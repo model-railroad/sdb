@@ -1,11 +1,10 @@
 # SPDX-FileCopyrightText: 2017 Tony DiCola for Adafruit Industries
 # SPDX-License-Identifier: MIT
-# RM adapted for MicroPython ESP32
-
 # `adafruit_vl53l0x`
 # CircuitPython driver for the VL53L0X distance sensor.  This code is adapted
-# from the pololu driver here:
-# https://github.com/pololu/vl53l0x-arduino
+# from the pololu driver here: https://github.com/pololu/vl53l0x-arduino
+#
+# RM adapted for MicroPython ESP32 v1.19.1
 import math
 import time
 
