@@ -1,29 +1,16 @@
-# README #
+# Software Defined Blocks
 
-This README would normally document whatever steps are necessary to get your application up and running.
+### Goal
 
-### What is this repository for? ###
+* Monitors sensors to detect block occupancy.
+* Sends information to JMRI over Wifi.
 
-* Quick summary
-* Version
-* [Learn Markdown](https://bitbucket.org/tutorials/markdowndemo)
+### Hardware Target
 
-### How do I get set up? ###
+* ESP32
 
-* Summary of set up
-* Configuration
-* Dependencies
-* Database configuration
-* How to run tests
-* Deployment instructions
+### Supported Sensors
 
-### Contribution guidelines ###
+* VL53L0X ToF Distance Sensor
 
-* Writing tests
-* Code review
-* Other guidelines
-
-### Who do I talk to? ###
-
-* Repo owner or admin
-* Other community or team contact
+~~
