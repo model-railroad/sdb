@@ -1,0 +1,4 @@
+# Port: COM3 == /dev/ttyS2 on Cygwin, COM4=/dev/ttyS3
+AMPY_PORT=/dev/ttyS4
+AMPY_BAUD=115200
+AMPY_DELAY=0.1

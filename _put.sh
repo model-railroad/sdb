@@ -1,9 +1,19 @@
 #!/bin/bash
+export RSHELL_PORT=/dev/ttyS4
 
 FS="src/main.py"
-if [[ -f "$1" ]]; then FS="$1"; fi
 
-export RSHELL_PORT=/dev/ttyS4
-ampy put "$FS"
+if [[ -f "$1" ]]; then
+    for f in "$@"; do
+        echo "Put $f"
+        ampy put "$f"
+    done
+else
+    f="$FS"
+    echo "Put $f"
+    ampy put "$f"
+fi
+
+
 ampy ls
 rshell repl
