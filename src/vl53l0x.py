@@ -145,8 +145,7 @@ class VL53L0X:
         # limit checks
         config_control = self._read_u8(_MSRC_CONFIG_CONTROL) | 0x12
         self._write_u8(_MSRC_CONFIG_CONTROL, config_control)
-        # set final range signal rate limit to 0.25 MCPS (million counts per
-        # second)
+        # set final range signal rate limit to 0.25 MCPS (million counts per second)
         self.set_signal_rate_limit(0.25)
         self._write_u8(_SYSTEM_SEQUENCE_CONFIG, 0xFF)
         spad_count, spad_is_aperture = self._get_spad_info()
@@ -156,7 +155,6 @@ class VL53L0X:
         # _6, so read it from there.
         ref_spad_map = bytearray(7)
         ref_spad_map[0] = _GLOBAL_CONFIG_SPAD_ENABLES_REF_0
-        #with self._device:
         self._device_write(ref_spad_map, end=1)
         self._device_readinto(ref_spad_map, start=1)
 
@@ -179,7 +177,6 @@ class VL53L0X:
                 ref_spad_map[1 + (i // 8)] &= ~(1 << (i % 8))
             elif (ref_spad_map[1 + (i // 8)] >> (i % 8)) & 0x1 > 0:
                 spads_enabled += 1
-        #with self._device:
         self._device_write(ref_spad_map)
         for pair in (
             (0xFF, 0x01),
@@ -536,7 +533,7 @@ class VL53L0X:
             (0x00, 0x01),
             (0xFF, 0x00),
             (0x80, 0x00),
-            (_SYSRANGE_START, 0x01),
+            (_SYSRANGE_START, 0x01), 
         ):
             self._write_u8(pair[0], pair[1])
         start = _time_monotonic()
