@@ -1,0 +1,10 @@
+# Context:
+# https://code.visualstudio.com/docs/cpp/cpp-ide
+# and
+# https://clang.llvm.org/docs/ClangFormatStyleOptions.html
+
+BasedOnStyle: Google
+IndentWidth: 4
+BreakBeforeBraces: Attach
+AllowShortFunctionsOnASingleLine: false
+ColumnLimit: 0

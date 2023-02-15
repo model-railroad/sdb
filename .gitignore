@@ -2,3 +2,5 @@
 *.log
 .DS_Store
 Thumbs.db
+build
+.vscode/c_cpp_properties.json
