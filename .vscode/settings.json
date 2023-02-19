@@ -3,5 +3,6 @@
         "interface/ftdi/esp32_devkitj_v1.cfg",
         "target/esp32.cfg"
     ],
-    "idf.portWin": "COM5"
+    "idf.portWin": "COM5",
+    "C_Cpp.default.cppStandard": "c++11"
 }
