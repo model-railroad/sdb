@@ -21,7 +21,7 @@ public:
 
     virtual void onStart() {}
     
-    virtual int onLoop() {
+    virtual long onLoop() {
         return 1000 /*ms*/;
     }
 
