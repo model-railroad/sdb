@@ -6,11 +6,14 @@
 #include <Adafruit_VL53L0X.h>
 #include <Wire.h>
 
+#define OUT_OF_RANGE_MM 2000
+
 class SdbModTof : public SdbMod {
 public:
     SdbModTof(SdbModManager& manager) :
         SdbMod(manager, "tf"),
-        _tof()
+        _tof(),
+        _tof_dist_mm(OUT_OF_RANGE_MM)
     { }
 
     void onStart() override {
@@ -29,25 +32,21 @@ public:
 private:
     Adafruit_VL53L0X _tof;
     VL53L0X_RangingMeasurementData_t _measure;
-    uint16_t _tof_dist_mm = 0;
-    
-    #define YTXT 22
+    long _tof_dist_mm;
 
     void measure_tof() {
-        Serial.println("@@ Loop TOP");
-        _tof.rangingTest(&_measure, /*debug*/ true);
-        _tof_dist_mm = _measure.RangeMilliMeter;
+        _tof.rangingTest(&_measure, /*debug*/ false);
         
-        if (_measure.RangeStatus != 4) {  // phase failures have incorrect data
-            Serial.print("@@ TOF distance mm: "); 
-            Serial.println(_tof_dist_mm);
-            temp_global_dist = _tof_dist_mm;
-
-//            digitalWrite(PIN_LED2, _tof_dist_mm < THRESHOLD_MM ? HIGH : LOW);
-
+        int new_dist_mm;
+        if (_measure.RangeStatus != 4) {
+            new_dist_mm = _measure.RangeMilliMeter;
         } else {
-            Serial.println("@@ TOF out of range ");
-//            digitalWrite(PIN_LED2, LOW);
+            // phase failures have incorrect data
+            new_dist_mm = OUT_OF_RANGE_MM;
+        }
+        if (_tof_dist_mm != new_dist_mm) {
+            _tof_dist_mm = new_dist_mm;
+            _manager.dataStore().put(SdbKey::TofDistanceMM, new_dist_mm);
         }
     }
 };

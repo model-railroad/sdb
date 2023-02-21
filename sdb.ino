@@ -1,7 +1,5 @@
 #include "src/common.h"
 
-int temp_global_dist = 0;
-
 #include "src/sdb_mod_manager.h"
 #include "src/mod_blinky.h"
 #include "src/mod_display.h"

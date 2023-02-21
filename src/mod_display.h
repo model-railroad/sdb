@@ -10,14 +10,20 @@ class SdbModDisplay : public SdbMod {
 public:
     SdbModDisplay(SdbModManager& manager) :
         SdbMod(manager, "dp"),
-        // U8G2 INIT -- OLED U8G2 constructor for ESP32 WIFI_KIT_32 I2C bus
-        _u8g2(U8G2_R0, /*SLC*/ 15, /*SDA*/ 4, /*RESET*/ 16),
-        _y_offset(0),
-        _tof_dist_mm(0)
+        // U8G2 INIT -- OLED U8G2 constructor for ESP32 WIFI_KIT_32 I2C bus on I2C pins 4+15+16
+        _u8g2(U8G2_R0, /*SCL*/ 15, /*SDA*/ 4, /*RESET*/ 16), // for U8G2_SSD1306_128X64_NONAME_F_SW_I2C
+        _y_offset(0)
     { }
 
     void onStart() override {
+        _u8g2.setBusClock(600000);
         _u8g2.begin();
+        DEBUG_PRINTF( ("OLED I2C Bus Clock %d\n", _u8g2.getBusClock()) );
+        _u8g2.setFont(u8g2_font_6x10_tf);
+        _u8g2.setFontRefHeightExtendedText();
+        _u8g2.setDrawColor(1);
+        _u8g2.setFontPosTop();
+        _u8g2.setFontDirection(0);
     }
 
     long onLoop() override {
@@ -28,17 +34,11 @@ public:
 private:
     U8G2_SSD1306_128X64_NONAME_F_SW_I2C _u8g2;
     int _y_offset;
-    int _tof_dist_mm;
     
     #define YTXT 22
 
     void prepare() {
         _u8g2.clearBuffer();
-        _u8g2.setFont(u8g2_font_6x10_tf);
-        _u8g2.setFontRefHeightExtendedText();
-        _u8g2.setDrawColor(1);
-        _u8g2.setFontPosTop();
-        _u8g2.setFontDirection(0);
     }
 
     void draw() {
@@ -46,7 +46,7 @@ private:
 
         int str_len;
         int y = abs(_y_offset - 8);
-        _tof_dist_mm = temp_global_dist;
+        long _tof_dist_mm = _manager.dataStore().get(SdbKey::TofDistanceMM, 2000);
         
         // u8g2.setFont(u8g2_font_6x10_tf); //-- from prepare
         // Font is 6x10, coords are x,y
