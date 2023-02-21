@@ -1,6 +1,10 @@
 #ifndef __INC_SDB_MOD_TOF_H
 #define __INC_SDB_MOD_TOF_H
 
+// Important: I2C controller 0 (aka &Wire ) is used in mod_display.
+//            I2C controller 1 (aka &Wire1) is used here.
+// ToF default I2C address is 0x29, pins sda=21 slc=22.
+
 #include "common.h"
 #include "sdb_mod.h"
 #include <Adafruit_VL53L0X.h>
@@ -17,8 +21,8 @@ public:
     { }
 
     void onStart() override {
-        Wire.begin(/*SDA*/ 21, /*SLC*/ 22);
-        if (!_tof.begin()) {
+        Wire1.begin(/*SDA*/ 21, /*SLC*/ 22);
+        if (!_tof.begin(/*i2c_addr*/ VL53L0X_I2C_ADDR, /*debug*/ false, /*i2c*/ &Wire1)) {
             Serial.println(F("@@ VL53L0X begin failed (disconnected?)"));
             panic_blink_led();
         }

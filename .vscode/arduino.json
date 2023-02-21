@@ -5,7 +5,7 @@
     "board": "esp32:esp32:heltec_wifi_kit_32",
     "port": "COM5",
     "buildPreferences": [
-        ["build.extra_flags", "-DCUSTOM1=123 -DCUSTOM2=3.14 -Wall"],
-        ["compiler.cpp.extra_flags", "-DCUSTOM3=\"hello\""]
+        ["build.extra_flags", "-DESP32"],
+        ["compiler.cpp.extra_flags", "-DESP32"]
     ]
 }

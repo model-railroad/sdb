@@ -6,6 +6,11 @@
 
 #include <HardwareSerial.h>
 
+#if !defined(ESP32)
+    #warning ESP32 is not defined. Defining it here.
+    #define ESP32 1
+#endif
+
 #define MS_TO_TICKS(ms) ((ms) / portTICK_PERIOD_MS)
 #define rtDelay(ms) { vTaskDelay( MS_TO_TICKS(ms) ); } // delay in mS
 
