@@ -39,6 +39,7 @@ public:
 
     void onStart() {
         for(auto mod_p : _mods) {
+            DEBUG_PRINTF( ("Start module [%s]\n", mod_p->name().c_str()) );
             mod_p->onStart();
         }
     }

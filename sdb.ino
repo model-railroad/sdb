@@ -1,6 +1,7 @@
 #include "src/common.h"
 #include "src/sdb_mod_manager.h"
 #include "src/mod_blinky.h"
+#include "src/mod_display.h"
 
 SdbModManager _g_sdb_mod_manager;
 
@@ -10,7 +11,9 @@ void setup() {
     DEBUG_PRINTF( ("SDB on Core %d, compiled using C++ %d\n", xPortGetCoreID(), __cplusplus) );
 
     auto blinky = new SdbModBlinky(_g_sdb_mod_manager);
+    auto display = new SdbModDisplay(_g_sdb_mod_manager);
     _g_sdb_mod_manager.registerMod(blinky);
+    _g_sdb_mod_manager.registerMod(display);
     _g_sdb_mod_manager.onStart();
 }
 

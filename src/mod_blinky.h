@@ -19,6 +19,23 @@ public:
         pinMode(LED_PIN2, OUTPUT);
     }
 
+    long onLoop() override {
+        long wait_ms = 1000;
+        if (_state == State::Init) {
+            wait_ms = _manager.schedule(250, [this]() { state1_1On2Off(); });
+        }
+        return wait_ms;
+    }
+
+private:
+    enum class State {
+        Init,
+        State1_1On2Off,
+        State2_1Off2On,
+        State3_1Off2Off_Pause,
+    };
+    State _state;
+
     void state1_1On2Off() {
         _state = State::State1_1On2Off;
         digitalWrite(LED_PIN1, HIGH);
@@ -39,23 +56,6 @@ public:
         digitalWrite(LED_PIN2, LOW);
         _manager.schedule(1000, [this]() { state1_1On2Off(); });
     }
-    
-    long onLoop() override {
-        long wait_ms = 1000;
-        if (_state == State::Init) {
-            wait_ms = _manager.schedule(250, [this]() { state1_1On2Off(); });
-        }
-        return wait_ms;
-    }
-
-private:
-    enum class State {
-        Init,
-        State1_1On2Off,
-        State2_1Off2On,
-        State3_1Off2Off_Pause,
-    };
-    State _state;
 };
 
 #endif // __INC_SDB_MOD_BLINKY_H
