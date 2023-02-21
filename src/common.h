@@ -17,7 +17,7 @@
 #define PRO_CPU 0
 #define APP_CPU 1
 
-//-- In main INO
-//-- bool is_ota_updating();
+// In main INO
+void panic_blink_led();
 
 #endif // __INC_COMMON_H

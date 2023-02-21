@@ -12,8 +12,8 @@ public:
         SdbMod(manager, "dp"),
         // U8G2 INIT -- OLED U8G2 constructor for ESP32 WIFI_KIT_32 I2C bus
         _u8g2(U8G2_R0, /*SLC*/ 15, /*SDA*/ 4, /*RESET*/ 16),
-        y_offset(0),
-        tof_dist_mm(0)
+        _y_offset(0),
+        _tof_dist_mm(0)
     { }
 
     void onStart() override {
@@ -27,9 +27,8 @@ public:
 
 private:
     U8G2_SSD1306_128X64_NONAME_F_SW_I2C _u8g2;
-    char draw_num[12];
-    int y_offset;
-    int tof_dist_mm;
+    int _y_offset;
+    int _tof_dist_mm;
     
     #define YTXT 22
 
@@ -46,7 +45,8 @@ private:
         prepare();
 
         int str_len;
-        int y = abs(y_offset - 8);
+        int y = abs(_y_offset - 8);
+        _tof_dist_mm = temp_global_dist;
         
         // u8g2.setFont(u8g2_font_6x10_tf); //-- from prepare
         // Font is 6x10, coords are x,y
@@ -55,16 +55,16 @@ private:
         _u8g2.drawStr(0, y, "VL53L0X TEST");
         y += YTXT;
         
-        String dt = String(tof_dist_mm) + " mm";
+        String dt = String(_tof_dist_mm) + " mm";
         _u8g2.drawStr(0, y, dt.c_str());
         y += YTXT;
 
         // Frame is an empty Box. Box is filled.
         _u8g2.drawFrame(0, y, 128, 8);
-        float w = (128.0f / 2000.0f) * tof_dist_mm;
+        float w = (128.0f / 2000.0f) * _tof_dist_mm;
         _u8g2.drawBox(0, y, min(128, max(0, (int)w)) , 8);
         
-        y_offset = (y_offset + 1) % 16;
+        _y_offset = (_y_offset + 1) % 16;
 
         _u8g2.sendBuffer();
     }
