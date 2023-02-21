@@ -6,7 +6,7 @@
 #include <Adafruit_VL53L0X.h>
 #include <Wire.h>
 
-#define OUT_OF_RANGE_MM 2000
+#define OUT_OF_RANGE_MM 2*1000
 
 class SdbModTof : public SdbMod {
 public:

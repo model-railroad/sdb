@@ -71,8 +71,9 @@ public:
                 next_ms = mod_ms;
             }
         }
+        long loop_ms = millis() - start_ms;
         long delta_ms = next_ms - start_ms;
-        DEBUG_PRINTF( ("loop pause %d ms, sched #%d\n", delta_ms, _scheduled.size()) );
+        DEBUG_PRINTF( ("loop %3d ms + pause %3d ms, sched #%d\n", loop_ms, delta_ms, _scheduled.size()) );
         if (delta_ms > 0) {
             delay(delta_ms);
         }
