@@ -17,7 +17,7 @@ public:
     SdbModTof(SdbModManager& manager) :
         SdbMod(manager, "tf"),
         _tof(),
-        _tof_dist_mm(OUT_OF_RANGE_MM)
+        _exported_dist_mm(NULL)
     { }
 
     void onStart() override {
@@ -26,17 +26,20 @@ public:
             Serial.println(F("@@ VL53L0X begin failed (disconnected?)"));
             panic_blink_led();
         }
+        _exported_dist_mm = _manager.dataStore().ptrLong(SdbKey::TofDistanceMM, OUT_OF_RANGE_MM);
     }
 
     long onLoop() override {
         measure_tof();
-        return 250;
+        // Make refresh rate dynamic: faster when target is closer to sensor.
+        long delay_ms = max(10L, min(250L, *_exported_dist_mm / 10));
+        return delay_ms;
     }
 
 private:
     Adafruit_VL53L0X _tof;
     VL53L0X_RangingMeasurementData_t _measure;
-    long _tof_dist_mm;
+    long* _exported_dist_mm;
 
     void measure_tof() {
         _tof.rangingTest(&_measure, /*debug*/ false);
@@ -48,9 +51,8 @@ private:
             // phase failures have incorrect data
             new_dist_mm = OUT_OF_RANGE_MM;
         }
-        if (_tof_dist_mm != new_dist_mm) {
-            _tof_dist_mm = new_dist_mm;
-            _manager.dataStore().put(SdbKey::TofDistanceMM, new_dist_mm);
+        if (*_exported_dist_mm != new_dist_mm) {
+            *_exported_dist_mm = new_dist_mm;
         }
     }
 };

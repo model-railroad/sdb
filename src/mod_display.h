@@ -26,6 +26,8 @@ class SdbModDisplay : public SdbMod {
 public:
     SdbModDisplay(SdbModManager& manager) :
         SdbMod(manager, "dp"),
+        _imported_dist_mm(NULL),
+        _last_dist_mm(0),
 #if defined(USE_DISPLAY_LIB_U8G2)
         // U8G2 INIT -- OLED U8G2 constructor for ESP32 WIFI_KIT_32 I2C bus on I2C pins 4+15+16
         // _u8g2(U8G2_R0, /*SCL*/ 15, /*SDA*/ 4, /*RESET*/ 16), // for U8G2_SSD1306_128X64_NONAME_F_SW_I2C
@@ -39,6 +41,8 @@ public:
     { }
 
     void onStart() override {
+        _imported_dist_mm = _manager.dataStore().ptrLong(SdbKey::TofDistanceMM, 2000);
+
 #if defined(USE_DISPLAY_LIB_U8G2)
         _u8g2.setBusClock(600000);
         _u8g2.begin();
@@ -62,10 +66,10 @@ public:
     }
 
     long onLoop() override {
-        long new_dist_mm = _manager.dataStore().get(SdbKey::TofDistanceMM, 2000);
-        if (_tof_dist_mm != new_dist_mm) {
+        long new_dist_mm = *_imported_dist_mm;
+        if (_last_dist_mm != new_dist_mm) {
             _is_on = true;
-            _tof_dist_mm = new_dist_mm;
+            _last_dist_mm = new_dist_mm;
             set_next_time_off();
         }
 
@@ -86,7 +90,8 @@ private:
     Adafruit_SSD1306 _display;
 #endif
     int _y_offset;
-    long _tof_dist_mm;
+    long _last_dist_mm;
+    long* _imported_dist_mm;
     long _next_time_off_ts;
     bool _is_on;
     
@@ -123,13 +128,13 @@ private:
         _u8g2.drawStr(0, y, "VL53L0X TEST");
         y += YTXT;
         
-        String dt = String(_tof_dist_mm) + " mm";
+        String dt = String(_last_dist_mm) + " mm";
         _u8g2.drawStr(0, y, dt.c_str());
         y += YTXT;
 
         // Frame is an empty Box. Box is filled.
         _u8g2.drawFrame(0, y, 128, 8);
-        float w = (128.0f / 2000.0f) * _tof_dist_mm;
+        float w = (128.0f / 2000.0f) * _last_dist_mm;
         _u8g2.drawBox(0, y, min(128, max(0, (int)w)), 8);
 
         _u8g2.sendBuffer();
@@ -140,14 +145,14 @@ private:
         _display.print("VL53L0X");
         y += YTXT;
 
-        String dt = String(_tof_dist_mm) + " mm";
+        String dt = String(_last_dist_mm) + " mm";
         _display.setCursor(0,y);
         _display.print(dt.c_str());
         y += YTXT;
 
         // Frame is an empty Box. Box is filled.
         _display.drawRect(0, y, 128, 8, WHITE);
-        float w = (128.0f / 2000.0f) * _tof_dist_mm;
+        float w = (128.0f / 2000.0f) * _last_dist_mm;
         _display.fillRect(0, y, min(128, max(0, (int)w)), 8, WHITE);
 
         _display.display();
