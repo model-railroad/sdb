@@ -19,8 +19,8 @@
 #define ERROR_PRINTF(x)   { Serial.printf x ; }
 
 // CPU affinity for ESP32
-#define PRO_CPU 0
-#define APP_CPU 1
+#define PRO_CPU 0       // Wifi
+#define APP_CPU 1       // Main app
 
 // In main INO
 void panic_blink_led();

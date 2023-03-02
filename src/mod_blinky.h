@@ -3,9 +3,33 @@
 
 #include "common.h"
 #include "sdb_mod.h"
+#include "sdb_task.h"
 
 #define LED_PIN1 BUILTIN_LED
 #define LED_PIN2 19
+
+
+class TaskBlinky : public SdbTask {
+public:
+    TaskBlinky() : SdbTask("TaskBlinky", SdbPriority::Sensor) {
+    }
+
+    void onRun() override {
+        while (true) {
+            digitalWrite(LED_PIN1, HIGH);
+            digitalWrite(LED_PIN2, LOW);
+            rtDelay(250 /*ms*/);
+
+            digitalWrite(LED_PIN1, LOW);
+            digitalWrite(LED_PIN2, HIGH);
+            rtDelay(250 /*ms*/);
+
+            digitalWrite(LED_PIN1, LOW);
+            digitalWrite(LED_PIN2, LOW);
+            rtDelay(1000 /*ms*/);
+        }
+    }
+};
 
 class SdbModBlinky : public SdbMod {
 public:
@@ -17,13 +41,14 @@ public:
     void onStart() override {
         pinMode(LED_PIN1, OUTPUT);
         pinMode(LED_PIN2, OUTPUT);
+            _task_blinky.start();
     }
 
     long onLoop() override {
         long wait_ms = 1000;
-        if (_state == State::Init) {
-            wait_ms = _manager.schedule(250, [this]() { state1_1On2Off(); });
-        }
+        // if (_state == State::Init) {
+        //     wait_ms = _manager.schedule(250, [this]() { state1_1On2Off(); });
+        // }
         return wait_ms;
     }
 
@@ -35,6 +60,7 @@ private:
         State3_1Off2Off_Pause,
     };
     State _state;
+    TaskBlinky _task_blinky;
 
     void state1_1On2Off() {
         _state = State::State1_1On2Off;
@@ -57,5 +83,6 @@ private:
         _manager.schedule(1000, [this]() { state1_1On2Off(); });
     }
 };
+
 
 #endif // __INC_SDB_MOD_BLINKY_H

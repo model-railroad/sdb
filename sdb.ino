@@ -1,4 +1,5 @@
 #include "src/common.h"
+#include <esp_wifi.h>
 
 #include "src/sdb_mod_manager.h"
 #include "src/mod_blinky.h"
@@ -20,7 +21,11 @@ void panic_blink_led() {
 void setup() {
     Serial.begin(115200);
     Serial.setDebugOutput(true);
-    DEBUG_PRINTF( ("SDB on Core %d, compiled using C++ %d\n", xPortGetCoreID(), __cplusplus) );
+    DEBUG_PRINTF( ("SDB on Core %d with priority %d, compiled using C++ %d\n",
+        xPortGetCoreID(),
+        uxTaskPriorityGet(NULL),
+        __cplusplus) );
+    DEBUG_PRINTF( ("Wifi on Core %d\n", WIFI_TASK_CORE_ID) );
 
     auto blinky = new SdbModBlinky(_g_sdb_mod_manager);
     auto display = new SdbModDisplay(_g_sdb_mod_manager);

@@ -31,7 +31,7 @@ public:
     long* ptrLong(const SdbKey::SdbKey key, long _default) {
         auto key_value = _mapLong.find(key);
         if (key_value == _mapLong.end()) {
-            long* val = (long*) malloc(sizeof(long));
+            long* val = (long*) calloc(1, sizeof(long));
             *val = _default;
             _mapLong[key] = val;
             return val;
@@ -52,7 +52,7 @@ public:
     String* ptrString(const SdbKey::SdbKey key, String& _default) {
         auto key_value = _mapString.find(key);
         if (key_value == _mapString.end()) {
-            String* val = (String*) malloc(sizeof(String));
+            String* val = (String*) calloc(1, sizeof(String));
             *val = _default;
             _mapString[key] = val;
             return val;
