@@ -3,6 +3,7 @@
 
 #include "common.h"
 #include "sdb_mod_manager.h"
+#include "sdb_lock.h"
 #include <unordered_map>
 
 namespace SdbKey {
@@ -12,23 +13,56 @@ namespace SdbKey {
     };
 }
 
-
-
 class SdbDataStore {
 public:
-    SdbDataStore() {
+    SdbDataStore() :
+        _lock("LockData")
+    { }
+
+    SdbLock& lock() {
+        return _lock;
     }
 
     void putLong(const SdbKey::SdbKey key, long value) {
-        long* ptr = ptrLong(key, value);
+        SdbMutex auto_lock(_lock);
+        long* ptr = _ptrLong_unlocked(key, value);
         *ptr = value;
     }
 
     long getLong(const SdbKey::SdbKey key, long _default) {
-        return *ptrLong(key, _default);
+        SdbMutex auto_lock(_lock);
+        return *_ptrLong_unlocked(key, _default);
     }
 
     long* ptrLong(const SdbKey::SdbKey key, long _default) {
+        SdbMutex auto_lock(_lock);
+        return _ptrLong_unlocked(key, _default);
+    }
+
+    void putString(const SdbKey::SdbKey key, String& value) {
+        SdbMutex auto_lock(_lock);
+        String* ptr = ptrString(key, value);
+        *ptr = value;
+    }
+
+    String& getString(const SdbKey::SdbKey key, String& _default) {
+        SdbMutex auto_lock(_lock);
+        return *ptrString(key, _default);
+    }
+
+    String* ptrString(const SdbKey::SdbKey key, String& _default) {
+        SdbMutex auto_lock(_lock);
+        return _ptrString_unlocked(key, _default);
+    }
+
+private:
+    SdbLock _lock;
+    // An unordered map of SdbKey(as int) to long values.
+    std::unordered_map<SdbKey::SdbKey, long*, std::hash<int>> _mapLong;
+    // An unordered map of SdbKey(as int) to String values.
+    std::unordered_map<SdbKey::SdbKey, String*, std::hash<int>> _mapString;
+
+    long* _ptrLong_unlocked(const SdbKey::SdbKey key, long _default) {
         auto key_value = _mapLong.find(key);
         if (key_value == _mapLong.end()) {
             long* val = (long*) calloc(1, sizeof(long));
@@ -40,16 +74,7 @@ public:
         }
     }
 
-    void putString(const SdbKey::SdbKey key, String& value) {
-        String* ptr = ptrString(key, value);
-        *ptr = value;
-    }
-
-    String& getString(const SdbKey::SdbKey key, String& _default) {
-        return *ptrString(key, _default);
-    }
-
-    String* ptrString(const SdbKey::SdbKey key, String& _default) {
+    String* _ptrString_unlocked(const SdbKey::SdbKey key, String& _default) {
         auto key_value = _mapString.find(key);
         if (key_value == _mapString.end()) {
             String* val = (String*) calloc(1, sizeof(String));
@@ -60,13 +85,6 @@ public:
             return key_value->second;
         }
     }
- 
-
-private:
-    // An unordered map of SdbKey(as int) to long values.
-    std::unordered_map<SdbKey::SdbKey, long*, std::hash<int>> _mapLong;
-    // An unordered map of SdbKey(as int) to String values.
-    std::unordered_map<SdbKey::SdbKey, String*, std::hash<int>> _mapString;
 };
 
 //

@@ -7,6 +7,7 @@
 
 #include "common.h"
 #include "sdb_mod.h"
+#include "sdb_lock.h"
 
 #define USE_DISPLAY_LIB_U8G2
 #undef  USE_DISPLAY_LIB_AF_GFX
@@ -66,7 +67,11 @@ public:
     }
 
     long onLoop() override {
-        long new_dist_mm = *_imported_dist_mm;
+        long new_dist_mm;
+        {
+            SdbMutex data_lock(_manager.dataStore().lock());
+            new_dist_mm = *_imported_dist_mm;
+        }
         if (_last_dist_mm != new_dist_mm) {
             _is_on = true;
             _last_dist_mm = new_dist_mm;

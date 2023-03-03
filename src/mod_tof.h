@@ -7,6 +7,7 @@
 
 #include "common.h"
 #include "sdb_mod.h"
+#include "sdb_lock.h"
 #include <Adafruit_VL53L0X.h>
 #include <Wire.h>
 
@@ -30,9 +31,9 @@ public:
     }
 
     long onLoop() override {
-        measure_tof();
+        long dist_mm = measure_tof();
         // Make refresh rate dynamic: faster when target is closer to sensor.
-        long delay_ms = max(10L, min(250L, *_exported_dist_mm / 10));
+        long delay_ms = max(10L, min(250L, dist_mm / 10));
         return delay_ms;
     }
 
@@ -41,7 +42,7 @@ private:
     VL53L0X_RangingMeasurementData_t _measure;
     long* _exported_dist_mm;
 
-    void measure_tof() {
+    long measure_tof() {
         _tof.rangingTest(&_measure, /*debug*/ false);
         
         int new_dist_mm;
@@ -51,9 +52,15 @@ private:
             // phase failures have incorrect data
             new_dist_mm = OUT_OF_RANGE_MM;
         }
-        if (*_exported_dist_mm != new_dist_mm) {
-            *_exported_dist_mm = new_dist_mm;
+
+        {
+            SdbMutex data_lock(_manager.dataStore().lock());
+            if (*_exported_dist_mm != new_dist_mm) {
+                *_exported_dist_mm = new_dist_mm;
+            }
         }
+
+        return new_dist_mm;
     }
 };
 
