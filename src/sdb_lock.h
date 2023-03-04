@@ -2,6 +2,7 @@
 #define __INC_SDB_LOCK_H
 
 #include "common.h"
+#include <assert.h>
 #include <freertos/semphr.h>
 #include <functional>
 
@@ -9,8 +10,10 @@ class SdbLock {
 public:
     SdbLock(String name) :
         _name(name),
-        _handle(xSemaphoreCreateMutex())
-    { }
+        _handle(xSemaphoreCreateRecursiveMutex())
+    {
+        assert(_handle != NULL);
+    }
 
     void execute(const std::function<void()> lambda) {
         try {
@@ -30,13 +33,15 @@ public:
         // e.g. one second, then busy loop, and panic if the wait is above a
         // significant threshold (for debugging purposes).
         // Or create an acquire()-->false method, or throw.
-        if (xSemaphoreTake(_handle, portMAX_DELAY) != pdTRUE) {
-            DEBUG_PRINTF( ("[%s] acquire failed", _name.c_str()) );
+        if (xSemaphoreTakeRecursive(_handle, portMAX_DELAY) != pdTRUE) {
+            PANIC_PRINTF( ("[%s] acquire failed", _name.c_str()) );
         }
     }
 
     void release() {
-        xSemaphoreGive(_handle);
+        if (xSemaphoreGiveRecursive(_handle) != pdTRUE) {
+            PANIC_PRINTF( ("[%s] release failed", _name.c_str()) );
+        }
     }
 
 private:

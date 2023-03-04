@@ -17,12 +17,13 @@
 #define VERBOSE_PRINTF(x) { /*Serial.printf x ; */ }
 #define DEBUG_PRINTF(x)   { Serial.printf x ; }
 #define ERROR_PRINTF(x)   { Serial.printf x ; }
+#define PANIC_PRINTF(x)   { Serial.printf x ; sdb_panic(NULL); }
 
 // CPU affinity for ESP32
 #define PRO_CPU 0       // Wifi
 #define APP_CPU 1       // Main app
 
-// In main INO
-void panic_blink_led();
+// In main INO... a global panic method.
+void sdb_panic(char* msg = NULL);
 
 #endif // __INC_COMMON_H

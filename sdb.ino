@@ -8,7 +8,10 @@
 
 SdbModManager _g_sdb_mod_manager;
 
-void panic_blink_led() {
+void sdb_panic(char* msg) {
+    if (msg != NULL) {
+        ERROR_PRINTF( ("[SDB] PANIC! Cause: %s\n", msg ) );
+    }
     pinMode(LED_BUILTIN, OUTPUT);
     while (true) {
         digitalWrite(LED_BUILTIN, LOW);

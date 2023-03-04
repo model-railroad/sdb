@@ -25,7 +25,7 @@ public:
         Wire1.begin(/*SDA*/ 21, /*SLC*/ 22);
         if (!_tof.begin(/*i2c_addr*/ VL53L0X_I2C_ADDR, /*debug*/ false, /*i2c*/ &Wire1)) {
             Serial.println(F("@@ VL53L0X begin failed (disconnected?)"));
-            panic_blink_led();
+            sdb_panic();
         }
         _exported_dist_mm = _manager.dataStore().ptrLong(SdbKey::TofDistanceMM, OUT_OF_RANGE_MM);
     }
