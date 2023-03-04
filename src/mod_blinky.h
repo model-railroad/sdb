@@ -13,7 +13,7 @@ class SdbModBlinky : public SdbModTask {
 public:
     SdbModBlinky(SdbModManager& manager) :
         SdbModTask(manager, "ld", "TaskBlinky", SdbPriority::Sensor),
-        _io_lock(manager.ioLock())
+        _ioLock(manager.ioLock())
     { }
 
     void onStart() override {
@@ -27,26 +27,26 @@ public:
     }
 
 private:
-    SdbLock& _io_lock;
+    SdbLock& _ioLock;
 
     void onTaskRun() override {
         while (true) {
             {
-                SdbMutex io_mutex(_io_lock);
+                SdbMutex io_mutex(_ioLock);
                 digitalWrite(LED_PIN1, HIGH);
                 digitalWrite(LED_PIN2, LOW);
             }
             rtDelay(250 /*ms*/);
 
             {
-                SdbMutex io_mutex(_io_lock);
+                SdbMutex io_mutex(_ioLock);
                 digitalWrite(LED_PIN1, LOW);
                 digitalWrite(LED_PIN2, HIGH);
             }
             rtDelay(250 /*ms*/);
 
             {
-                SdbMutex io_mutex(_io_lock);
+                SdbMutex io_mutex(_ioLock);
                 digitalWrite(LED_PIN1, LOW);
                 digitalWrite(LED_PIN2, LOW);
             }

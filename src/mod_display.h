@@ -22,15 +22,16 @@
 #include <Adafruit_SSD1306.h>
 #endif
 
+#define DISPLAY_TIME_ON_MS 15*1000
 
 class SdbModDisplay : public SdbMod {
 public:
     SdbModDisplay(SdbModManager& manager) :
         SdbMod(manager, "dp"),
-        _io_lock(_manager.ioLock()),
-        _data_lock(_manager.dataStore().lock()),
-        _imported_dist_mm(NULL),
-        _last_dist_mm(0),
+        _ioLock(_manager.ioLock()),
+        _dataLock(_manager.dataStore().lock()),
+        _sharedDistMM(NULL),
+        _lastDistMM(0),
 #if defined(USE_DISPLAY_LIB_U8G2)
         // U8G2 INIT -- OLED U8G2 constructor for ESP32 WIFI_KIT_32 I2C bus on I2C pins 4+15+16
         // _u8g2(U8G2_R0, /*SCL*/ 15, /*SDA*/ 4, /*RESET*/ 16), // for U8G2_SSD1306_128X64_NONAME_F_SW_I2C
@@ -38,13 +39,13 @@ public:
 #elif defined(USE_DISPLAY_LIB_AF_GFX)
         _display(/*w*/ 128, /*h*/ 64, /*twi*/ &Wire, /*rst_pin*/ 16),
 #endif
-        _y_offset(0),
-        _is_on(true),
-        _next_time_off_ts(0)
+        _yOffset(0),
+        _isOn(true),
+        _nextTimeOffTS(0)
     { }
 
     void onStart() override {
-        _imported_dist_mm = _manager.dataStore().ptrLong(SdbKey::TofDistanceMM, 2000);
+        _sharedDistMM = _manager.dataStore().ptrLong(SdbKey::TofDistanceMM, 2000);
 
 #if defined(USE_DISPLAY_LIB_U8G2)
         _u8g2.setBusClock(600000);
@@ -69,51 +70,53 @@ public:
     }
 
     long onLoop() override {
-        long new_dist_mm;
+        bool changes = false;
+        long newDistMM;
         {
-            SdbMutex data_mutex(_data_lock);
-            new_dist_mm = *_imported_dist_mm;
+            SdbMutex data_mutex(_dataLock);
+            newDistMM = *_sharedDistMM;
         }
-        if (_last_dist_mm != new_dist_mm) {
-            _is_on = true;
-            _last_dist_mm = new_dist_mm;
+        if (_lastDistMM != newDistMM) {
+            changes = true;
+            _isOn = true;
+            _lastDistMM = newDistMM;
             set_next_time_off();
         }
 
-        if (_is_on) {
-            if (millis() > _next_time_off_ts) {
+        if (_isOn) {
+            if (millis() > _nextTimeOffTS) {
                 turn_off();
             } else {
                 draw();
                 update();
             }
         }
-        return 250;
+        // Refresh more often when we have changes.
+        return changes ? 50 : 250;
     }
 
 private:
-    SdbLock& _io_lock;
-    SdbLock& _data_lock;
+    SdbLock& _ioLock;
+    SdbLock& _dataLock;
 
 #if defined(USE_DISPLAY_LIB_U8G2)
     U8G2_SSD1306_128X64_NONAME_F_HW_I2C _u8g2;
 #elif defined(USE_DISPLAY_LIB_AF_GFX)
     Adafruit_SSD1306 _display;
 #endif
-    int _y_offset;
-    long _last_dist_mm;
-    long* _imported_dist_mm;
-    long _next_time_off_ts;
-    bool _is_on;
+    int _yOffset;
+    long _lastDistMM;
+    long* _sharedDistMM;
+    long _nextTimeOffTS;
+    bool _isOn;
     
-    #define DISPLAY_TIME_ON_MS 30*1000
     void set_next_time_off() {
-        _next_time_off_ts = millis() + DISPLAY_TIME_ON_MS;
+        _nextTimeOffTS = millis() + DISPLAY_TIME_ON_MS;
     }
 
     void turn_off() {
-        if (_is_on) {
-            _is_on = false;
+        if (_isOn) {
+            _isOn = false;
 #if defined(USE_DISPLAY_LIB_U8G2)
             _u8g2.clearBuffer();
             _u8g2.sendBuffer();
@@ -126,8 +129,8 @@ private:
 
     #define YTXT 22
     void draw() {
-        _is_on = true;
-        int y = abs(_y_offset - 8);
+        _isOn = true;
+        int y = abs(_yOffset - 8);
         
 #if defined(USE_DISPLAY_LIB_U8G2)
         _u8g2.clearBuffer();
@@ -139,13 +142,13 @@ private:
         _u8g2.drawStr(0, y, "VL53L0X TEST");
         y += YTXT;
         
-        String dt = String(_last_dist_mm) + " mm";
+        String dt = String(_lastDistMM) + " mm";
         _u8g2.drawStr(0, y, dt.c_str());
         y += YTXT;
 
         // Frame is an empty Box. Box is filled.
         _u8g2.drawFrame(0, y, 128, 8);
-        float w = (128.0f / 2000.0f) * _last_dist_mm;
+        float w = (128.0f / 2000.0f) * _lastDistMM;
         _u8g2.drawBox(0, y, min(128, max(0, (int)w)), 8);
 #elif defined(USE_DISPLAY_LIB_AF_GFX)
         _display.clearDisplay();
@@ -154,22 +157,22 @@ private:
         _display.print("VL53L0X");
         y += YTXT;
 
-        String dt = String(_last_dist_mm) + " mm";
+        String dt = String(_lastDistMM) + " mm";
         _display.setCursor(0,y);
         _display.print(dt.c_str());
         y += YTXT;
 
         // Frame is an empty Box. Box is filled.
         _display.drawRect(0, y, 128, 8, WHITE);
-        float w = (128.0f / 2000.0f) * _last_dist_mm;
+        float w = (128.0f / 2000.0f) * _lastDistMM;
         _display.fillRect(0, y, min(128, max(0, (int)w)), 8, WHITE);
 #endif
         
-        _y_offset = (_y_offset + 1) % 16;
+        _yOffset = (_yOffset + 1) % 16;
     }
 
     void update() {
-        SdbMutex io_mutex(_io_lock);
+        SdbMutex io_mutex(_ioLock);
 #if defined(USE_DISPLAY_LIB_U8G2)
         _u8g2.sendBuffer();
 #elif defined(USE_DISPLAY_LIB_AF_GFX)

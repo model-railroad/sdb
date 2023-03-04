@@ -24,34 +24,34 @@ public:
     }
 
     void putLong(const SdbKey::SdbKey key, long value) {
-        SdbMutex auto_mutex(_lock);
+        SdbMutex autoMutex(_lock);
         long* ptr = _ptrLong_unlocked(key, value);
         *ptr = value;
     }
 
     long getLong(const SdbKey::SdbKey key, long _default) {
-        SdbMutex auto_mutex(_lock);
+        SdbMutex autoMutex(_lock);
         return *_ptrLong_unlocked(key, _default);
     }
 
     long* ptrLong(const SdbKey::SdbKey key, long _default) {
-        SdbMutex auto_mutex(_lock);
+        SdbMutex autoMutex(_lock);
         return _ptrLong_unlocked(key, _default);
     }
 
     void putString(const SdbKey::SdbKey key, String& value) {
-        SdbMutex auto_mutex(_lock);
+        SdbMutex autoMutex(_lock);
         String* ptr = ptrString(key, value);
         *ptr = value;
     }
 
     String& getString(const SdbKey::SdbKey key, String& _default) {
-        SdbMutex auto_mutex(_lock);
+        SdbMutex autoMutex(_lock);
         return *ptrString(key, _default);
     }
 
     String* ptrString(const SdbKey::SdbKey key, String& _default) {
-        SdbMutex auto_mutex(_lock);
+        SdbMutex autoMutex(_lock);
         return _ptrString_unlocked(key, _default);
     }
 
@@ -63,26 +63,26 @@ private:
     std::unordered_map<SdbKey::SdbKey, String*, std::hash<int>> _mapString;
 
     long* _ptrLong_unlocked(const SdbKey::SdbKey key, long _default) {
-        auto key_value = _mapLong.find(key);
-        if (key_value == _mapLong.end()) {
+        auto keyValue = _mapLong.find(key);
+        if (keyValue == _mapLong.end()) {
             long* val = (long*) calloc(1, sizeof(long));
             *val = _default;
             _mapLong[key] = val;
             return val;
         } else {
-            return key_value->second;
+            return keyValue->second;
         }
     }
 
     String* _ptrString_unlocked(const SdbKey::SdbKey key, String& _default) {
-        auto key_value = _mapString.find(key);
-        if (key_value == _mapString.end()) {
+        auto keyValue = _mapString.find(key);
+        if (keyValue == _mapString.end()) {
             String* val = (String*) calloc(1, sizeof(String));
             *val = _default;
             _mapString[key] = val;
             return val;
         } else {
-            return key_value->second;
+            return keyValue->second;
         }
     }
 };

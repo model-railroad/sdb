@@ -11,11 +11,11 @@ class SdbMod {
 public:
     SdbMod(SdbModManager& manager, const String& name) :
         _manager(manager),
-        _mod_name(name) {
+        _modName(name) {
     }
 
     const String& name() {
-        return _mod_name;
+        return _modName;
     }
 
     // void enqueue(msg) { _msg_queue.add(msg); }
@@ -28,22 +28,22 @@ public:
 
 protected:
     SdbModManager& _manager;
-    const String _mod_name;
+    const String _modName;
 };
 
 class SdbModTask : public SdbMod {
 public:
-    SdbModTask(SdbModManager& manager, const String& mod_name, const String& task_name, SdbPriority::SdbPriority priority) :
-        SdbMod(manager, mod_name),
-        _mod_task_impl(this, task_name, priority)
+    SdbModTask(SdbModManager& manager, const String& modName, const String& taskName, SdbPriority::SdbPriority priority) :
+        SdbMod(manager, modName),
+        _modTaskImpl(this, taskName, priority)
     { }
 
     void startTask() {
-        _mod_task_impl.start();
+        _modTaskImpl.start();
     }
 
     bool isTaskStarted() {
-        return _mod_task_impl.isStarted();
+        return _modTaskImpl.isStarted();
     }
 
     virtual void onTaskRun() = 0;
@@ -51,19 +51,19 @@ public:
 private:
     class _SdbModTaskImpl : public SdbTask {
     public:
-        _SdbModTaskImpl(SdbModTask* mod_task, const String& task_name, SdbPriority::SdbPriority priority) :
-            SdbTask(task_name, priority),
-            _mod_task(mod_task) {            
+        _SdbModTaskImpl(SdbModTask* mod_task, const String& taskName, SdbPriority::SdbPriority priority) :
+            SdbTask(taskName, priority),
+            _modTask(mod_task) {            
         }
 
         void onRun() override {
-            _mod_task->onTaskRun();
+            _modTask->onTaskRun();
         }
     private:
-        SdbModTask* _mod_task;
+        SdbModTask* _modTask;
     };
 
-    _SdbModTaskImpl _mod_task_impl;
+    _SdbModTaskImpl _modTaskImpl;
 };
 
 #endif // __INC_SDB_MOD_H

@@ -6,9 +6,9 @@
 #include "src/mod_display.h"
 #include "src/mod_tof.h"
 
-SdbModManager _g_sdb_mod_manager;
+SdbModManager _gSdbModManager;
 
-void sdb_panic(char* msg) {
+void sdbPanic(char* msg) {
     if (msg != NULL) {
         ERROR_PRINTF( ("[SDB] PANIC! Cause: %s\n", msg ) );
     }
@@ -30,15 +30,15 @@ void setup() {
         __cplusplus) );
     DEBUG_PRINTF( ("Wifi on Core %d\n", WIFI_TASK_CORE_ID) );
 
-    auto blinky = new SdbModBlinky(_g_sdb_mod_manager);
-    auto display = new SdbModDisplay(_g_sdb_mod_manager);
-    auto tof = new SdbModTof(_g_sdb_mod_manager);
-    _g_sdb_mod_manager.registerMod(blinky);
-    _g_sdb_mod_manager.registerMod(display);
-    _g_sdb_mod_manager.registerMod(tof);
-    _g_sdb_mod_manager.onStart();
+    auto blinky = new SdbModBlinky(_gSdbModManager);
+    auto display = new SdbModDisplay(_gSdbModManager);
+    auto tof = new SdbModTof(_gSdbModManager);
+    _gSdbModManager.registerMod(blinky);
+    _gSdbModManager.registerMod(display);
+    _gSdbModManager.registerMod(tof);
+    _gSdbModManager.onStart();
 }
 
 void loop() {
-    _g_sdb_mod_manager.onLoop();
+    _gSdbModManager.onLoop();
 }

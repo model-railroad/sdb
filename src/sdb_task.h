@@ -18,7 +18,7 @@ namespace SdbPriority {
 class SdbTask {
 public:
     SdbTask(const String& name, SdbPriority::SdbPriority priority) :
-        _task_name(name),
+        _taskName(name),
         _handle(NULL),
         _priority(priority)
     { }
@@ -26,15 +26,15 @@ public:
     void start() {
         if (xTaskCreatePinnedToCore(
                 _entryPoint,    // pvTaskCode,
-                _task_name.c_str(),  // pcName (16 char max),
+                _taskName.c_str(),  // pcName (16 char max),
                 4096,           // usStackDepth in bytes
                 this,           // pvParameters,
                 _priority,      // uxPriority, from 0 to configMAX_PRIORITIES
                 &_handle,       // pvCreatedTask
                 APP_CPU /*tskNO_AFFINITY*/) != pdPASS) {
-            ERROR_PRINTF( ("[%s] FATAL: xTaskCreate failed.\n", _task_name.c_str()) );
+            ERROR_PRINTF( ("[%s] FATAL: xTaskCreate failed.\n", _taskName.c_str()) );
         } else {
-            DEBUG_PRINTF( ("[%s]  Task created == %p\n", _task_name.c_str(), _handle) );
+            DEBUG_PRINTF( ("[%s]  Task created == %p\n", _taskName.c_str(), _handle) );
         }
     }
 
@@ -45,14 +45,14 @@ public:
     virtual void onRun() = 0;
 
 protected:
-    const String _task_name;
+    const String _taskName;
     const SdbPriority::SdbPriority _priority;
     TaskHandle_t _handle;
 
 private:
     static void _entryPoint(void *taskParameters) {
         SdbTask* task = (SdbTask*)taskParameters;
-        DEBUG_PRINTF( ("[%s] Task running on Core %d\n",  task->_task_name.c_str(), xPortGetCoreID()) );
+        DEBUG_PRINTF( ("[%s] Task running on Core %d\n",  task->_taskName.c_str(), xPortGetCoreID()) );
         task->onRun();
     }
 };

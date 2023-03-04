@@ -17,19 +17,19 @@ class SdbModTof : public SdbModTask {
 public:
     SdbModTof(SdbModManager& manager) :
         SdbModTask(manager, "tf", "TaskTof", SdbPriority::Sensor),
-        _io_lock(_manager.ioLock()),
-        _data_lock(_manager.dataStore().lock()),
+        _ioLock(_manager.ioLock()),
+        _dataLock(_manager.dataStore().lock()),
         _tof(),
-        _exported_dist_mm(NULL)
+        _sharedDistMM(NULL)
     { }
 
     void onStart() override {
         Wire1.begin(/*SDA*/ 21, /*SLC*/ 22);
         if (!_tof.begin(/*i2c_addr*/ VL53L0X_I2C_ADDR, /*debug*/ false, /*i2c*/ &Wire1)) {
             Serial.println(F("@@ VL53L0X begin failed (disconnected?)"));
-            sdb_panic();
+            sdbPanic();
         }
-        _exported_dist_mm = _manager.dataStore().ptrLong(SdbKey::TofDistanceMM, OUT_OF_RANGE_MM);
+        _sharedDistMM = _manager.dataStore().ptrLong(SdbKey::TofDistanceMM, OUT_OF_RANGE_MM);
         startTask();
     }
 
@@ -40,42 +40,42 @@ public:
 private:
     Adafruit_VL53L0X _tof;
     VL53L0X_RangingMeasurementData_t _measure;
-    long* _exported_dist_mm;
-    SdbLock& _io_lock;
-    SdbLock& _data_lock;
+    long* _sharedDistMM;
+    SdbLock& _ioLock;
+    SdbLock& _dataLock;
 
     void onTaskRun() {
         while(true) {
-            long dist_mm = measure_tof();
-            update_data_store(dist_mm);
+            long distMM = measure_tof();
+            update_data_store(distMM);
 
             // Make refresh rate dynamic: faster when target is closer to sensor.
-            long delay_ms = max(50L, min(250L, dist_mm / 10));
-            rtDelay(delay_ms);
+            long delayMS = max(50L, min(250L, distMM / 10));
+            rtDelay(delayMS);
         }
     }
 
     long measure_tof() {
         {
-            SdbMutex io_mutex(_io_lock);
+            SdbMutex ioMutex(_ioLock);
             _tof.rangingTest(&_measure, /*debug*/ false);
         }
         
-        int new_dist_mm;
+        int newDistMM;
         if (_measure.RangeStatus != 4) {
-            new_dist_mm = _measure.RangeMilliMeter;
+            newDistMM = _measure.RangeMilliMeter;
         } else {
             // phase failures have incorrect data
-            new_dist_mm = OUT_OF_RANGE_MM;
+            newDistMM = OUT_OF_RANGE_MM;
         }
 
-        return new_dist_mm;
+        return newDistMM;
     }
 
-    void update_data_store(long new_dist_mm) {
-        SdbMutex data_mutex(_data_lock);
-        if (*_exported_dist_mm != new_dist_mm) {
-            *_exported_dist_mm = new_dist_mm;
+    void update_data_store(long newDistMM) {
+        SdbMutex dataMutex(_dataLock);
+        if (*_sharedDistMM != newDistMM) {
+            *_sharedDistMM = newDistMM;
         }
     }
 };

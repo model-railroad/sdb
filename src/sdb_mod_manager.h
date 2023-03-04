@@ -12,15 +12,15 @@
 class SdbModManager {
 public:
     SdbModManager() :
-        _io_lock("LockIO")
+        _ioLock("LockIO")
     { }
 
     SdbLock& ioLock() {
-        return _io_lock;
+        return _ioLock;
     }
 
     SdbDataStore& dataStore() {
-        return _data_store;
+        return _dataStore;
     }
 
     void registerMod(SdbMod* mod) {
@@ -31,11 +31,11 @@ public:
         long now_ms = millis();
         Scheduled* scheduled = new Scheduled(now_ms + delay_ms, lambda);
         _scheduled.push_back(scheduled);
-        // Vector sorted in reverse by _at_ms (sooner element at the end).
+        // Vector sorted in reverse by _atMS (sooner element at the end).
         std::sort(
             _scheduled.begin(),
             _scheduled.end(),
-            [](Scheduled* a, Scheduled* b) { return a->_at_ms < b->_at_ms; }
+            [](Scheduled* a, Scheduled* b) { return a->_atMS < b->_atMS; }
         );
         if (_scheduled.empty()) {
             // This case cannot happen.
@@ -43,7 +43,7 @@ public:
         } else {
             // The latest element is the soonest, and indicates how much to wait.
             Scheduled* last = _scheduled.back();
-            return last->_at_ms - now_ms;
+            return last->_atMS - now_ms;
         }
     }
 
@@ -55,55 +55,55 @@ public:
     }
 
     void onLoop() {
-        long start_ms = millis();
-        long next_ms = start_ms + 2000; // default: 2s loop
+        long startMS = millis();
+        long nextMS = startMS + 2000; // default: 2s loop
 
         while (!_scheduled.empty()) {
             Scheduled* last = _scheduled.back();
-            if (last->_at_ms <= start_ms) {
+            if (last->_atMS <= startMS) {
                 _scheduled.pop_back();
                 last->_lambda();
             } else {
-                if (last->_at_ms < next_ms) {
-                    next_ms = last->_at_ms;
+                if (last->_atMS < nextMS) {
+                    nextMS = last->_atMS;
                 }
                 break;
             }
         }
     
         for (auto mod_p : _mods) {
-            long mod_ms = millis();
+            long modMS = millis();
             long ms = mod_p->onLoop();
             if (ms > 0) {
-                mod_ms += ms;
+                modMS += ms;
             }
-            if (mod_ms < next_ms) {
-                next_ms = mod_ms;
+            if (modMS < nextMS) {
+                nextMS = modMS;
             }
         }
-        long loop_ms = millis() - start_ms;
-        long delta_ms = next_ms - start_ms;
-        DEBUG_PRINTF( ("loop %3d ms + pause %3d ms, sched #%d\n", loop_ms, delta_ms, _scheduled.size()) );
-        if (delta_ms > 0) {
-            delay(delta_ms);
+        long loopMS = millis() - startMS;
+        long deltaMS = nextMS - startMS;
+        DEBUG_PRINTF( ("loop %3d ms + pause %3d ms, sched #%d\n", loopMS, deltaMS, _scheduled.size()) );
+        if (deltaMS > 0) {
+            delay(deltaMS);
         }
     }
 
 
 
 private:
-    SdbLock _io_lock;
-    SdbDataStore _data_store;
+    SdbLock _ioLock;
+    SdbDataStore _dataStore;
     std::vector<SdbMod*> _mods;
 
     struct Scheduled {
-        const long _at_ms;
+        const long _atMS;
         const std::function<void()> _lambda;
         Scheduled(const long at_ms, const std::function<void()> lambda):
-            _at_ms(at_ms), _lambda(lambda) {
+            _atMS(at_ms), _lambda(lambda) {
         }
     };
-    // Vector sorted in reverse by _at_ms (sooner element at the end).
+    // Vector sorted in reverse by _atMS (sooner element at the end).
     std::vector<Scheduled*> _scheduled;
 };
 
