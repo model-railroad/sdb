@@ -6,8 +6,8 @@
 // WifiKit32 OLED I2C address is 0x3C, pins sda=4 scl=16 reset=16.
 
 #include "common.h"
-#include "sdb_mod.h"
 #include "sdb_lock.h"
+#include "sdb_mod.h"
 
 #define USE_DISPLAY_LIB_U8G2
 #undef  USE_DISPLAY_LIB_AF_GFX
@@ -27,6 +27,8 @@ class SdbModDisplay : public SdbMod {
 public:
     SdbModDisplay(SdbModManager& manager) :
         SdbMod(manager, "dp"),
+        _io_lock(_manager.ioLock()),
+        _data_lock(_manager.dataStore().lock()),
         _imported_dist_mm(NULL),
         _last_dist_mm(0),
 #if defined(USE_DISPLAY_LIB_U8G2)
@@ -69,7 +71,7 @@ public:
     long onLoop() override {
         long new_dist_mm;
         {
-            SdbMutex data_lock(_manager.dataStore().lock());
+            SdbMutex data_mutex(_data_lock);
             new_dist_mm = *_imported_dist_mm;
         }
         if (_last_dist_mm != new_dist_mm) {
@@ -83,12 +85,16 @@ public:
                 turn_off();
             } else {
                 draw();
+                update();
             }
         }
         return 250;
     }
 
 private:
+    SdbLock& _io_lock;
+    SdbLock& _data_lock;
+
 #if defined(USE_DISPLAY_LIB_U8G2)
     U8G2_SSD1306_128X64_NONAME_F_HW_I2C _u8g2;
 #elif defined(USE_DISPLAY_LIB_AF_GFX)
@@ -141,8 +147,6 @@ private:
         _u8g2.drawFrame(0, y, 128, 8);
         float w = (128.0f / 2000.0f) * _last_dist_mm;
         _u8g2.drawBox(0, y, min(128, max(0, (int)w)), 8);
-
-        _u8g2.sendBuffer();
 #elif defined(USE_DISPLAY_LIB_AF_GFX)
         _display.clearDisplay();
 
@@ -159,11 +163,18 @@ private:
         _display.drawRect(0, y, 128, 8, WHITE);
         float w = (128.0f / 2000.0f) * _last_dist_mm;
         _display.fillRect(0, y, min(128, max(0, (int)w)), 8, WHITE);
-
-        _display.display();
 #endif
         
         _y_offset = (_y_offset + 1) % 16;
+    }
+
+    void update() {
+        SdbMutex io_mutex(_io_lock);
+#if defined(USE_DISPLAY_LIB_U8G2)
+        _u8g2.sendBuffer();
+#elif defined(USE_DISPLAY_LIB_AF_GFX)
+        _display.display();
+#endif
     }
 };
 

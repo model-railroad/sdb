@@ -6,17 +6,19 @@
 // ToF default I2C address is 0x29, pins sda=21 slc=22.
 
 #include "common.h"
-#include "sdb_mod.h"
 #include "sdb_lock.h"
+#include "sdb_mod.h"
 #include <Adafruit_VL53L0X.h>
 #include <Wire.h>
 
 #define OUT_OF_RANGE_MM 2*1000
 
-class SdbModTof : public SdbMod {
+class SdbModTof : public SdbModTask {
 public:
     SdbModTof(SdbModManager& manager) :
-        SdbMod(manager, "tf"),
+        SdbModTask(manager, "tf", "TaskTof", SdbPriority::Sensor),
+        _io_lock(_manager.ioLock()),
+        _data_lock(_manager.dataStore().lock()),
         _tof(),
         _exported_dist_mm(NULL)
     { }
@@ -28,22 +30,36 @@ public:
             sdb_panic();
         }
         _exported_dist_mm = _manager.dataStore().ptrLong(SdbKey::TofDistanceMM, OUT_OF_RANGE_MM);
+        startTask();
     }
 
     long onLoop() override {
-        long dist_mm = measure_tof();
-        // Make refresh rate dynamic: faster when target is closer to sensor.
-        long delay_ms = max(10L, min(250L, dist_mm / 10));
-        return delay_ms;
+        return 2000;
     }
 
 private:
     Adafruit_VL53L0X _tof;
     VL53L0X_RangingMeasurementData_t _measure;
     long* _exported_dist_mm;
+    SdbLock& _io_lock;
+    SdbLock& _data_lock;
+
+    void onTaskRun() {
+        while(true) {
+            long dist_mm = measure_tof();
+            update_data_store(dist_mm);
+
+            // Make refresh rate dynamic: faster when target is closer to sensor.
+            long delay_ms = max(50L, min(250L, dist_mm / 10));
+            rtDelay(delay_ms);
+        }
+    }
 
     long measure_tof() {
-        _tof.rangingTest(&_measure, /*debug*/ false);
+        {
+            SdbMutex io_mutex(_io_lock);
+            _tof.rangingTest(&_measure, /*debug*/ false);
+        }
         
         int new_dist_mm;
         if (_measure.RangeStatus != 4) {
@@ -53,14 +69,14 @@ private:
             new_dist_mm = OUT_OF_RANGE_MM;
         }
 
-        {
-            SdbMutex data_lock(_manager.dataStore().lock());
-            if (*_exported_dist_mm != new_dist_mm) {
-                *_exported_dist_mm = new_dist_mm;
-            }
-        }
-
         return new_dist_mm;
+    }
+
+    void update_data_store(long new_dist_mm) {
+        SdbMutex data_mutex(_data_lock);
+        if (*_exported_dist_mm != new_dist_mm) {
+            *_exported_dist_mm = new_dist_mm;
+        }
     }
 };
 

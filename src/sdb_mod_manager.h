@@ -6,11 +6,21 @@
 #include <functional>
 #include <vector>
 #include "sdb_data_store.h"
+#include "sdb_lock.h"
 #include "sdb_mod.h"
 
 class SdbModManager {
 public:
-    SdbModManager() {
+    SdbModManager() :
+        _io_lock("LockIO")
+    { }
+
+    SdbLock& ioLock() {
+        return _io_lock;
+    }
+
+    SdbDataStore& dataStore() {
+        return _data_store;
     }
 
     void registerMod(SdbMod* mod) {
@@ -79,12 +89,10 @@ public:
         }
     }
 
-    SdbDataStore& dataStore() {
-        return _data_store;
-    }
 
 
 private:
+    SdbLock _io_lock;
     SdbDataStore _data_store;
     std::vector<SdbMod*> _mods;
 

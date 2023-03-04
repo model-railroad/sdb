@@ -2,8 +2,8 @@
 #define __INC_SDB_DATA_STORE_H
 
 #include "common.h"
-#include "sdb_mod_manager.h"
 #include "sdb_lock.h"
+#include "sdb_mod_manager.h"
 #include <unordered_map>
 
 namespace SdbKey {
@@ -24,34 +24,34 @@ public:
     }
 
     void putLong(const SdbKey::SdbKey key, long value) {
-        SdbMutex auto_lock(_lock);
+        SdbMutex auto_mutex(_lock);
         long* ptr = _ptrLong_unlocked(key, value);
         *ptr = value;
     }
 
     long getLong(const SdbKey::SdbKey key, long _default) {
-        SdbMutex auto_lock(_lock);
+        SdbMutex auto_mutex(_lock);
         return *_ptrLong_unlocked(key, _default);
     }
 
     long* ptrLong(const SdbKey::SdbKey key, long _default) {
-        SdbMutex auto_lock(_lock);
+        SdbMutex auto_mutex(_lock);
         return _ptrLong_unlocked(key, _default);
     }
 
     void putString(const SdbKey::SdbKey key, String& value) {
-        SdbMutex auto_lock(_lock);
+        SdbMutex auto_mutex(_lock);
         String* ptr = ptrString(key, value);
         *ptr = value;
     }
 
     String& getString(const SdbKey::SdbKey key, String& _default) {
-        SdbMutex auto_lock(_lock);
+        SdbMutex auto_mutex(_lock);
         return *ptrString(key, _default);
     }
 
     String* ptrString(const SdbKey::SdbKey key, String& _default) {
-        SdbMutex auto_lock(_lock);
+        SdbMutex auto_mutex(_lock);
         return _ptrString_unlocked(key, _default);
     }
 

@@ -2,85 +2,56 @@
 #define __INC_SDB_MOD_BLINKY_H
 
 #include "common.h"
+#include "sdb_lock.h"
 #include "sdb_mod.h"
-#include "sdb_task.h"
 
 #define LED_PIN1 BUILTIN_LED
 #define LED_PIN2 19
 
 
-class TaskBlinky : public SdbTask {
-public:
-    TaskBlinky() : SdbTask("TaskBlinky", SdbPriority::Sensor) {
-    }
-
-    void onRun() override {
-        while (true) {
-            digitalWrite(LED_PIN1, HIGH);
-            digitalWrite(LED_PIN2, LOW);
-            rtDelay(250 /*ms*/);
-
-            digitalWrite(LED_PIN1, LOW);
-            digitalWrite(LED_PIN2, HIGH);
-            rtDelay(250 /*ms*/);
-
-            digitalWrite(LED_PIN1, LOW);
-            digitalWrite(LED_PIN2, LOW);
-            rtDelay(1000 /*ms*/);
-        }
-    }
-};
-
-class SdbModBlinky : public SdbMod {
+class SdbModBlinky : public SdbModTask {
 public:
     SdbModBlinky(SdbModManager& manager) :
-        SdbMod(manager, "ld"),
-        _state(State::Init) {
-    }
+        SdbModTask(manager, "ld", "TaskBlinky", SdbPriority::Sensor),
+        _io_lock(manager.ioLock())
+    { }
 
     void onStart() override {
         pinMode(LED_PIN1, OUTPUT);
         pinMode(LED_PIN2, OUTPUT);
-            _task_blinky.start();
+        startTask();
     }
 
     long onLoop() override {
-        long wait_ms = 1000;
-        // if (_state == State::Init) {
-        //     wait_ms = _manager.schedule(250, [this]() { state1_1On2Off(); });
-        // }
-        return wait_ms;
+        return 2000;
     }
 
 private:
-    enum class State {
-        Init,
-        State1_1On2Off,
-        State2_1Off2On,
-        State3_1Off2Off_Pause,
-    };
-    State _state;
-    TaskBlinky _task_blinky;
+    SdbLock& _io_lock;
 
-    void state1_1On2Off() {
-        _state = State::State1_1On2Off;
-        digitalWrite(LED_PIN1, HIGH);
-        digitalWrite(LED_PIN2, LOW);
-        _manager.schedule(250, [this]() { state2_1Off2On(); });
-    }
+    void onTaskRun() override {
+        while (true) {
+            {
+                SdbMutex io_mutex(_io_lock);
+                digitalWrite(LED_PIN1, HIGH);
+                digitalWrite(LED_PIN2, LOW);
+            }
+            rtDelay(250 /*ms*/);
 
-    void state2_1Off2On() {
-        _state = State::State2_1Off2On;
-        digitalWrite(LED_PIN1, LOW);
-        digitalWrite(LED_PIN2, HIGH);
-        _manager.schedule(250, [this]() { state3_1Off2Off_Pause(); });
-    }
+            {
+                SdbMutex io_mutex(_io_lock);
+                digitalWrite(LED_PIN1, LOW);
+                digitalWrite(LED_PIN2, HIGH);
+            }
+            rtDelay(250 /*ms*/);
 
-    void state3_1Off2Off_Pause() {
-        _state = State::State3_1Off2Off_Pause;
-        digitalWrite(LED_PIN1, LOW);
-        digitalWrite(LED_PIN2, LOW);
-        _manager.schedule(1000, [this]() { state1_1On2Off(); });
+            {
+                SdbMutex io_mutex(_io_lock);
+                digitalWrite(LED_PIN1, LOW);
+                digitalWrite(LED_PIN2, LOW);
+            }
+            rtDelay(1000 /*ms*/);
+        }
     }
 };
 
