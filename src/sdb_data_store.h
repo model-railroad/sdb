@@ -3,7 +3,6 @@
 
 #include "common.h"
 #include "sdb_lock.h"
-#include "sdb_mod_manager.h"
 #include <unordered_map>
 
 namespace SdbKey {
