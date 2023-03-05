@@ -23,7 +23,7 @@ public:
     virtual void onStart() {}
     
     virtual long onLoop() {
-        return 2000 /*ms*/;
+        return 1000 /*ms*/;
     }
 
 protected:
