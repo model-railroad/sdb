@@ -45,7 +45,7 @@ public:
         *ptr = value;
     }
 
-    String& getString(const SdbKey::SdbKey key, const String& _default) {
+    const String& getString(const SdbKey::SdbKey key, const String& _default) {
         SdbMutex autoMutex(_lock);
         return *ptrString(key, _default);
     }
@@ -63,26 +63,26 @@ private:
     std::unordered_map<SdbKey::SdbKey, String*, std::hash<int>> _mapString;
 
     long* _ptrLong_unlocked(const SdbKey::SdbKey key, long _default) {
-        auto keyValue = _mapLong.find(key);
-        if (keyValue == _mapLong.end()) {
+        auto kvKeyLong = _mapLong.find(key);
+        if (kvKeyLong == _mapLong.end()) {
             long* val = (long*) calloc(1, sizeof(long));
             *val = _default;
             _mapLong[key] = val;
             return val;
         } else {
-            return keyValue->second;
+            return kvKeyLong->second;
         }
     }
 
     String* _ptrString_unlocked(const SdbKey::SdbKey key, const String& _default) {
-        auto keyValue = _mapString.find(key);
-        if (keyValue == _mapString.end()) {
+        auto kvKeyStr = _mapString.find(key);
+        if (kvKeyStr == _mapString.end()) {
             String* val = (String*) calloc(1, sizeof(String));
             *val = _default;
             _mapString[key] = val;
             return val;
         } else {
-            return keyValue->second;
+            return kvKeyStr->second;
         }
     }
 };

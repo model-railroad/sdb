@@ -4,21 +4,30 @@
 class SdbModManager;
 
 #include "common.h"
+#include "sdb_lock.h"
 #include "sdb_mod_manager.h"
 #include "sdb_task.h"
+#include <vector>
+
+namespace SdbEvent {
+    enum SdbEvent {
+        Empty,
+        DisplayWifiAP,
+        DisplaySensor,
+    };
+}
 
 class SdbMod {
 public:
     SdbMod(SdbModManager& manager, const String& name) :
         _manager(manager),
-        _modName(name) {
-    }
+        _modName(name),
+        _eventLock(name)
+    { }
 
     const String& name() {
         return _modName;
     }
-
-    // void enqueue(msg) { _msg_queue.add(msg); }
 
     virtual void onStart() {}
     
@@ -26,9 +35,26 @@ public:
         return 1000 /*ms*/;
     }
 
+    void queueEvent(const SdbEvent::SdbEvent event) {
+        SdbMutex eventMutex(_eventLock);
+        _events.push_back(event);
+    }
+
 protected:
     SdbModManager& _manager;
     const String _modName;
+    std::vector<SdbEvent::SdbEvent> _events;
+    SdbLock _eventLock;
+
+    const SdbEvent::SdbEvent dequeueEvent() {
+        SdbMutex eventMutex(_eventLock);
+        if (_events.empty()) {
+            return SdbEvent::Empty;
+        }
+        auto result = _events.front();
+        _events.erase(_events.begin());
+        return result;
+    }
 };
 
 class SdbModTask : public SdbMod {

@@ -24,14 +24,22 @@
 
 #define DISPLAY_TIME_ON_MS 15*1000
 
+#define MOD_DISPLAY_NAME "dp"
+
+enum DisplayState {
+    DisplaySensor,
+    DisplayWifiAP,
+};
+
 class SdbModDisplay : public SdbMod {
 public:
     SdbModDisplay(SdbModManager& manager) :
-        SdbMod(manager, "dp"),
+        SdbMod(manager, MOD_DISPLAY_NAME),
         _ioLock(_manager.ioLock()),
         _dataLock(_manager.dataStore().lock()),
         _sharedDistMM(NULL),
         _lastDistMM(0),
+        _state(DisplaySensor),
 #if defined(USE_DISPLAY_LIB_U8G2)
         // U8G2 INIT -- OLED U8G2 constructor for ESP32 WIFI_KIT_32 I2C bus on I2C pins 4+15+16
         // _u8g2(U8G2_R0, /*SCL*/ 15, /*SDA*/ 4, /*RESET*/ 16), // for U8G2_SSD1306_128X64_NONAME_F_SW_I2C
@@ -71,6 +79,44 @@ public:
 
     long onLoop() override {
         bool changes = false;
+
+        auto event = dequeueEvent();
+        switch(event) {
+            case SdbEvent::DisplaySensor:
+                _state = DisplaySensor;
+                break;
+            case SdbEvent::DisplayWifiAP:
+                _state = DisplayWifiAP;
+                break;
+        }
+
+        switch(_state) {
+            case DisplaySensor:
+                changes = loopSensor();
+                break;
+            case DisplayWifiAP:
+                changes = loopWifiAP();
+                break;
+        }
+
+        // Refresh more often when we have changes.
+        return changes ? 50 : 250;
+    }
+
+private:
+    SdbLock& _ioLock;
+    SdbLock& _dataLock;
+    DisplayState _state;
+
+    bool loopWifiAP() {
+        const String& ip = _manager.dataStore().getString(SdbKey::SoftAPIP, "unknown");
+        drawWifiAP(ip);
+        update();
+        return false; // no changes
+    }
+
+    bool loopSensor() {
+        bool changes = false;
         long newDistMM;
         {
             SdbMutex data_mutex(_dataLock);
@@ -87,17 +133,13 @@ public:
             if (millis() > _nextTimeOffTS) {
                 turn_off();
             } else {
-                draw();
+                drawSensor();
                 update();
             }
         }
         // Refresh more often when we have changes.
-        return changes ? 50 : 250;
+        return changes;
     }
-
-private:
-    SdbLock& _ioLock;
-    SdbLock& _dataLock;
 
 #if defined(USE_DISPLAY_LIB_U8G2)
     U8G2_SSD1306_128X64_NONAME_F_HW_I2C _u8g2;
@@ -128,7 +170,7 @@ private:
     }
 
     #define YTXT 22
-    void draw() {
+    void drawSensor() {
         _isOn = true;
         int y = abs(_yOffset - 8);
         
@@ -168,6 +210,21 @@ private:
         _display.fillRect(0, y, min(128, max(0, (int)w)), 8, WHITE);
 #endif
         
+        _yOffset = (_yOffset + 1) % 16;
+    }
+
+    void drawWifiAP(const String& ip) {
+        int y = abs(_yOffset - 8);
+        
+        _u8g2.clearBuffer();
+        _u8g2.setFont(u8g2_font_t0_22b_tf);
+
+        _u8g2.drawStr(0, y, "SDB Wifi AP");
+        y += YTXT;
+        
+        _u8g2.drawStr(0, y, ip.c_str());
+        y += YTXT;
+
         _yOffset = (_yOffset + 1) % 16;
     }
 

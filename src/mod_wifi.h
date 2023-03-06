@@ -4,6 +4,7 @@
 #include "common.h"
 #include "sdb_lock.h"
 #include "sdb_mod.h"
+#include "mod_display.h"
 #include <WiFi.h>
 #include <WiFiClient.h>
 #include <WiFiAP.h>
@@ -17,11 +18,12 @@
 #define AP_SSID "SdbNodeWifi"
 #define AP_PASS "12345678"
 
+#define MOD_WIFI_NAME "wi"
 
 class SdbModWifi : public SdbModTask {
 public:
     SdbModWifi(SdbModManager& manager) :
-        SdbModTask(manager, "wi", "TaskWifi", SdbPriority::Network),
+        SdbModTask(manager, MOD_WIFI_NAME, "TaskWifi", SdbPriority::Network),
         _apMode(false),
         _wifiStatus(WL_NO_SHIELD)    // start with an "invalid" value
     { }
@@ -75,12 +77,14 @@ private:
         const IPAddress ip = WiFi.softAPIP();
         DEBUG_PRINTF( ( "[WIFI] AP IP: %s.\n", ip.toString().c_str() ) );
         _manager.dataStore().putString(SdbKey::SoftAPIP, ip.toString());
+        _manager.queueEvent(MOD_DISPLAY_NAME, SdbEvent::DisplayWifiAP);
 
         return success;
     }
 
     bool startSTA() {
         ERROR_PRINTF( ( "[WIFI] STA mode not implemented yet.\n" ) );
+        _manager.queueEvent(MOD_DISPLAY_NAME, SdbEvent::DisplaySensor);
         return false;
     }
 

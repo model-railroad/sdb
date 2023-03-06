@@ -8,7 +8,7 @@
 
 class SdbLock {
 public:
-    SdbLock(String name) :
+    SdbLock(const String& name) :
         _name(name),
         _handle(xSemaphoreCreateRecursiveMutex())
     {
@@ -45,8 +45,8 @@ public:
     }
 
 private:
-    String _name;
-    SemaphoreHandle_t _handle;
+    const String _name;
+    const SemaphoreHandle_t _handle;
 };
 
 /// A mutex is a lock that auto-acquires and auto-releases on scope.

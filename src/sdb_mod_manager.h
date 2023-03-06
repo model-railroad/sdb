@@ -2,12 +2,13 @@
 #define __INC_SDB_MOD_MANAGER_H
 
 #include "common.h"
-#include <algorithm>
-#include <functional>
-#include <vector>
 #include "sdb_data_store.h"
 #include "sdb_lock.h"
 #include "sdb_mod.h"
+#include <algorithm>
+#include <functional>
+#include <map>
+#include <vector>
 
 class SdbModManager {
 public:
@@ -24,12 +25,27 @@ public:
     }
 
     void registerMod(SdbMod* mod) {
-        _mods.push_back(mod);
+        _mods[mod->name()] = mod;
     }
 
-    long schedule(long delay_ms, const std::function<void()> lambda) {
-        long now_ms = millis();
-        Scheduled* scheduled = new Scheduled(now_ms + delay_ms, lambda);
+    SdbMod* modByName(const String& modName) {
+        auto kvNameMod = _mods.find(modName);
+        if (kvNameMod == _mods.end()) {
+            return NULL;
+        } else {
+            return kvNameMod->second;
+        }
+    }
+
+    void queueEvent(const String& modName, const SdbEvent::SdbEvent event) {
+        SdbMod* mod = modByName(modName);
+        assert(mod != NULL);
+        mod->queueEvent(event);
+    }
+
+    long schedule(long delayMS, const std::function<void()> lambda) {
+        long nowMS = millis();
+        Scheduled* scheduled = new Scheduled(nowMS + delayMS, lambda);
         _scheduled.push_back(scheduled);
         // Vector sorted in reverse by _atMS (sooner element at the end).
         std::sort(
@@ -39,18 +55,18 @@ public:
         );
         if (_scheduled.empty()) {
             // This case cannot happen.
-            return delay_ms;
+            return delayMS;
         } else {
             // The latest element is the soonest, and indicates how much to wait.
             Scheduled* last = _scheduled.back();
-            return last->_atMS - now_ms;
+            return last->_atMS - nowMS;
         }
     }
 
     void onStart() {
-        for(auto mod_p : _mods) {
-            DEBUG_PRINTF( ("Start module [%s]\n", mod_p->name().c_str()) );
-            mod_p->onStart();
+        for(auto kvNameMod : _mods) {
+            DEBUG_PRINTF( ("Start module [%s]\n", kvNameMod.first.c_str()) );
+            kvNameMod.second->onStart();
         }
     }
 
@@ -71,9 +87,9 @@ public:
             }
         }
     
-        for (auto mod_p : _mods) {
+        for (auto kvNameMod : _mods) {
             long modMS = millis();
-            long ms = mod_p->onLoop();
+            long ms = kvNameMod.second->onLoop();
             if (ms > 0) {
                 modMS += ms;
             }
@@ -94,7 +110,7 @@ public:
 private:
     SdbLock _ioLock;
     SdbDataStore _dataStore;
-    std::vector<SdbMod*> _mods;
+    std::map<String, SdbMod*> _mods;
 
     struct Scheduled {
         const long _atMS;

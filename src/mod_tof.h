@@ -13,10 +13,12 @@
 
 #define OUT_OF_RANGE_MM 2*1000
 
+#define MOD_TOF_NAME "tf"
+
 class SdbModTof : public SdbModTask {
 public:
     SdbModTof(SdbModManager& manager) :
-        SdbModTask(manager, "tf", "TaskTof", SdbPriority::Sensor),
+        SdbModTask(manager, MOD_TOF_NAME, "TaskTof", SdbPriority::Sensor),
         _ioLock(_manager.ioLock()),
         _dataLock(_manager.dataStore().lock()),
         _tof(),

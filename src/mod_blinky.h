@@ -8,11 +8,12 @@
 #define LED_PIN1 BUILTIN_LED
 #define LED_PIN2 19
 
+#define MOD_BLINKY_NAME "ld"
 
 class SdbModBlinky : public SdbModTask {
 public:
     SdbModBlinky(SdbModManager& manager) :
-        SdbModTask(manager, "ld", "TaskBlinky", SdbPriority::Sensor),
+        SdbModTask(manager, MOD_BLINKY_NAME, "TaskBlinky", SdbPriority::Sensor),
         _ioLock(manager.ioLock())
     { }
 
