@@ -9,8 +9,9 @@ namespace SdbPriority {
         Idle = 0,
         MainLoop = 1,
         Display = 2,
-        Logic = 3,
-        Sensor = 4,
+        Network = 3,
+        Logic = 4,
+        Sensor = 5,
         Max = configMAX_PRIORITIES
     };
 }
