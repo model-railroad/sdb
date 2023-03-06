@@ -9,6 +9,7 @@ namespace SdbKey {
     enum SdbKey {
         Empty,
         TofDistanceMM,
+        SoftAPIP,
     };
 }
 
@@ -38,18 +39,18 @@ public:
         return _ptrLong_unlocked(key, _default);
     }
 
-    void putString(const SdbKey::SdbKey key, String& value) {
+    void putString(const SdbKey::SdbKey key, const String& value) {
         SdbMutex autoMutex(_lock);
         String* ptr = ptrString(key, value);
         *ptr = value;
     }
 
-    String& getString(const SdbKey::SdbKey key, String& _default) {
+    String& getString(const SdbKey::SdbKey key, const String& _default) {
         SdbMutex autoMutex(_lock);
         return *ptrString(key, _default);
     }
 
-    String* ptrString(const SdbKey::SdbKey key, String& _default) {
+    String* ptrString(const SdbKey::SdbKey key, const String& _default) {
         SdbMutex autoMutex(_lock);
         return _ptrString_unlocked(key, _default);
     }
@@ -73,7 +74,7 @@ private:
         }
     }
 
-    String* _ptrString_unlocked(const SdbKey::SdbKey key, String& _default) {
+    String* _ptrString_unlocked(const SdbKey::SdbKey key, const String& _default) {
         auto keyValue = _mapString.find(key);
         if (keyValue == _mapString.end()) {
             String* val = (String*) calloc(1, sizeof(String));
