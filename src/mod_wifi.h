@@ -6,8 +6,10 @@
 #include "sdb_mod.h"
 #include "mod_display.h"
 #include <WiFi.h>
-#include <WiFiClient.h>
 #include <WiFiAP.h>
+#include <WiFiClient.h>
+#include <esp_http_server.h>
+#include <functional>
 #include <vector>
 
 // This pin is checked for GND at startup, to force AP mode to reset the
@@ -20,10 +22,14 @@
 
 #define MOD_WIFI_NAME "wi"
 
-class SdbModWifi : public SdbModTask {
+const char _ap_index_html[] PROGMEM = R"rawliteral(<html>
+<body>Hello world!</body>
+</html>)rawliteral";
+
+class SdbModWifi : public SdbMod {
 public:
     SdbModWifi(SdbModManager& manager) :
-        SdbModTask(manager, MOD_WIFI_NAME, "TaskWifi", SdbPriority::Network),
+        SdbMod(manager, MOD_WIFI_NAME),
         _apMode(false),
         _wifiStatus(WL_NO_SHIELD)    // start with an "invalid" value
     { }
@@ -33,10 +39,8 @@ public:
 
         _apMode = checkApMode();
         bool started = _apMode ? startAP() : startSTA();
-        if (started) {
-            startTask();
-        } else {
-            PANIC_PRINTF( ( "[WIFI] wifi did not start -- TBD move in loop & retry\n" ) );
+        if (!started) {
+            PANIC_PRINTF( ( "[WIFI] wifi did not start\n" ) );
         }
     }
 
@@ -72,6 +76,7 @@ private:
         bool success = WiFi.softAP(AP_SSID, AP_PASS);
         if (!success) {
             ERROR_PRINTF( ( "[WIFI] AP mode did not successfully start.\n" ) );
+            return false;
         }
 
         const IPAddress ip = WiFi.softAPIP();
@@ -79,22 +84,15 @@ private:
         _manager.dataStore().putString(SdbKey::SoftAPIP, ip.toString());
         _manager.queueEvent(MOD_DISPLAY_NAME, SdbEvent::DisplayWifiAP);
 
-        return success;
+        startAPServer();
+
+        return true;
     }
 
     bool startSTA() {
         ERROR_PRINTF( ( "[WIFI] STA mode not implemented yet.\n" ) );
         _manager.queueEvent(MOD_DISPLAY_NAME, SdbEvent::DisplaySensor);
         return false;
-    }
-
-    void onTaskRun() override {
-        // TBD do init stuff
-
-        while (true) {
-            // TBD check http server
-            rtDelay(250 /*ms*/);
-        }
     }
 
     void scanNetworks() {
@@ -107,6 +105,44 @@ private:
         DEBUG_PRINTF( ( "[WIFI] scanNetworks: %d = %s\n", i, WiFi.SSID(i).c_str()) );
         }
         WiFi.scanDelete(); // free memory
+    }
+
+    void startAPServer() {
+        // The ESP HTTPD server uses tasks and is all async.
+        httpd_handle_t httpdHandle = NULL;
+        httpd_config_t httpdConfig = HTTPD_DEFAULT_CONFIG();
+        httpdConfig.task_priority = SdbPriority::Network;
+        httpdConfig.core_id = APP_CPU;
+
+        // This can really only fail if the config is invalid, or if
+        // task/memory cannot be allocated, which is all fatal.
+        auto error = httpd_start(&httpdHandle, &httpdConfig);
+        if (error != ESP_OK) {
+            PANIC_PRINTF( ( "[WIFI] httpd_start failed with error %d\n", error ) );
+        }
+
+        auto lambda = [this](httpd_req_t *req) -> esp_err_t { return _indexHandler(req); };
+        auto func = new std::function<esp_err_t(httpd_req_t *)>(lambda);
+        httpd_uri_t indexUri = {
+            .uri = "/",
+            .method = HTTP_GET,
+            .handler = &_handlerLambda,
+            .user_ctx = func
+        };
+
+        httpd_register_uri_handler(httpdHandle, &indexUri);
+    }
+
+    static esp_err_t _handlerLambda(httpd_req_t *req) {
+        DEBUG_PRINTF( ( "[WIFI] _handlerLambda for %p -> %p.\n", req, req->user_ctx ) );
+        auto lambdaPtr = static_cast< std::function<esp_err_t(httpd_req_t *)>* >(req->user_ctx);
+        return (*lambdaPtr)(req);
+    }
+
+    esp_err_t _indexHandler(httpd_req_t *req) {
+        DEBUG_PRINTF( ( "[WIFI] _indexHandler for %p.\n", req ) );
+        httpd_resp_send(req, _ap_index_html, HTTPD_RESP_USE_STRLEN);
+        return ESP_OK;
     }
 };
 
