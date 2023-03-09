@@ -8,19 +8,7 @@
 #include "common.h"
 #include "sdb_lock.h"
 #include "sdb_mod.h"
-
-#define USE_DISPLAY_LIB_U8G2
-#undef  USE_DISPLAY_LIB_AF_GFX
-// #undef  USE_DISPLAY_LIB_U8G2
-// #define USE_DISPLAY_LIB_AF_GFX
-
-#if defined(USE_DISPLAY_LIB_U8G2)
 #include <U8g2lib.h>
-#elif defined(USE_DISPLAY_LIB_AF_GFX)
-#include <Wire.h>
-#include <Adafruit_GFX.h>
-#include <Adafruit_SSD1306.h>
-#endif
 
 #define DISPLAY_TIME_ON_MS 15*1000
 
@@ -40,13 +28,9 @@ public:
         _sharedDistMM(NULL),
         _lastDistMM(0),
         _state(DisplaySensor),
-#if defined(USE_DISPLAY_LIB_U8G2)
         // U8G2 INIT -- OLED U8G2 constructor for ESP32 WIFI_KIT_32 I2C bus on I2C pins 4+15+16
         // _u8g2(U8G2_R0, /*SCL*/ 15, /*SDA*/ 4, /*RESET*/ 16), // for U8G2_SSD1306_128X64_NONAME_F_SW_I2C
         _u8g2(U8G2_R0, /*RESET*/ 16, /*SCL*/ 15, /*SDA*/ 4), // for U8G2_SSD1306_128X64_NONAME_F_HW_I2C
-#elif defined(USE_DISPLAY_LIB_AF_GFX)
-        _display(/*w*/ 128, /*h*/ 64, /*twi*/ &Wire, /*rst_pin*/ 16),
-#endif
         _yOffset(0),
         _isOn(true),
         _nextTimeOffTS(0)
@@ -55,7 +39,6 @@ public:
     void onStart() override {
         _sharedDistMM = _manager.dataStore().ptrLong(SdbKey::TofDistanceMM, 2000);
 
-#if defined(USE_DISPLAY_LIB_U8G2)
         _u8g2.setBusClock(600000);
         _u8g2.begin();
         DEBUG_PRINTF( ("OLED I2C Bus Clock %d, Address 0x%02x\n", _u8g2.getBusClock(), u8g2_GetI2CAddress(&_u8g2)) );
@@ -64,15 +47,6 @@ public:
         _u8g2.setDrawColor(1);
         _u8g2.setFontPosTop();
         _u8g2.setFontDirection(0);
-#elif defined(USE_DISPLAY_LIB_AF_GFX)
-        Wire.begin(/*SDA*/ 4, /*SLC*/ 15);
-        _display.begin(SSD1306_SWITCHCAPVCC, 0x3C);
-        // init done
-        _display.display();
-        
-        _display.setTextSize(2);
-        _display.setTextColor(WHITE);
-#endif
 
         set_next_time_off();
     }
@@ -107,6 +81,12 @@ private:
     SdbLock& _ioLock;
     SdbLock& _dataLock;
     DisplayState _state;
+    U8G2_SSD1306_128X64_NONAME_F_HW_I2C _u8g2;
+    int _yOffset;
+    long _lastDistMM;
+    long* _sharedDistMM;
+    long _nextTimeOffTS;
+    bool _isOn;
 
     bool loopWifiAP() {
         const String& ip = _manager.dataStore().getString(SdbKey::SoftAPIP, "unknown");
@@ -141,17 +121,6 @@ private:
         return changes;
     }
 
-#if defined(USE_DISPLAY_LIB_U8G2)
-    U8G2_SSD1306_128X64_NONAME_F_HW_I2C _u8g2;
-#elif defined(USE_DISPLAY_LIB_AF_GFX)
-    Adafruit_SSD1306 _display;
-#endif
-    int _yOffset;
-    long _lastDistMM;
-    long* _sharedDistMM;
-    long _nextTimeOffTS;
-    bool _isOn;
-    
     void set_next_time_off() {
         _nextTimeOffTS = millis() + DISPLAY_TIME_ON_MS;
     }
@@ -159,13 +128,8 @@ private:
     void turn_off() {
         if (_isOn) {
             _isOn = false;
-#if defined(USE_DISPLAY_LIB_U8G2)
             _u8g2.clearBuffer();
             _u8g2.sendBuffer();
-#elif defined(USE_DISPLAY_LIB_AF_GFX)
-            _display.clearDisplay();
-            _display.display();
-#endif
         }
     }
 
@@ -174,7 +138,6 @@ private:
         _isOn = true;
         int y = abs(_yOffset - 8);
         
-#if defined(USE_DISPLAY_LIB_U8G2)
         _u8g2.clearBuffer();
 
         // u8g2.setFont(u8g2_font_6x10_tf); //-- from prepare
@@ -192,23 +155,6 @@ private:
         _u8g2.drawFrame(0, y, 128, 8);
         float w = (128.0f / 2000.0f) * _lastDistMM;
         _u8g2.drawBox(0, y, min(128, max(0, (int)w)), 8);
-#elif defined(USE_DISPLAY_LIB_AF_GFX)
-        _display.clearDisplay();
-
-        _display.setCursor(0,y);
-        _display.print("VL53L0X");
-        y += YTXT;
-
-        String dt = String(_lastDistMM) + " mm";
-        _display.setCursor(0,y);
-        _display.print(dt.c_str());
-        y += YTXT;
-
-        // Frame is an empty Box. Box is filled.
-        _display.drawRect(0, y, 128, 8, WHITE);
-        float w = (128.0f / 2000.0f) * _lastDistMM;
-        _display.fillRect(0, y, min(128, max(0, (int)w)), 8, WHITE);
-#endif
         
         _yOffset = (_yOffset + 1) % 16;
     }
@@ -230,11 +176,7 @@ private:
 
     void update() {
         SdbMutex io_mutex(_ioLock);
-#if defined(USE_DISPLAY_LIB_U8G2)
         _u8g2.sendBuffer();
-#elif defined(USE_DISPLAY_LIB_AF_GFX)
-        _display.display();
-#endif
     }
 };
 
