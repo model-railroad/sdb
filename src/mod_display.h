@@ -17,6 +17,7 @@
 enum DisplayState {
     DisplaySensor,
     DisplayWifiAP,
+    DisplayVoltage,
 };
 
 class SdbModDisplay : public SdbMod {
@@ -27,7 +28,9 @@ public:
         _dataLock(_manager.dataStore().lock()),
         _sharedDistMM(NULL),
         _lastDistMM(0),
-        _state(DisplaySensor),
+        _sharedMV(NULL),
+        _lastVoltageMV(0),
+        _state(DisplayVoltage),
         // U8G2 INIT -- OLED U8G2 constructor for ESP32 WIFI_KIT_32 I2C bus on I2C pins 4+15+16
         // _u8g2(U8G2_R0, /*SCL*/ 15, /*SDA*/ 4, /*RESET*/ 16), // for U8G2_SSD1306_128X64_NONAME_F_SW_I2C
         _u8g2(U8G2_R0, /*RESET*/ 16, /*SCL*/ 15, /*SDA*/ 4), // for U8G2_SSD1306_128X64_NONAME_F_HW_I2C
@@ -38,6 +41,7 @@ public:
 
     void onStart() override {
         _sharedDistMM = _manager.dataStore().ptrLong(SdbKey::TofDistanceMM, 2000);
+        _sharedMV = _manager.dataStore().ptrLong(SdbKey::VoltageMV, 0);
 
         _u8g2.setBusClock(600000);
         _u8g2.begin();
@@ -71,6 +75,9 @@ public:
             case DisplayWifiAP:
                 changes = loopWifiAP();
                 break;
+            case DisplayVoltage:
+                changes = loopVoltage();
+                break;
         }
 
         // Refresh more often when we have changes.
@@ -83,6 +90,8 @@ private:
     DisplayState _state;
     U8G2_SSD1306_128X64_NONAME_F_HW_I2C _u8g2;
     int _yOffset;
+    long _lastVoltageMV;
+    long* _sharedMV;
     long _lastDistMM;
     long* _sharedDistMM;
     long _nextTimeOffTS;
@@ -121,6 +130,32 @@ private:
         return changes;
     }
 
+    bool loopVoltage() {
+        bool changes = false;
+        long voltageMV;
+        {
+            SdbMutex data_mutex(_dataLock);
+            voltageMV = *_sharedMV;
+        }
+        if (_lastVoltageMV != voltageMV) {
+            changes = true;
+            _isOn = true;
+            _lastVoltageMV = voltageMV;
+            set_next_time_off();
+        }
+
+        if (_isOn) {
+            if (millis() > _nextTimeOffTS) {
+                turn_off();
+            } else {
+                drawVoltage();
+                update();
+            }
+        }
+        // Refresh more often when we have changes.
+        return changes;
+    }
+
     void set_next_time_off() {
         _nextTimeOffTS = millis() + DISPLAY_TIME_ON_MS;
     }
@@ -137,7 +172,7 @@ private:
     void drawSensor() {
         _isOn = true;
         int y = abs(_yOffset - 8);
-        
+
         _u8g2.clearBuffer();
 
         // u8g2.setFont(u8g2_font_6x10_tf); //-- from prepare
@@ -146,7 +181,7 @@ private:
 
         _u8g2.drawStr(0, y, "VL53L0X TEST");
         y += YTXT;
-        
+
         String dt = String(_lastDistMM) + " mm";
         _u8g2.drawStr(0, y, dt.c_str());
         y += YTXT;
@@ -155,7 +190,32 @@ private:
         _u8g2.drawFrame(0, y, 128, 8);
         float w = (128.0f / 2000.0f) * _lastDistMM;
         _u8g2.drawBox(0, y, min(128, max(0, (int)w)), 8);
-        
+
+        _yOffset = (_yOffset + 1) % 16;
+    }
+
+    void drawVoltage() {
+        _isOn = true;
+        int y = abs(_yOffset - 8);
+
+        _u8g2.clearBuffer();
+
+        // u8g2.setFont(u8g2_font_6x10_tf); //-- from prepare
+        // Font is 6x10, coords are x,y
+        _u8g2.setFont(u8g2_font_t0_22b_tf);
+
+        _u8g2.drawStr(0, y, "Voltage");
+        y += YTXT;
+
+        String dt = String(_lastVoltageMV) + " mV";
+        _u8g2.drawStr(0, y, dt.c_str());
+        y += YTXT;
+
+        // Frame is an empty Box. Box is filled.
+        _u8g2.drawFrame(0, y, 128, 8);
+        float w = (128.0f / 3300.0f) * _lastVoltageMV;
+        _u8g2.drawBox(0, y, min(128, max(0, (int)w)), 8);
+
         _yOffset = (_yOffset + 1) % 16;
     }
 

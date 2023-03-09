@@ -5,6 +5,7 @@
 #include "src/mod_blinky.h"
 #include "src/mod_display.h"
 #include "src/mod_tof.h"
+#include "src/mod_volt.h"
 #include "src/mod_wifi.h"
 
 SdbModManager _gSdbModManager;
@@ -47,14 +48,11 @@ void setup() {
         __cplusplus) );
     DEBUG_PRINTF( ("Wifi on Core %d\n", WIFI_TASK_CORE_ID) );
 
-    auto blinky = new SdbModBlinky(_gSdbModManager);
-    auto display = new SdbModDisplay(_gSdbModManager);
-    auto tof = new SdbModTof(_gSdbModManager);
-    auto wifi = new SdbModWifi(_gSdbModManager);
-    _gSdbModManager.registerMod(blinky);
-    _gSdbModManager.registerMod(display);
-    _gSdbModManager.registerMod(tof);
-    _gSdbModManager.registerMod(wifi);
+    _gSdbModManager.registerMod(new SdbModBlinky(_gSdbModManager));
+    _gSdbModManager.registerMod(new SdbModDisplay(_gSdbModManager));
+    //_gSdbModManager.registerMod(new SdbModTof(_gSdbModManager));
+    _gSdbModManager.registerMod(new SdbModVolt(_gSdbModManager));
+    //_gSdbModManager.registerMod(new SdbModWifi(_gSdbModManager));
     _gSdbModManager.onStart();
 }
 

@@ -8,6 +8,7 @@
 namespace SdbKey {
     enum SdbKey {
         Empty,
+        VoltageMV,
         TofDistanceMM,
         SoftAPIP,
     };
