@@ -22,7 +22,8 @@
 #include <Adafruit_SSD1306.h>
 #endif
 
-#define DISPLAY_TIME_ON_MS 15*1000
+#define DISPLAY_TIME_SENSOR_ON_MS (15*1000)
+#define DISPLAY_TIME_WIFI_ON_MS   (2*1000)
 
 #define MOD_DISPLAY_NAME "dp"
 
@@ -74,7 +75,7 @@ public:
         _display.setTextColor(WHITE);
 #endif
 
-        set_next_time_off();
+        setNextTimeOff();
     }
 
     long onLoop() override {
@@ -109,8 +110,7 @@ private:
     DisplayState _state;
 
     bool loopWifiAP() {
-        const String& ip = _manager.dataStore().getString(SdbKey::SoftAPIP, "unknown");
-        drawWifiAP(ip);
+        drawWifiAP();
         update();
         return false; // no changes
     }
@@ -126,12 +126,18 @@ private:
             changes = true;
             _isOn = true;
             _lastDistMM = newDistMM;
-            set_next_time_off();
+            setNextTimeOff();
         }
 
         if (_isOn) {
-            if (millis() > _nextTimeOffTS) {
-                turn_off();
+            // In sensor mode, turn off display after some inactivity.
+            // But before that, display the wifi state for 2 seconds.
+            long now = millis();
+            if (now > _nextTimeOffTS) {
+                turnOff();
+            } else if (now > _nextTimeOffTS - DISPLAY_TIME_WIFI_ON_MS) {
+                drawWifiAP();
+                update();
             } else {
                 drawSensor();
                 update();
@@ -152,11 +158,11 @@ private:
     long _nextTimeOffTS;
     bool _isOn;
     
-    void set_next_time_off() {
-        _nextTimeOffTS = millis() + DISPLAY_TIME_ON_MS;
+    void setNextTimeOff() {
+        _nextTimeOffTS = millis() + DISPLAY_TIME_SENSOR_ON_MS;
     }
 
-    void turn_off() {
+    void turnOff() {
         if (_isOn) {
             _isOn = false;
 #if defined(USE_DISPLAY_LIB_U8G2)
@@ -211,6 +217,11 @@ private:
 #endif
         
         _yOffset = (_yOffset + 1) % 16;
+    }
+
+    void drawWifiAP() {
+         const String& ip = _manager.dataStore().getString(SdbKey::SoftAPIP, "unknown");
+         drawWifiAP(ip);
     }
 
     void drawWifiAP(const String& ip) {

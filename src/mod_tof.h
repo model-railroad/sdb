@@ -66,6 +66,7 @@ private:
         int newDistMM;
         if (_measure.RangeStatus != 4) {
             newDistMM = _measure.RangeMilliMeter;
+            // DEBUG_PRINTF( ("[TOF] dist %ld mm\n", newDistMM) );
         } else {
             // phase failures have incorrect data
             newDistMM = OUT_OF_RANGE_MM;

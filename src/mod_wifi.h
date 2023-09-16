@@ -82,7 +82,12 @@ private:
         const IPAddress ip = WiFi.softAPIP();
         DEBUG_PRINTF( ( "[WIFI] AP IP: %s.\n", ip.toString().c_str() ) );
         _manager.dataStore().putString(SdbKey::SoftAPIP, ip.toString());
+
+        // Display the wifi info for a few seconds, then back to sensor state.
         _manager.queueEvent(MOD_DISPLAY_NAME, SdbEvent::DisplayWifiAP);
+        _manager.schedule(DISPLAY_TIME_WIFI_ON_MS, [this](void) {
+            _manager.queueEvent(MOD_DISPLAY_NAME, SdbEvent::DisplaySensor);
+        });
 
         startAPServer();
 
@@ -102,7 +107,7 @@ private:
         DEBUG_PRINTF( ( "[WIFI] scanNetworks: found %d networks.\n", n ) );
         for (int i = 0; i < n; ++i) {
             _wifiNetworks.push_back(WiFi.SSID(i));
-        DEBUG_PRINTF( ( "[WIFI] scanNetworks: %d = %s\n", i, WiFi.SSID(i).c_str()) );
+            DEBUG_PRINTF( ( "[WIFI] scanNetworks: %d = %s\n", i, WiFi.SSID(i).c_str()) );
         }
         WiFi.scanDelete(); // free memory
     }
