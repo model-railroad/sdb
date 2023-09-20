@@ -31,7 +31,7 @@ public:
             Serial.println(F("@@ VL53L0X begin failed (disconnected?)"));
             sdbPanic();
         }
-        _sharedDistMM = _manager.dataStore().ptrLong(SdbKey::TofDistanceMM, OUT_OF_RANGE_MM);
+        _sharedDistMM = _manager.dataStore().ptrLong(SdbKey::TofDistanceMmLong, OUT_OF_RANGE_MM);
         startTask();
     }
 

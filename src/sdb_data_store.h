@@ -7,9 +7,12 @@
 
 namespace SdbKey {
     enum SdbKey {
-        Empty,
-        TofDistanceMM,
-        SoftAPIP,
+        Empty = 0,
+        SoftApIpStr = 1,
+        // Sensors
+        TofDistanceMmLong = 0x100,
+        // NVS
+        NvsStart = 0x8000,
     };
 }
 
@@ -87,6 +90,6 @@ private:
     }
 };
 
-//
+
 #endif // __INC_SDB_DATA_STORE_H
 

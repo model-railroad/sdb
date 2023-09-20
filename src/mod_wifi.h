@@ -1,6 +1,12 @@
 #ifndef __INC_SDB_MOD_WIFI_H
 #define __INC_SDB_MOD_WIFI_H
 
+// Wifi module.
+// AP mode, a.k.a. "Ad-hoc wifi": this module generates its own wifi network,
+//   and clients can connect to it to provide the initial configuration.
+// STA mode, a.k.a. "normal wifi": this module connects to an existing wifi network,
+//   provides pages for configuration, and sent its state to a JMIR or MQTT server.
+
 #include "common.h"
 #include "sdb_lock.h"
 #include "sdb_mod.h"
@@ -81,13 +87,10 @@ private:
 
         const IPAddress ip = WiFi.softAPIP();
         DEBUG_PRINTF( ( "[WIFI] AP IP: %s.\n", ip.toString().c_str() ) );
-        _manager.dataStore().putString(SdbKey::SoftAPIP, ip.toString());
+        _manager.dataStore().putString(SdbKey::SoftApIpStr, ip.toString());
 
         // Display the wifi info for a few seconds, then back to sensor state.
         _manager.queueEvent(MOD_DISPLAY_NAME, SdbEvent::DisplayWifiAP);
-        _manager.schedule(DISPLAY_TIME_WIFI_ON_MS, [this](void) {
-            _manager.queueEvent(MOD_DISPLAY_NAME, SdbEvent::DisplaySensor);
-        });
 
         startAPServer();
 

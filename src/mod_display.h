@@ -54,7 +54,7 @@ public:
     { }
 
     void onStart() override {
-        _sharedDistMM = _manager.dataStore().ptrLong(SdbKey::TofDistanceMM, 2000);
+        _sharedDistMM = _manager.dataStore().ptrLong(SdbKey::TofDistanceMmLong, 2000);
 
 #if defined(USE_DISPLAY_LIB_U8G2)
         _u8g2.setBusClock(600000);
@@ -88,6 +88,10 @@ public:
                 break;
             case SdbEvent::DisplayWifiAP:
                 _state = DisplayWifiAP;
+                // Display the wifi info for a few seconds, then back to sensor state.
+                _manager.schedule(DISPLAY_TIME_WIFI_ON_MS, [this](void) {
+                    _manager.queueEvent(MOD_DISPLAY_NAME, SdbEvent::DisplaySensor);
+                });
                 break;
         }
 
@@ -220,7 +224,7 @@ private:
     }
 
     void drawWifiAP() {
-         const String& ip = _manager.dataStore().getString(SdbKey::SoftAPIP, "unknown");
+         const String& ip = _manager.dataStore().getString(SdbKey::SoftApIpStr, "unknown");
          drawWifiAP(ip);
     }
 
