@@ -21,8 +21,7 @@ public:
         SdbModTask(manager, MOD_TOF_NAME, "TaskTof", SdbPriority::Sensor),
         _ioLock(_manager.ioLock()),
         _dataLock(_manager.dataStore().lock()),
-        _tof(),
-        _sharedDistMM(NULL)
+        _tof()
     { }
 
     void onStart() override {
@@ -31,7 +30,7 @@ public:
             Serial.println(F("@@ VL53L0X begin failed (disconnected?)"));
             sdbPanic();
         }
-        _sharedDistMM = _manager.dataStore().ptrLong(SdbKey::TofDistanceMmLong, OUT_OF_RANGE_MM);
+        _lastDistMM = _manager.dataStore().putLong(SdbKey::TofDistanceMmLong, OUT_OF_RANGE_MM);
         startTask();
     }
 
@@ -42,7 +41,7 @@ public:
 private:
     Adafruit_VL53L0X _tof;
     VL53L0X_RangingMeasurementData_t _measure;
-    long* _sharedDistMM;
+    long _lastDistMM;
     SdbLock& _ioLock;
     SdbLock& _dataLock;
 
@@ -76,9 +75,8 @@ private:
     }
 
     void update_data_store(long newDistMM) {
-        SdbMutex dataMutex(_dataLock);
-        if (*_sharedDistMM != newDistMM) {
-            *_sharedDistMM = newDistMM;
+        if (_lastDistMM != newDistMM) {
+            _lastDistMM = _manager.dataStore().putLong(SdbKey::TofDistanceMmLong, newDistMM);
         }
     }
 };

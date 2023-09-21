@@ -8,6 +8,7 @@
 #include "common.h"
 #include "sdb_lock.h"
 #include "sdb_mod.h"
+#include "mod_tof.h"
 
 #define USE_DISPLAY_LIB_U8G2
 #undef  USE_DISPLAY_LIB_AF_GFX
@@ -38,7 +39,6 @@ public:
         SdbMod(manager, MOD_DISPLAY_NAME),
         _ioLock(_manager.ioLock()),
         _dataLock(_manager.dataStore().lock()),
-        _sharedDistMM(NULL),
         _lastDistMM(0),
         _state(DisplaySensor),
 #if defined(USE_DISPLAY_LIB_U8G2)
@@ -54,8 +54,6 @@ public:
     { }
 
     void onStart() override {
-        _sharedDistMM = _manager.dataStore().ptrLong(SdbKey::TofDistanceMmLong, 2000);
-
 #if defined(USE_DISPLAY_LIB_U8G2)
         _u8g2.setBusClock(600000);
         _u8g2.begin();
@@ -121,11 +119,7 @@ private:
 
     bool loopSensor() {
         bool changes = false;
-        long newDistMM;
-        {
-            SdbMutex data_mutex(_dataLock);
-            newDistMM = *_sharedDistMM;
-        }
+        long newDistMM = _manager.dataStore().getLong(SdbKey::TofDistanceMmLong, OUT_OF_RANGE_MM);
         if (_lastDistMM != newDistMM) {
             changes = true;
             _isOn = true;
