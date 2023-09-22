@@ -31,7 +31,8 @@
 class SdbModManager {
 public:
     SdbModManager() :
-        _ioLock("LockIO")
+        _ioLock("LockIO"),
+        _scheduleLock("LockSched")
     { }
 
     SdbLock& ioLock() {
@@ -62,6 +63,7 @@ public:
     }
 
     long schedule(long delayMS, const std::function<void()> lambda) {
+        SdbMutex autoMutex(_scheduleLock);
         long nowMS = millis();
         Scheduled* scheduled = new Scheduled(nowMS + delayMS, lambda);
         _scheduled.push_back(scheduled);
@@ -92,17 +94,28 @@ public:
         long startMS = millis();
         long nextMS = startMS + 2000; // default: 2s loop
 
-        while (!_scheduled.empty()) {
-            Scheduled* last = _scheduled.back();
-            if (last->_atMS <= startMS) {
-                _scheduled.pop_back();
-                last->_lambda();
-            } else {
-                if (last->_atMS < nextMS) {
-                    nextMS = last->_atMS;
+        while (true) {
+            Scheduled* last = NULL;
+            {
+                SdbMutex autoMutex(_scheduleLock);
+                if (_scheduled.empty()) {
+                    break;
                 }
-                break;
+                // the last item is the soonest we need to execute
+                last = _scheduled.back();
+                // last cannot be null below
+                if (last->_atMS <= startMS) {
+                    _scheduled.pop_back();
+                    // exec the lambda below out of the lock
+                } else {
+                    if (last->_atMS < nextMS) {
+                        nextMS = last->_atMS;
+                    }
+                    break;
+                }
             }
+            last->_lambda();
+            delete last;
         }
     
         for (auto kvNameMod : _mods) {
@@ -139,6 +152,7 @@ private:
     };
     // Vector sorted in reverse by _atMS (sooner element at the end).
     std::vector<Scheduled*> _scheduled;
+    SdbLock _scheduleLock;
 };
 
 //
