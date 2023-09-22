@@ -1,4 +1,5 @@
 {
+    "editor.rulers": [ 100 ],
     "idf.openOcdConfigs": [
         "interface/ftdi/esp32_devkitj_v1.cfg",
         "target/esp32.cfg"
