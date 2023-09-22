@@ -12,7 +12,7 @@ monitors sensors, and sends block activation signals to a server such as
 Requirements:
 
 - An embedded [ESP32](https://www.espressif.com/en/products/socs/esp32) board.
-- Sensors (Time-of-Flight sensor, camera).
+- Sensors (Time-of-Flight, infrared, camera).
 - A [JMRI](https://www.jmri.org/) server with JSON or MQTT.
 - A Wifi network to communicate with JMRI.
 
@@ -20,8 +20,8 @@ Requirements:
 ### Hardware Target
 
 - [ESP32](https://www.espressif.com/en/products/socs/esp32) board:
-  - Generic ESP32.
-  - ESP32-CAM.
+    - Generic ESP32.
+    - ESP32-CAM.
 
 ### Supported Sensors
 
@@ -80,8 +80,8 @@ Each module should have:
 - An init method called when the main starts.
 - A start method called once all other modules have been initialized.
 - A loop method called as part of the main loop.
-  - The loop method will return the max time it wants to sleep before being called again.
-    The loop method may be invoked sooner than requested, but not later.
+    - The loop method will return the max time it wants to sleep before being called again.
+      The loop method may be invoked sooner than requested, but not later.
 - Its own thread-safe message queue.
 
 Each module is free to start a thread or do their process in the main loop.
@@ -90,7 +90,7 @@ The main loop will call all the modules’ loop methods, and sleep the minimum t
 all modules (similar to a classic Arduino sketch main loop).
 
 Care should be taken to avoid having two modules use the same hardware resource -- e.g. the same
-GPIO pin, or the same I2C controller, etc. One way to ensure this would be to have a globa
+GPIO pin, or the same I2C controller, etc. One way to ensure this would be to have a global
 “hardware resource allocator”, e.g. an object which “owns” all hardware resources and panics if a
 resource is reused without being freed first. This seems overkill in the context of the phase 1 MVP.
 
@@ -100,7 +100,7 @@ Modules are registered in a global ModuleManager singleton.
 
 The module manager is also responsible for maintaining a thread-safe message queue per module.
 
-Each module has a unique identifier code name which will be 2 characters long (see below).
+Each module has a unique identifier code name which is 2 characters long.
 
 ### Message Queue
 
@@ -123,8 +123,8 @@ but it’s enough to share e.g. pointers.
 The message queue is also a poor way to share frequently changing data between modules, as well as
 to handle configuration data.
 
-Thus a suggestion is to have a singleton global dictionary as a Data Store. Some keys are transient
-data, whereas others are backed up to Non-Volatile Storage (NVS).
+Thus the current implementation is to have a singleton global dictionary as a Data Store.
+Some keys are transient data, whereas others are backed up to Non-Volatile Storage (NVS).
 
 Whereas it makes more sense for each module to have its own message queue, the data store is a
 global singleton. Accessors must be thread safe as they can be used by any threaded module.
@@ -166,8 +166,8 @@ For a ToF sensor, that data is the distance threshold, and whether the block is 
 when the sensor is below that threshold. 
 To be clear, that means the ToF module only needs to export distance information, and the block 
 module is the one reading the sensor(s) distance and computing the state of the block. 
-That also means the trigger logic will be depending on the type of sensor, and that logic lives in t
-he block module rather than the sensor module.
+That also means the trigger logic will be depending on the type of sensor, and that logic lives in
+the block module rather than the sensor module.
 
 We may want to include debounce capabilities in there in case the measurements are noisy.
 
@@ -181,24 +181,25 @@ We may want to include debounce capabilities in there in case the measurements a
 ### Expect modules
 
 - Display.
-  - Owns the OLED + its I2C driver.
-  - Read store for variables to display (e.g. a simple location code + value).
+    - Owns the OLED + its I2C driver.
+    - Read store for variables to display (e.g. a simple location code +
+      value).
 - Wifi + HTTP.
-  - Owns the wifi, handling reconnections.
-  - Owns sending a web page over it.
-  - Read store for states to display on that web page.
-  - On configuration change, write to store + notify modules.
+    - Owns the wifi, handling reconnections.
+    - Owns sending a web page over it.
+    - Read store for states to display on that web page.
+    - On configuration change, write to store + notify modules.
 - ToF sensor.
-  - Manages i2c sensors.
-  - Optional: filter/smooth the readings, discard spikes.
-  - Regularly reads sensor values and updates them into the store.
+    - Manages i2c sensors.
+    - Optional: filter/smooth the readings, discard spikes.
+    - Regularly reads sensor values and updates them into the store.
 - Block Module.
-  - Regularly reads store for sensor states.
-  - Updates blocks states in store.
-  - Notified by Wifi / HTTP if configuration has changed.
-  - Notify JMRI JSON module when there’s a change.
-  - Notify JMRI MQTT module when there’s a change.
-  - (we’ll support both protocols upfront)
+    - Regularly reads store for sensor states.
+    - Updates blocks states in store.
+    - Notified by Wifi / HTTP if configuration has changed.
+    - Notify JMRI JSON module when there’s a change.
+    - Notify JMRI MQTT module when there’s a change.
+    - (we’ll support both protocols upfront)
 - JMRI JSON/MQTT Module(s).
   - Manages its own socket to the JMRI server.
   - Notified by Wifi / HTTP if configuration has changed.
@@ -245,11 +246,11 @@ $ ./_arduino_cli.sh core update-index
 Finally you need to select your board model:
 
 - F1 > Arduino Board Manager
-  - Search for “esp”
-  - Install esp32 by Espressif, version 2.06
+    - Search for “esp”
+    - Install esp32 by Espressif, version 2.06
 - F1 > Arduino Board Config
-  - Should be picked up from the sdb project settings.
-  - Current is `Heltec Wifi Kit 32, PSRAM disabled, 240 MHz`.
+    - Should be picked up from the sdb project settings.
+    - Current is `Heltec Wifi Kit 32, PSRAM disabled, 240 MHz`.
 
 
 ### CLion Instructions
