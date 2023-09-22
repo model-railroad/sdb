@@ -161,11 +161,11 @@ We’ll start with a dedicated “block module”.
 
 The configuration consists of output blocks (JMRI system names).
 
-For each block, an input is configured with its own data. 
-For a ToF sensor, that data is the distance threshold, and whether the block is occupied or free 
-when the sensor is below that threshold. 
-To be clear, that means the ToF module only needs to export distance information, and the block 
-module is the one reading the sensor(s) distance and computing the state of the block. 
+For each block, an input is configured with its own data.
+For a ToF sensor, that data is the distance threshold, and whether the block is occupied or free
+when the sensor is below that threshold.
+To be clear, that means the ToF module only needs to export distance information, and the block
+module is the one reading the sensor(s) distance and computing the state of the block.
 That also means the trigger logic will be depending on the type of sensor, and that logic lives in
 the block module rather than the sensor module.
 
@@ -226,14 +226,14 @@ The first run:
 
 - Use Extensions > Arduino > Install.
 - Open Workspace > …/sdb/sdb.code-workspace
-- When asked by the Arduino Extension: “Use bundled arduino-cli”.  
+- When asked by the Arduino Extension: “Use bundled arduino-cli”.
   If not, can be done in the extension settings.
 
 To connect your ESP32 and deploy to it:
 
 - F1 > Arduino Board Manager
 - Section Additional URLs > Workspace > Add Item
-- Add this URL to the board list: 
+- Add this URL to the board list:
   “https://raw.githubusercontent.com/espressif/arduino-esp32/gh-pages/package_esp32_index.json”
 
 Alternatively, on Cygwin, the same can be done from the command line:
@@ -267,7 +267,7 @@ Note that you'll want to customize this script to match your serial port.
 On Windows, connect your ESP32 and use the Device Manager to figure which COM port is in use.
 On Linux, use `lsusb` or `dmesg` for the same result.
 
-`_compile_and_monitor.sh` and `_compile_and_monitor.bat` default to `monitor -p COM5`.  
+`_compile_and_monitor.sh` and `_compile_and_monitor.bat` default to `monitor -p COM5`.
 Adjusted the latter value to match your USB port.
 
 The first compilation takes about forever, and it unfortunately doesn't list which files are
