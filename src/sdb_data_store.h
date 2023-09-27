@@ -22,6 +22,9 @@
 #include "common.h"
 #include "sdb_lock.h"
 #include <unordered_map>
+#include <nvs_flash.h>
+#include <nvs.h>
+#include <nvs_handle.hpp>
 
 namespace SdbKey {
     /// Keys for SdbDataStore
@@ -59,16 +62,59 @@ public:
         return _lock;
     }
 
+    void onStart() {
+        // Initialize NVS
+        esp_err_t err = nvs_flash_init();
+        if (err == ESP_ERR_NVS_NO_FREE_PAGES || err == ESP_ERR_NVS_NEW_VERSION_FOUND) {
+            // From sample code: NVS partition was truncated and needs to be erased.
+            // Then retry nvs_flash_init
+            err = nvs_flash_erase();
+            DEBUG_ESP_PRINTLN(err, "NVS flash erase failed");
+            if (err == ESP_OK) {
+                err = nvs_flash_init();
+            }
+        }
+        PANIC_ESP_PRINTLN(err, "NVS init failed.");
+    }
+
     /// Inserts this long value at the given key.
     long putLong(const SdbKey::SdbKey key, long value) {
         SdbMutex autoMutex(_lock);
         _mapLong[key] = value;
+
+        if (key > SdbKey::NvsStart) {
+            esp_err_t err;
+            std::unique_ptr<nvs::NVSHandle> handle = nvs::open_nvs_handle("sdb", NVS_READWRITE, &err);
+            PANIC_ESP_PRINTLN(err, "NVS open failed.");
+            String nvsKey(key, HEX);
+            err = handle->set_item(nvsKey.c_str(), (int32_t)value);
+            DEBUG_ESP_PRINTLN(err, "NVS write failed");
+            err = handle->commit();
+            DEBUG_ESP_PRINTLN(err, "NVS commit failed");
+        }
+
         return value;
     }
 
     /// Retrieves the long value at the given key, or returns the default value.
     long getLong(const SdbKey::SdbKey key, long _default) {
         SdbMutex autoMutex(_lock);
+
+        if (key > SdbKey::NvsStart && !loadedFromNvs(key)) {
+            _mapNvs[key] = true;
+            esp_err_t err;
+            std::unique_ptr<nvs::NVSHandle> handle = nvs::open_nvs_handle("sdb", NVS_READWRITE, &err);
+            PANIC_ESP_PRINTLN(err, "NVS open failed.");
+            String nvsKey(key, HEX);
+            int32_t data = 0;
+            err = handle->get_item(nvsKey.c_str(), data);
+            DEBUG_ESP_PRINTLN(err, "NVS get string size failed");
+            if (CHECK_ESP_OK(err)) {
+                _mapLong[key] = data;
+                return data;
+            }
+        }
+
         auto kvKeyLong = _mapLong.find(key);
         if (kvKeyLong == _mapLong.end()) {
             return _default;
@@ -81,11 +127,44 @@ public:
     void putString(const SdbKey::SdbKey key, const String& value) {
         SdbMutex autoMutex(_lock);
         _mapString[key] = value;
+
+        if (key > SdbKey::NvsStart) {
+            esp_err_t err;
+            std::unique_ptr<nvs::NVSHandle> handle = nvs::open_nvs_handle("sdb", NVS_READWRITE, &err);
+            PANIC_ESP_PRINTLN(err, "NVS open failed.");
+            String nvsKey(key, HEX);
+            err = handle->set_string(nvsKey.c_str(), value.c_str());
+            DEBUG_ESP_PRINTLN(err, "NVS write failed");
+            err = handle->commit();
+            DEBUG_ESP_PRINTLN(err, "NVS commit failed");
+        }
     }
 
     /// Retrieves the string reference at the given key, or returns the default value.
     const String& getString(const SdbKey::SdbKey key, const String& _default) {
         SdbMutex autoMutex(_lock);
+
+        if (key > SdbKey::NvsStart && !loadedFromNvs(key)) {
+            _mapNvs[key] = true;
+            esp_err_t err;
+            std::unique_ptr<nvs::NVSHandle> handle = nvs::open_nvs_handle("sdb", NVS_READWRITE, &err);
+            PANIC_ESP_PRINTLN(err, "NVS open failed.");
+            String nvsKey(key, HEX);
+            size_t size = 0;
+            err = handle->get_item_size(nvs::ItemType::SZ, nvsKey.c_str(), size);
+            DEBUG_ESP_PRINTLN(err, "NVS get string size failed");
+            if (CHECK_ESP_OK(err) && size > 0) {
+                char* dest = (char*)malloc(size);
+                err = handle->get_string(nvsKey.c_str(), dest, size);
+                DEBUG_ESP_PRINTLN(err, "NVS get string failed");
+                if (CHECK_ESP_OK(err)) {
+                    _mapString[key] = String(dest);
+                    // String dest has limited scope; don't return a reference to it.
+                }
+                free(dest);
+            }
+        }
+
         auto kvKeyStr = _mapString.find(key);
         if (kvKeyStr == _mapString.end()) {
             return _default;
@@ -100,6 +179,13 @@ private:
     std::unordered_map<SdbKey::SdbKey, long, std::hash<int>> _mapLong;
     /// An unordered map of SdbKey(as int) to String values.
     std::unordered_map<SdbKey::SdbKey, String, std::hash<int>> _mapString;
+    /// Map of keys loaded from NVS
+    std::unordered_map<SdbKey::SdbKey, bool, std::hash<int>> _mapNvs;
+
+    bool loadedFromNvs(const SdbKey::SdbKey key) {
+        auto loaded = _mapNvs.find(key);
+        return loaded != _mapNvs.end();
+    }
 };
 
 

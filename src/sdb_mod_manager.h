@@ -84,6 +84,7 @@ public:
     }
 
     void onStart() {
+        _dataStore.onStart();
         for(auto kvNameMod : _mods) {
             DEBUG_PRINTF( ("Start module [%s]\n", kvNameMod.first.c_str()) );
             kvNameMod.second->onStart();

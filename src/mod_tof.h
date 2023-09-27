@@ -45,8 +45,7 @@ public:
     void onStart() override {
         Wire1.begin(/*SDA*/ 21, /*SLC*/ 22);
         if (!_tof.begin(/*i2c_addr*/ VL53L0X_I2C_ADDR, /*debug*/ false, /*i2c*/ &Wire1)) {
-            Serial.println(F("@@ VL53L0X begin failed (disconnected?)"));
-            sdbPanic();
+            PANIC_PRINTLN("@@ VL53L0X begin failed (disconnected?)");
         }
         _lastDistMM = _manager.dataStore().putLong(SdbKey::TofDistanceMmLong, OUT_OF_RANGE_MM);
         startTask();

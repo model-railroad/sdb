@@ -36,6 +36,22 @@
 #define DEBUG_PRINTF(x)   { Serial.printf x ; }
 #define ERROR_PRINTF(x)   { Serial.printf x ; }
 #define PANIC_PRINTF(x)   { Serial.printf x ; sdbPanic(NULL); }
+#define PANIC_PRINTLN(x)  { Serial.println( F(x) ) ; sdbPanic(NULL); }
+
+#define CHECK_ESP_OK(err) ( (err) == ESP_OK )
+
+#define PANIC_ESP_PRINTLN(err, x) { if (!CHECK_ESP_OK(err)) \
+    { Serial.println( F(x) ); \
+      Serial.printf("\nESP Error %02d: %s\n", (err), esp_err_to_name(err)); \
+      sdbPanic(NULL); } }
+
+#define DEBUG_ESP_PRINTLN(err, x) { if (!CHECK_ESP_OK(err)) \
+    { Serial.println( F(x) ); \
+      Serial.printf("\nESP Error %02d: %s\n", (err), esp_err_to_name(err)); } }
+
+#define ERROR_ESP_PRINTLN(err, x) { if (!CHECK_ESP_OK(err)) \
+    { Serial.println( F(x) ); \
+      Serial.printf("\nESP Error %02d: %s\n", (err), esp_err_to_name(err)); } }
 
 // CPU affinity for ESP32
 #define PRO_CPU 0       // Wifi
