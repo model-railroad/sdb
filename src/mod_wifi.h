@@ -46,9 +46,8 @@
 
 #define MOD_WIFI_NAME "wi"
 
-const char _ap_index_html[] PROGMEM = R"rawliteral(<html>
-<body>Hello world!</body>
-</html>)rawliteral";
+#include "mod_wifi_ap_index.h"
+#include "mod_wifi_sta_index.h"
 
 class SdbModWifi : public SdbMod {
 public:
@@ -147,27 +146,45 @@ private:
             PANIC_PRINTF( ( "[WIFI] httpd_start failed with error %d\n", error ) );
         }
 
-        auto lambda = [this](httpd_req_t *req) -> esp_err_t { return _indexHandler(req); };
-        auto func = new std::function<esp_err_t(httpd_req_t *)>(lambda);
+        auto indexLambda = [this](httpd_req_t *req) -> esp_err_t { return _indexHandler(req); };
         httpd_uri_t indexUri = {
             .uri = "/",
             .method = HTTP_GET,
-            .handler = &_handlerLambda,
-            .user_ctx = func
+            .handler = &_handlerToLambda,
+            .user_ctx = new std::function<esp_err_t(httpd_req_t *)>(indexLambda)
         };
-
         httpd_register_uri_handler(httpdHandle, &indexUri);
+
+        auto getLambda = [this](httpd_req_t *req) -> esp_err_t { return _getHandler(req); };
+        httpd_uri_t getUri = {
+            .uri = "/get",
+            .method = HTTP_GET,
+            .handler = &_handlerToLambda,
+            .user_ctx = new std::function<esp_err_t(httpd_req_t *)>(getLambda)
+        };
+        httpd_register_uri_handler(httpdHandle, &getUri);
     }
 
-    static esp_err_t _handlerLambda(httpd_req_t *req) {
+    // _handlerToLambda is a static method "trampoline" to invoke the actual handler in the
+    // context of this class instance. user_ctx is expected to be the std::function to perform
+    // the actual work.
+    static esp_err_t _handlerToLambda(httpd_req_t *req) {
         DEBUG_PRINTF( ( "[WIFI] _handlerLambda for %p -> %p.\n", req, req->user_ctx ) );
         auto lambdaPtr = static_cast< std::function<esp_err_t(httpd_req_t *)>* >(req->user_ctx);
         return (*lambdaPtr)(req);
     }
 
+    // Handler for /
     esp_err_t _indexHandler(httpd_req_t *req) {
         DEBUG_PRINTF( ( "[WIFI] _indexHandler for %p.\n", req ) );
         httpd_resp_send(req, _ap_index_html, HTTPD_RESP_USE_STRLEN);
+        return ESP_OK;
+    }
+
+    // Handler for /get
+    esp_err_t _getHandler(httpd_req_t *req) {
+        DEBUG_PRINTF( ( "[WIFI] getHandler for %p.\n", req ) );
+        httpd_resp_send(req, "response", HTTPD_RESP_USE_STRLEN);
         return ESP_OK;
     }
 };
