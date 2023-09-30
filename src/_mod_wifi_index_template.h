@@ -16,11 +16,13 @@
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef __INC_SDB_MOD_WIFI_STA_INDEX_H
-#define __INC_SDB_MOD_WIFI_STA_INDEX_H
+#ifndef __INC_SDB_@NAME@_H
+#define __INC_SDB_@NAME@_H
 
-const char _sta_index_html[] PROGMEM = R"rawliteral(<html>
-<body>Hello world STA page!</body>
-</html>)rawliteral";
+// File: _@NAME@.html, Size: @SIZE@
+#define _@NAME@_html_gz_len @SIZEGZ@
+const char _@NAME@_html_gz[] = {
+@BYTESGZ@
+};
 
-#endif // __INC_SDB_MOD_WIFI_STA_INDEX_H
+#endif // __INC_SDB_@NAME@_H

@@ -46,8 +46,8 @@
 
 #define MOD_WIFI_NAME "wi"
 
-#include "mod_wifi_ap_index.h"
-#include "mod_wifi_sta_index.h"
+#include "_mod_wifi_ap_index.html.gz.h"
+#include "_mod_wifi_sta_index.html.gz.h"
 
 class SdbModWifi : public SdbMod {
 public:
@@ -177,14 +177,17 @@ private:
     // Handler for /
     esp_err_t _indexHandler(httpd_req_t *req) {
         DEBUG_PRINTF( ( "[WIFI] _indexHandler for %p.\n", req ) );
-        httpd_resp_send(req, _ap_index_html, HTTPD_RESP_USE_STRLEN);
+        httpd_resp_set_type(req, "text/html");
+        httpd_resp_set_hdr(req, "Content-Encoding", "gzip");
+        httpd_resp_send(req, _mod_wifi_ap_index_html_gz, _mod_wifi_ap_index_html_gz_len);
         return ESP_OK;
     }
 
     // Handler for /get
     esp_err_t _getHandler(httpd_req_t *req) {
         DEBUG_PRINTF( ( "[WIFI] getHandler for %p.\n", req ) );
-        httpd_resp_send(req, "response", HTTPD_RESP_USE_STRLEN);
+        httpd_resp_set_type(req, "text/json");
+        httpd_resp_sendstr(req, "response");
         return ESP_OK;
     }
 };

@@ -1,0 +1,24 @@
+<html>
+<body>
+<h1>Software Defined Blocks</h1>
+<h2>Current Wifi Configuration</h2>
+<p>Wifi Network: <span id="wn">$WN$</span></p>
+<p>Wifi Password: <span id="wp">$WP$</span></p>
+
+<h2>New Wifi Configuration</h2>
+<p>List of available Wifi networks: $WL$</p>
+<script>
+function init() {
+    const wn = document.querySelector("#wn");
+    wn.textContent = "window load";
+
+    fetch("/get").then((response) => {
+        if (response.ok) {
+            const wp = document.querySelector("#wp");
+            wp.textContent = response.text;
+        }
+    });
+}
+window.addEventListener("load", (event) => init());
+</script>
+</body></html>
