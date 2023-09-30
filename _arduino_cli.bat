@@ -1,7 +1,7 @@
 @ECHO OFF
 ECHO .
-SET C=%USERPROFILE%\.vscode\extensions\vsciot-vscode.vscode-arduino-0.5.0-win32-x64\assets\platform\win32-x64\arduino-cli\arduino-cli.exe
-IF NOT EXIST %C% SET C=%USERPROFILE%\.vscode\extensions\vsciot-vscode.vscode-arduino-0.5.0-win32-ia32\assets\platform\win32-ia32\arduino-cli\arduino-cli.exe
+FOR /F %%i IN ('DIR /A:D /B %USERPROFILE%\.vscode\extensions\vsciot-vscode.vscode-arduino-0.*') DO SET AD=%%i
+SET C=%USERPROFILE%\.vscode\extensions\%AD%\assets\platform\win32-x64\arduino-cli\arduino-cli.exe
 
 IF NOT EXIST %C% (
     ECHO "ERROR: arduino-cli not found in %C%"
