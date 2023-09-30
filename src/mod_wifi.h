@@ -46,8 +46,8 @@
 
 #define MOD_WIFI_NAME "wi"
 
-#include "_mod_wifi_ap_index.html.gz.h"
-#include "_mod_wifi_sta_index.html.gz.h"
+#include "html/_mod_wifi_ap_index.html.gz.h"
+#include "html/_mod_wifi_sta_index.html.gz.h"
 
 class SdbModWifi : public SdbMod {
 public:

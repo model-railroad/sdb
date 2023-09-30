@@ -22,7 +22,7 @@ SIZEGZ=$(stat -c%s "$GZ")
 sed -e "s/@NAME@/$NAME/g; s/@SIZE@/$SIZE/g; s/@SIZEGZ@/$SIZEGZ/g" \
     -e "/@BYTESGZ@/e cat $BYTESGZ" \
     -e "/@BYTESGZ@/d" \
-    src/_mod_wifi_index_template.h > $OUT
+    src/html/_mod_wifi_index.h.template.txt > $OUT
 
 rm "$GZ"
 rm "$BYTESGZ"
