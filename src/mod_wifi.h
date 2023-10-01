@@ -79,6 +79,7 @@ public:
 private:
     bool _apMode;
     wl_status_t _wifiStatus;
+    // A list of SSID found when scanning. The first letter is E for encryped vs O for open.
     std::vector<String> _wifiNetworks;
 
     bool checkApMode() {
@@ -126,8 +127,11 @@ private:
         int n = WiFi.scanNetworks(/*async*/ false, /*show_hidden*/ false);
         DEBUG_PRINTF( ( "[WIFI] scanNetworks: found %d networks.\n", n ) );
         for (int i = 0; i < n; ++i) {
-            _wifiNetworks.push_back(WiFi.SSID(i));
-            DEBUG_PRINTF( ( "[WIFI] scanNetworks: %d = %s\n", i, WiFi.SSID(i).c_str()) );
+            bool encrypted = WiFi.encryptionType(i) != WIFI_AUTH_OPEN;
+            String name(encrypted ? "E" : "O");
+            name += WiFi.SSID(i);
+            _wifiNetworks.push_back(name);
+            DEBUG_PRINTF( ( "[WIFI] scanNetworks: %d = %s\n", i, name.c_str()) );
         }
         WiFi.scanDelete(); // free memory
     }

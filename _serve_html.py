@@ -3,6 +3,7 @@
 # Python3 local server for AP/STA index, to develop/debug the HTML locally without
 # having to recompile SDB and use an ESP32 deployment.
 
+import json
 import http.server
 
 HOST = "localhost"
@@ -25,7 +26,31 @@ class LocalSdbServer(http.server.BaseHTTPRequestHandler):
             self.send_response(200)
             self.send_header("Content-type", "application/json")
             self.end_headers()
-            self.wfile.write(bytes("{'v':'response'}", "utf-8"))
+            data = {
+                "id": "Current SSID or blank",
+                "pw": "Current Password or blank",
+                "st": "AP status string",
+                "ls": "ESSID 1\nOSSID 2\nESSID 3",
+            }
+            self.wfile.write(bytes(json.dumps(data), "utf-8"))
+        else:
+            self.send_response(404)
+    
+    def do_POST(self):
+        path = self.path
+        if path == "/set":
+            print("SDB POST headers:" + str(self.headers))
+            # get the body for the POST
+            content_length = int(self.headers.get('Content-Length'))
+            post_body = self.rfile.read(content_length)
+            print("SDB POST body:" + str(post_body))
+            self.send_response(200)
+            self.send_header("Content-type", "application/json")
+            self.end_headers()
+            data = {
+                "st": "Connecting",
+            }
+            self.wfile.write(bytes(json.dumps(data), "utf-8"))
         else:
             self.send_response(404)
 
