@@ -1,7 +1,7 @@
 #!/usr/bin/python
 #
 # Python3 local server for AP/STA index, to develop/debug the HTML locally without
-# having the recompile SDB and use an ESP32 deployment.
+# having to recompile SDB and use an ESP32 deployment.
 
 import http.server
 
@@ -23,9 +23,9 @@ class LocalSdbServer(http.server.BaseHTTPRequestHandler):
             # This is the only dynamic request currently handled by SDB.
             # Response is JSON.
             self.send_response(200)
-            self.send_header("Content-type", "text/json")
+            self.send_header("Content-type", "application/json")
             self.end_headers()
-            self.wfile.write(bytes("response", "utf-8"))
+            self.wfile.write(bytes("{'v':'response'}", "utf-8"))
         else:
             self.send_response(404)
 

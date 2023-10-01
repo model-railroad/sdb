@@ -186,8 +186,10 @@ private:
     // Handler for /get
     esp_err_t _getHandler(httpd_req_t *req) {
         DEBUG_PRINTF( ( "[WIFI] getHandler for %p.\n", req ) );
-        httpd_resp_set_type(req, "text/json");
-        httpd_resp_sendstr(req, "response");
+        DEBUG_PRINTF( ( "[WIFI] get uri %s.\n", req->uri ) );
+        DEBUG_PRINTF( ( "[WIFI] get content_len %d.\n", req->content_len ) );
+        httpd_resp_set_type(req, "application/json");
+        httpd_resp_sendstr(req, "{'v':'response'}");
         return ESP_OK;
     }
 };

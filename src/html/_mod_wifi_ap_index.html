@@ -6,18 +6,52 @@
 <p>Wifi Password: <span id="wp">$WP$</span></p>
 
 <h2>New Wifi Configuration</h2>
-<p>List of available Wifi networks: $WL$</p>
+<p>List of available Wifi networks: <span id="wl">$WL$</span></p>
+<p>Test Extra: <span id="we">$WE$</span></p>
 <script>
-function init() {
-    const wn = document.querySelector("#wn");
-    wn.textContent = "window load";
 
-    fetch("/get").then((response) => {
+function test3() {
+    console.log("test3");
+    // test using path uri
+    fetch("/get/wl").then((response) => {
+        console.log("test3 response: " + JSON.stringify(response));
+        if (response.ok) {
+            const wp = document.querySelector("#wl");
+            wp.textContent = response.text;
+        }
+    });
+}
+
+function test2() {
+    console.log("test2");
+    // test using body ==> can't have a BODY with GET
+    // fetch("/get", { body: "we" }).then((response) => {
+    //     console.log("test2 response: " + JSON.stringify(response));
+    //     if (response.ok) {
+    //         const wp = document.querySelector("#we");
+    //         wp.textContent = response.text;
+    //     }
+        test3();
+    // });
+}
+
+function test1() {
+    console.log("test1");
+    // test with cgi param
+    fetch("/get?v=wp").then((response) => {
+        console.log("test1 response: " + JSON.stringify(response));
         if (response.ok) {
             const wp = document.querySelector("#wp");
             wp.textContent = response.text;
         }
+        test2();
     });
+}
+
+function init() {
+    const wn = document.querySelector("#wn");
+    wn.textContent = "window load";
+    test1();
 }
 window.addEventListener("load", (event) => init());
 </script>
