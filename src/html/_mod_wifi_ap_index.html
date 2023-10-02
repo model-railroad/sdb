@@ -87,7 +87,7 @@ function fillTable(id, value) {
     const table = document.getElementById(id);
 
     var i = 1;
-    value.split("\n").forEach((name) => {
+    value.forEach((name) => {
         addRow(table, i++, name);
     });
 }
@@ -95,14 +95,18 @@ function fillTable(id, value) {
 async function load() {
     const response = await fetch("/get");
     if (response.ok) {
-        const data = await response.json();
-        fillText("id", data.id || "Not set. Please select one.");
-        fillText("pw", data.pw || "Not set.");
-        fillTable("ls", data.ls || "Empty");
-        statusWarning(false, data.st || "Not Configured Yet.");
-    } else {
-        statusWarning(true, "st", "Failed to load data from SDB.");
+        try {
+            const data = await response.json();
+            fillText("id", data.id || "Not set. Please select one.");
+            fillText("pw", data.pw || "Not set.");
+            fillTable("ls", data.ls || "Empty");
+            statusWarning(false, data.st || "Not Configured Yet.");
+            return;
+        } catch(e) {
+            console.log("@@ fetch error : " + JSON.stringify(e));
+        }
     }
+    statusWarning(true, "Failed to load data from SDB.");
 }
 
 async function onSubmit(event) {
@@ -131,11 +135,14 @@ async function onSubmit(event) {
         body: payload,
     });
     if (response.ok) {
-        const data = await response.json();
-        statusWarning(false, data.st || "??");
-    } else {
-        statusWarning(true, "st", "Failed to load data from SDB.");
+        try {
+            const data = await response.json();
+            statusWarning(false, data.st || "??");
+        } catch (e) {
+            console.log("@@ fetch error : " + JSON.stringify(e));
+        }
     }
+    statusWarning(true, "Failed to load data from SDB.");
 }
 
 function registerForm() {

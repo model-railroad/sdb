@@ -32,7 +32,8 @@ class SdbModManager {
 public:
     SdbModManager() :
         _ioLock("LockIO"),
-        _scheduleLock("LockSched")
+        _scheduleLock("LockSched"),
+        _debug_printf(0)
     { }
 
     SdbLock& ioLock() {
@@ -131,7 +132,12 @@ public:
         }
         long loopMS = millis() - startMS;
         long deltaMS = nextMS - startMS;
-        DEBUG_PRINTF( ("loop %3d ms + pause %3d ms, sched #%d\n", loopMS, deltaMS, _scheduled.size()) );
+        int size = _scheduled.size();
+        long debug_printf = loopMS * 1000 + deltaMS + size;
+        if (debug_printf != _debug_printf) {
+            DEBUG_PRINTF( ("loop %3d ms + pause %3d ms, sched #%d\n", loopMS, deltaMS, size) );
+            _debug_printf = debug_printf;
+        }
         if (deltaMS > 0) {
             delay(deltaMS);
         }
@@ -143,6 +149,7 @@ private:
     SdbLock _ioLock;
     SdbDataStore _dataStore;
     std::map<String, SdbMod*> _mods;
+    long _debug_printf;
 
     struct Scheduled {
         const long _atMS;

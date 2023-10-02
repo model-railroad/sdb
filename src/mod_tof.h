@@ -38,7 +38,6 @@ public:
     SdbModTof(SdbModManager& manager) :
         SdbModTask(manager, MOD_TOF_NAME, "TaskTof", SdbPriority::Sensor),
         _ioLock(_manager.ioLock()),
-        _dataLock(_manager.dataStore().lock()),
         _tof()
     { }
 
@@ -60,7 +59,6 @@ private:
     VL53L0X_RangingMeasurementData_t _measure;
     long _lastDistMM;
     SdbLock& _ioLock;
-    SdbLock& _dataLock;
 
     void onTaskRun() {
         while(true) {

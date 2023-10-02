@@ -36,7 +36,9 @@ namespace SdbKey {
 
         /// NVS -- WARNING: All NVS keys must be considered constants;
         /// their values should not change accross updates.
-        NvsStart = 0x8000,
+        NvsStart        = 0x8000,
+        WifiSsidStr     = 0x8001,
+        WifiPassStr     = 0x8002,
     };
 }
 
@@ -153,8 +155,8 @@ public:
             size_t size = 0;
             err = handle->get_item_size(nvs::ItemType::SZ, nvsKey.c_str(), size);
             DEBUG_ESP_PRINTLN(err, "NVS get string size failed");
-            if (CHECK_ESP_OK(err) && size > 0) {
-                char* dest = (char*)malloc(size);
+            if (CHECK_ESP_OK(err) && size > 0) {                
+                char* dest = (char*)malloc(size); // TBD use a shared_ptr(malloc,free)
                 err = handle->get_string(nvsKey.c_str(), dest, size);
                 DEBUG_ESP_PRINTLN(err, "NVS get string failed");
                 if (CHECK_ESP_OK(err)) {

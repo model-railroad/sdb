@@ -36,15 +36,18 @@
 #include <functional>
 #include <vector>
 
+#define MOD_WIFI_NAME "wi"
+
 // This pin is checked for GND at startup, to force AP mode to reset the
-// Wifi SSID + password. It's set to be pull-up by default.
+// Wifi SSID + password. It\"s set to be pull-up by default.
 #define FORCE_AP_PIN 36
 // Defaults for AP mode. Pass must be >=7 chars.
 // AP pass can be set here and this is not a secret.
 #define AP_SSID "SdbNodeWifi"
 #define AP_PASS "12345678"
 
-#define MOD_WIFI_NAME "wi"
+#define AP_WIFI_ENCRYPTED   'E'
+#define AP_WIFI_OPEN        'O'
 
 #include "html/_mod_wifi_ap_index.html.gz.h"
 #include "html/_mod_wifi_sta_index.html.gz.h"
@@ -78,6 +81,7 @@ public:
 
 private:
     bool _apMode;
+    String _apStatus;
     wl_status_t _wifiStatus;
     // A list of SSID found when scanning. The first letter is E for encryped vs O for open.
     std::vector<String> _wifiNetworks;
@@ -111,6 +115,7 @@ private:
         _manager.queueEvent(MOD_DISPLAY_NAME, SdbEvent::DisplayWifiAP);
 
         startAPServer();
+        _apStatus = "Ready for configuration";
 
         return true;
     }
@@ -128,7 +133,7 @@ private:
         DEBUG_PRINTF( ( "[WIFI] scanNetworks: found %d networks.\n", n ) );
         for (int i = 0; i < n; ++i) {
             bool encrypted = WiFi.encryptionType(i) != WIFI_AUTH_OPEN;
-            String name(encrypted ? "E" : "O");
+            String name(encrypted ? AP_WIFI_ENCRYPTED : AP_WIFI_OPEN);
             name += WiFi.SSID(i);
             _wifiNetworks.push_back(name);
             DEBUG_PRINTF( ( "[WIFI] scanNetworks: %d = %s\n", i, name.c_str()) );
@@ -167,6 +172,15 @@ private:
             .user_ctx = new std::function<esp_err_t(httpd_req_t *)>(getLambda)
         };
         httpd_register_uri_handler(httpdHandle, &getUri);
+
+        auto setLambda = [this](httpd_req_t *req) -> esp_err_t { return _setHandler(req); };
+        httpd_uri_t setUri = {
+            .uri = "/set",
+            .method = HTTP_POST,
+            .handler = &_handlerToLambda,
+            .user_ctx = new std::function<esp_err_t(httpd_req_t *)>(setLambda)
+        };
+        httpd_register_uri_handler(httpdHandle, &setUri);
     }
 
     // _handlerToLambda is a static method "trampoline" to invoke the actual handler in the
@@ -180,6 +194,7 @@ private:
 
     // Handler for /
     esp_err_t _indexHandler(httpd_req_t *req) {
+        // Handlers should return ESP_OK or ESP_FAIL to force closing the underlying socket.
         DEBUG_PRINTF( ( "[WIFI] _indexHandler for %p.\n", req ) );
         httpd_resp_set_type(req, "text/html");
         httpd_resp_set_hdr(req, "Content-Encoding", "gzip");
@@ -189,11 +204,83 @@ private:
 
     // Handler for /get
     esp_err_t _getHandler(httpd_req_t *req) {
+        // Handlers should return ESP_OK or ESP_FAIL to force closing the underlying socket.
         DEBUG_PRINTF( ( "[WIFI] getHandler for %p.\n", req ) );
         DEBUG_PRINTF( ( "[WIFI] get uri %s.\n", req->uri ) );
         DEBUG_PRINTF( ( "[WIFI] get content_len %d.\n", req->content_len ) );
         httpd_resp_set_type(req, "application/json");
-        httpd_resp_sendstr(req, "{'v':'response'}");
+
+        auto ssid = _manager.dataStore().getString(SdbKey::WifiSsidStr, "");
+        auto pass = _manager.dataStore().getString(SdbKey::WifiPassStr, "");
+
+        // For now, manually build the JSON string. Consider a json lib later.
+        String s("{\"id\":\"");
+        ssid.replace("\"", "_");
+        s += ssid;
+        s += "\",";
+
+        s += "\"pw\":\"";
+        pass.replace("\"", "_");
+        s += pass;
+        s += "\",";
+
+        s += "\"st\":\"";
+        _apStatus.replace("\"", "_");
+        s += _apStatus;
+        s += "\",";
+
+        s += "\"ls\":[";
+        bool sep = false;
+        for(String& n: _wifiNetworks) {
+            if (sep) {
+                s += ',';
+            }
+            n.replace("\"", "_");
+            s += '\"';
+            s += n;
+            s += '\"';
+            sep = true;
+        }
+        s += "]}";
+
+        DEBUG_PRINTF( ( "[WIFI] get JSON %s\n", s.c_str() ) );
+        httpd_resp_sendstr(req, s.c_str());
+        return ESP_OK;
+    }
+
+    // Handler for /set
+    esp_err_t _setHandler(httpd_req_t *req) {
+        // Handlers should return ESP_OK or ESP_FAIL to force closing the underlying socket.
+        DEBUG_PRINTF( ( "[WIFI] setHandler for %p.\n", req ) );
+        DEBUG_PRINTF( ( "[WIFI] set uri %s.\n", req->uri ) );
+        DEBUG_PRINTF( ( "[WIFI] set content_len %d.\n", req->content_len ) );
+
+        // Constraint body content length to something reasonable
+        size_t body_len = req->content_len + 1;
+        if (body_len > 512) { body_len = 512; }
+        std::unique_ptr<char[]> buffer(new char[body_len]);
+        char* content = buffer.get();
+
+        int ret = httpd_req_recv(req, content, body_len);
+        if (ret <= 0) {
+            // On success, ret is number of bytes read, > 0.
+            // 0 value indicates connection closed.
+            // < 0 values are error codes.>
+            if (ret == HTTPD_SOCK_ERR_TIMEOUT) {
+                httpd_resp_send_408(req);
+            } else {
+                httpd_resp_send_500(req);
+            }
+            // Nothing more can be done here.
+            return ESP_FAIL;
+        }
+
+        content[body_len - 1] = 0;
+        DEBUG_PRINTF( ( "[WIFI] set BODY = %s.\n", content) );
+        // TBD parse
+
+        httpd_resp_set_type(req, "application/json");
+        httpd_resp_sendstr(req, "{\"st\":\"Received\"}");
         return ESP_OK;
     }
 };

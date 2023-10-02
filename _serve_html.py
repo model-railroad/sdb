@@ -30,7 +30,7 @@ class LocalSdbServer(http.server.BaseHTTPRequestHandler):
                 "id": "Current SSID or blank",
                 "pw": "Current Password or blank",
                 "st": "AP status string",
-                "ls": "ESSID 1\nOSSID 2\nESSID 3",
+                "ls": ["ESSID 1","OSSID\"2\"","ESSID\'3\'"],
             }
             self.wfile.write(bytes(json.dumps(data), "utf-8"))
         else:
