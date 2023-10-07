@@ -243,7 +243,7 @@ $ ./_arduino_cli.sh config init --additional-urls https://raw.githubusercontent.
 $ ./_arduino_cli.sh core update-index
 ```
 
-Finally you need to select your board model:
+Finally, you need to select your board model:
 
 - F1 > Arduino Board Manager
     - Search for “esp”
@@ -252,10 +252,18 @@ Finally you need to select your board model:
     - Should be picked up from the sdb project settings.
     - Current is `Heltec Wifi Kit 32, PSRAM disabled, 240 MHz`.
 
+Actual build and deploy is done via the command line script indicated below.
+
 
 ### CLion Instructions
 
-TBD
+Open `sdb/CMakeLists.txt`.
+It defines one project "SDB" with all the sources.
+The main `sdb.ino` is treated as a C++ 11 file, and all `src/` headers are included.
+
+So far, this config is only used for editing sources.
+
+Actual build and deploy is done via the command line script indicated below.
 
 
 ### Build and Deploy
@@ -270,8 +278,16 @@ On Linux, use `lsusb` or `dmesg` for the same result.
 `_compile_and_monitor.sh` and `_compile_and_monitor.bat` default to `monitor -p COM5`.
 Adjusted the latter value to match your USB port.
 
+**Warning**: The HTML-to-gz generation is only done in the shell script.
+
 The first compilation takes about forever, and it unfortunately doesn't list which files are
 being compiled as it goes. You can add `--verbose` to list them, but then it's _really_ too verbose.
+
+**Tip**: On Windows, a default install of VS Code or CLion will likely run a PowerShell terminal.
+The ".bat" script can be used for that.
+Alternatively, if you install Git for Windows, you can change the terminal type in VS Code or
+CLion and select the `MSYS Git Bash` option to run the ".sh" script.
+
 
 
 # License
