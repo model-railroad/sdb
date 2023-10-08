@@ -16,8 +16,8 @@
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef __INC_SDB_MOD_MANAGER_H
-#define __INC_SDB_MOD_MANAGER_H
+#ifndef INC_SDB_MOD_MANAGER_H
+#define INC_SDB_MOD_MANAGER_H
 
 #include "common.h"
 #include "sdb_data_store.h"
@@ -164,5 +164,5 @@ private:
 };
 
 //
-#endif // __INC_SDB_MOD_MANAGER_H
+#endif // INC_SDB_MOD_MANAGER_H
 

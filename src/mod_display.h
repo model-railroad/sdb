@@ -16,8 +16,8 @@
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef __INC_SDB_MOD_DISPLAY_H
-#define __INC_SDB_MOD_DISPLAY_H
+#ifndef INC_SDB_MOD_DISPLAY_H
+#define INC_SDB_MOD_DISPLAY_H
 
 // Important: I2C controller 0 (aka &Wire ) is used here.
 //            I2C controller 1 (aka &Wire1) is used in mod_tof.
@@ -53,7 +53,7 @@ enum DisplayState {
 
 class SdbModDisplay : public SdbMod {
 public:
-    SdbModDisplay(SdbModManager& manager) :
+    explicit SdbModDisplay(SdbModManager& manager) :
         SdbMod(manager, MOD_DISPLAY_NAME),
         _ioLock(_manager.ioLock()),
         _dataLock(_manager.dataStore().lock()),
@@ -203,7 +203,7 @@ private:
         // Font is 6x10, coords are x,y
         _u8g2.setFont(u8g2_font_t0_22b_tf);
 
-        _u8g2.drawStr(0, y, "VL53L0X TEST");
+        _u8g2.drawStr(0, y, "SDB: VL53L0X");
         y += YTXT;
         
         String dt = String(_lastDistMM) + " mm";
@@ -265,4 +265,4 @@ private:
     }
 };
 
-#endif // __INC_SDB_MOD_DISPLAY_H
+#endif // INC_SDB_MOD_DISPLAY_H

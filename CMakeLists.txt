@@ -293,8 +293,8 @@ ${ARDUINO_DIR}/packages/esp32/hardware/esp32/2.0.6/libraries/SPI/src
 ${ARDUINO_DIR}/packages/esp32/hardware/esp32/2.0.6/libraries/WiFi/src
 ${ARDUINO_DIR}/packages/esp32/hardware/esp32/2.0.6/libraries/Wire/src
 ${ARDUINO_DIR}/packages/esp32/hardware/esp32/2.0.6/variants/heltec_wifi_kit_32
-${USER_PROFILE}/Documents/Arduino/libraries/Adafruit_VL53L0X/src
-${USER_PROFILE}/Documents/Arduino/libraries/U8g2/src
+${WIN_USER_PROFILE}/Documents/Arduino/libraries/Adafruit_VL53L0X/src
+${WIN_USER_PROFILE}/Documents/Arduino/libraries/U8g2/src
 )
 
 # ~~

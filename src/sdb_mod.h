@@ -16,8 +16,8 @@
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef __INC_SDB_MOD_H
-#define __INC_SDB_MOD_H
+#ifndef INC_SDB_MOD_H
+#define INC_SDB_MOD_H
 
 class SdbModManager;
 
@@ -110,4 +110,4 @@ private:
     _SdbModTaskImpl _modTaskImpl;
 };
 
-#endif // __INC_SDB_MOD_H
+#endif // INC_SDB_MOD_H

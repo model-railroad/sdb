@@ -16,8 +16,8 @@
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef __INC_SDB_MOD_TOF_H
-#define __INC_SDB_MOD_TOF_H
+#ifndef INC_SDB_MOD_TOF_H
+#define INC_SDB_MOD_TOF_H
 
 // Important: I2C controller 0 (aka &Wire ) is used in mod_display.
 //            I2C controller 1 (aka &Wire1) is used here.
@@ -35,7 +35,7 @@
 
 class SdbModTof : public SdbModTask {
 public:
-    SdbModTof(SdbModManager& manager) :
+    explicit SdbModTof(SdbModManager& manager) :
         SdbModTask(manager, MOD_TOF_NAME, "TaskTof", SdbPriority::Sensor),
         _ioLock(_manager.ioLock()),
         _tof()
@@ -60,7 +60,7 @@ private:
     long _lastDistMM;
     SdbLock& _ioLock;
 
-    void onTaskRun() {
+    [[noreturn]] void onTaskRun() override {
         while(true) {
             long distMM = measure_tof();
             update_data_store(distMM);
@@ -96,4 +96,4 @@ private:
     }
 };
 
-#endif // __INC_SDB_MOD_TOF_H
+#endif // INC_SDB_MOD_TOF_H

@@ -16,8 +16,8 @@
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef __INC_SDB_MOD_WIFI_H
-#define __INC_SDB_MOD_WIFI_H
+#ifndef INC_SDB_MOD_WIFI_H
+#define INC_SDB_MOD_WIFI_H
 
 // Wifi module.
 // AP mode, a.k.a. "Ad-hoc wifi": this module generates its own wifi network,
@@ -54,7 +54,7 @@
 
 class SdbModWifi : public SdbMod {
 public:
-    SdbModWifi(SdbModManager& manager) :
+    explicit SdbModWifi(SdbModManager& manager) :
         SdbMod(manager, MOD_WIFI_NAME),
         _apMode(false),
         _wifiStatus(WL_NO_SHIELD)    // start with an "invalid" value
@@ -214,12 +214,12 @@ private:
         auto pass = _manager.dataStore().getString(SdbKey::WifiPassStr, "");
 
         // For now, manually build the JSON string. Consider a json lib later.
-        String s("{\"id\":\"");
+        String s(R"({"id":")");
         ssid.replace("\"", "_");
         s += ssid;
         s += "\",";
 
-        s += "\"pw\":\"";
+        s += R"("pw":")";
         pass.replace("\"", "_");
         s += pass;
         s += "\",";
@@ -286,4 +286,4 @@ private:
 };
 
 
-#endif // __INC_SDB_MOD_WIFI_H
+#endif // INC_SDB_MOD_WIFI_H

@@ -16,8 +16,8 @@
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef __INC_SDB_TASK_H
-#define __INC_SDB_TASK_H
+#ifndef INC_SDB_TASK_H
+#define INC_SDB_TASK_H
 
 #include "common.h"
 #include "sdb_lock.h"
@@ -38,7 +38,7 @@ class SdbTask {
 public:
     SdbTask(const String& name, SdbPriority::SdbPriority priority) :
         _taskName(name),
-        _handle(NULL),
+        _handle(nullptr),
         _priority(priority)
     { }
 
@@ -58,7 +58,7 @@ public:
     }
 
     bool isStarted() {
-        return _handle != NULL;
+        return _handle != nullptr;
     }
 
     virtual void onRun() = 0;
@@ -70,10 +70,10 @@ protected:
 
 private:
     static void _entryPoint(void *taskParameters) {
-        SdbTask* task = (SdbTask*)taskParameters;
+        auto task = (SdbTask*)taskParameters;
         DEBUG_PRINTF( ("[%s] Task running on Core %d\n",  task->_taskName.c_str(), xPortGetCoreID()) );
         task->onRun();
     }
 };
 
-#endif // __INC_SDB_TASK_H
+#endif // INC_SDB_TASK_H

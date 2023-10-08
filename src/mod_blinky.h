@@ -16,8 +16,8 @@
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef __INC_SDB_MOD_BLINKY_H
-#define __INC_SDB_MOD_BLINKY_H
+#ifndef INC_SDB_MOD_BLINKY_H
+#define INC_SDB_MOD_BLINKY_H
 
 #include "common.h"
 #include "sdb_lock.h"
@@ -30,7 +30,7 @@
 
 class SdbModBlinky : public SdbModTask {
 public:
-    SdbModBlinky(SdbModManager& manager) :
+    explicit SdbModBlinky(SdbModManager& manager) :
         SdbModTask(manager, MOD_BLINKY_NAME, "TaskBlinky", SdbPriority::Sensor),
         _ioLock(manager.ioLock())
     { }
@@ -48,7 +48,7 @@ public:
 private:
     SdbLock& _ioLock;
 
-    void onTaskRun() override {
+    [[noreturn]] void onTaskRun() override {
         while (true) {
             {
                 SdbMutex io_mutex(_ioLock);
@@ -75,4 +75,4 @@ private:
 };
 
 
-#endif // __INC_SDB_MOD_BLINKY_H
+#endif // INC_SDB_MOD_BLINKY_H

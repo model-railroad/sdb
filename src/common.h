@@ -16,8 +16,8 @@
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef __INC_COMMON_H
-#define __INC_COMMON_H
+#ifndef INC_COMMON_H
+#define INC_COMMON_H
 
 #include <freertos/FreeRTOS.h>
 #include <freertos/task.h>
@@ -60,4 +60,4 @@
 // In main INO... a global panic method.
 void sdbPanic(char* msg = NULL);
 
-#endif // __INC_COMMON_H
+#endif // INC_COMMON_H
