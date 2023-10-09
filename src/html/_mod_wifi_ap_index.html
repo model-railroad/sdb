@@ -3,6 +3,7 @@
     <style>
         .warn { background-color: rgb(255, 128, 128);}
     </style>
+    <title>Software Defined Blocks - Wifi Setup</title>
 </head><body>
 <h1>Software Defined Blocks</h1>
 <p id="st_warn">SDB Status: <span id="st">Loading...</span></p>
@@ -109,6 +110,18 @@ async function load() {
     statusWarning(true, "Failed to load data from SDB.");
 }
 
+function convertPw(pw) {
+    if (pw) {
+        let result = "";
+        for (const chr of pw) {
+            result += chr.charCodeAt(0).toString(16);
+        }
+        return result;
+    } else {
+        return "";
+    }
+}
+
 async function onSubmit(event) {
     event.preventDefault();        
     statusWarning(false, "Submitting...");
@@ -118,7 +131,7 @@ async function onSubmit(event) {
 
     // Validate form content
     const ls = data.get("ls") || "";
-    const pw = data.get("pw") || "";
+    const pw = convertPw(data.get("pw") || "");
     if (ls === "") {
         statusWarning(true, "Please select a WiFi network.");
         return;
@@ -138,6 +151,7 @@ async function onSubmit(event) {
         try {
             const data = await response.json();
             statusWarning(false, data.st || "??");
+            return;
         } catch (e) {
             console.log("@@ fetch error : " + JSON.stringify(e));
         }

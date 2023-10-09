@@ -29,12 +29,16 @@
 #include "sdb_lock.h"
 #include "sdb_mod.h"
 #include "mod_display.h"
+
+#include <algorithm>
+#include <functional>
+#include <vector>
+
+#include <esp_http_server.h>
+#include <Arduino_JSON.h>
 #include <WiFi.h>
 #include <WiFiAP.h>
 #include <WiFiClient.h>
-#include <esp_http_server.h>
-#include <functional>
-#include <vector>
 
 #define MOD_WIFI_NAME "wi"
 
@@ -213,38 +217,18 @@ private:
         auto ssid = _manager.dataStore().getString(SdbKey::WifiSsidStr, "");
         auto pass = _manager.dataStore().getString(SdbKey::WifiPassStr, "");
 
-        // For now, manually build the JSON string. Consider a json lib later.
-        String s(R"({"id":")");
-        ssid.replace("\"", "_");
-        s += ssid;
-        s += "\",";
-
-        s += R"("pw":")";
-        pass.replace("\"", "_");
-        s += pass;
-        s += "\",";
-
-        s += "\"st\":\"";
-        _apStatus.replace("\"", "_");
-        s += _apStatus;
-        s += "\",";
-
-        s += "\"ls\":[";
-        bool sep = false;
+        // Note: we don't need to provide the actual password. Just the fact there's one.
+        JSONVar data;
+        data["id"] = ssid;
+        data["pw"] = pass.isEmpty() ? "" : "•••••";
+        data["st"] = _apStatus;
+        int index = 0;
         for(String& n: _wifiNetworks) {
-            if (sep) {
-                s += ',';
-            }
-            n.replace("\"", "_");
-            s += '\"';
-            s += n;
-            s += '\"';
-            sep = true;
+            data["ls"][index++] = n;
         }
-        s += "]}";
 
-        DEBUG_PRINTF( ( "[WIFI] get JSON %s\n", s.c_str() ) );
-        httpd_resp_sendstr(req, s.c_str());
+        DEBUG_PRINTF( ( "[WIFI] get JSON %s\n", JSON.stringify(data).c_str() ) );
+        httpd_resp_sendstr(req, JSON.stringify(data).c_str());
         return ESP_OK;
     }
 
@@ -277,11 +261,62 @@ private:
 
         content[body_len - 1] = 0;
         DEBUG_PRINTF( ( "[WIFI] set BODY = %s.\n", content) );
-        // TBD parse
+        JSONVar input = JSON.parse(content);
+        String selectedSsid = input["ls"];  // or empty if not set
+        String selectedPass = input["pw"];  // or empty if not set
+        DEBUG_PRINTF( ( "[WIFI] Selected SSID: %s\n", selectedSsid.c_str() ));
+        DEBUG_PRINTF( ( "[WIFI] Selected pass: %s\n", selectedPass.c_str() ));
+        bool success = memorizeNewSsid(selectedSsid, selectedPass);
 
+        JSONVar response;
+        response["st"] = success ? "Memorized" : "Invalid Data";
         httpd_resp_set_type(req, "application/json");
-        httpd_resp_sendstr(req, "{\"st\":\"Received\"}");
+        httpd_resp_sendstr(req, JSON.stringify(response).c_str());
         return ESP_OK;
+    }
+
+    static inline char hex2int(char c) {
+        if (c >= '0' && c <= '9') return      c - '0';
+        if (c >= 'A' && c <= 'F') return 10 + c - 'A';
+        if (c >= 'a' && c <= 'f') return 10 + c - 'a';
+        return 0;
+    }
+
+    /// Validate whether the ssid + pass is valid. If it is, memorizes the info in data store + NVS.
+    /// Note that SSIDs are prefixed by either E or O (encrypted vs open).
+    /// Returns true if accepted, false if not accepted.
+    boolean memorizeNewSsid(const String& ssid, const String& pass) {
+        // Verify ssid is one of the names we found before
+        auto found = std::find(_wifiNetworks.begin(), _wifiNetworks.end(), ssid);
+        if (found == std::end(_wifiNetworks)) {
+            DEBUG_PRINTF( ( "[WIFI] SSID %s not found in the scanned wifi network list.\n", ssid.c_str() ));
+            return false;
+        }
+
+        // Verify we have a password if one is required.
+        // The "password" is encoded in a naive chr hexa pattern and should have an even length.
+        if (ssid.charAt(0) == AP_WIFI_ENCRYPTED && (pass.isEmpty() || (pass.length() % 2 != 0))) {
+            DEBUG_PRINTF( ( "[WIFI] SSID %s requires a non-empty password.\n", ssid.c_str() ));
+            return false;
+        }
+
+        const char *pw2src = pass.c_str();
+        int pwlen = pass.length() / 2;
+        std::unique_ptr<char[]> buffer(new char[pwlen + 1]);
+        char* pwdst = buffer.get();
+        for(int i = 0; i < pwlen; i++) {
+            char c = (hex2int(*pw2src++) << 4) + hex2int(*pw2src++);
+            pwdst[i] = c;
+        }
+
+        pwdst[pwlen] = 0;
+        String pw(pwdst);
+
+        // Seems valid, write to the data store / NVS.
+        _manager.dataStore().putString(SdbKey::WifiSsidStr, ssid);
+        _manager.dataStore().putString(SdbKey::WifiPassStr, pw);
+        DEBUG_PRINTF( ( "[WIFI] SSID / pass updated in data store.\n" ));
+        return true;
     }
 };
 

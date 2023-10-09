@@ -1,6 +1,10 @@
 default_fqbn: esp32:esp32:heltec_wifi_kit_32
 default_port: COM5
 
+# Note:
+# - to search a library: $ ./_arduino_cli.sh lib search <name>
+# - to use a library, add a line below with Name (Version) and rebuild.
+
 profiles:
   wifikit32:
     fqbn: esp32:esp32:heltec_wifi_kit_32
@@ -11,6 +15,7 @@ profiles:
       - Adafruit_VL53L0X (1.2.2)
       - Adafruit SSD1306 (2.5.7)
       - U8g2 (2.33.15)
+      - Arduino_JSON (0.2.0)
 #      - Adafruit GFX Library (1.11.5)
 #      - Adafruit BusIO (1.14.1)
 

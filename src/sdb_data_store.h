@@ -35,7 +35,7 @@ namespace SdbKey {
         TofDistanceMmLong,
 
         /// NVS -- WARNING: All NVS keys must be considered constants;
-        /// their values should not change accross updates.
+        /// the enum values should not change across updates.
         NvsStart        = 0x8000,
         WifiSsidStr     = 0x8001,
         WifiPassStr     = 0x8002,
@@ -46,7 +46,7 @@ namespace SdbKey {
  * An in-memory data store of key/value pairs.
  *
  * Values accept 3 types: long, String, and blobs.
- * The key should be kep unique accross all data types.
+ * The key should be kep unique across all data types.
  * Strings are copied in the in-memory maps.
  * Blobs are allocated by the caller, and should be freed by the callers accordingly.
  *
