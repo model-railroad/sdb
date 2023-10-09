@@ -31,7 +31,8 @@ namespace SdbKey {
     enum SdbKey {
         /// In-memory keys, not backed into NVS.
         InMemoryStart = 0,
-        SoftApIpStr,
+        WifiApIpStr,
+        WifiStaIpStr,
         TofDistanceMmLong,
 
         /// NVS -- WARNING: All NVS keys must be considered constants;

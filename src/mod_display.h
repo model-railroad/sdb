@@ -49,6 +49,7 @@
 enum DisplayState {
     DisplaySensor,
     DisplayWifiAP,
+    DisplayWifiSTA,
 };
 
 class SdbModDisplay : public SdbMod {
@@ -109,6 +110,13 @@ public:
                     _manager.queueEvent(MOD_DISPLAY_NAME, SdbEvent::DisplaySensor);
                 });
                 break;
+            case SdbEvent::DisplayWifiSTA:
+                _state = DisplayWifiSTA;
+                // Display the wifi info for a few seconds, then back to sensor state.
+                _manager.schedule(DISPLAY_TIME_WIFI_ON_MS, [this](void) {
+                    _manager.queueEvent(MOD_DISPLAY_NAME, SdbEvent::DisplaySensor);
+                });
+                break;
         }
 
         switch(_state) {
@@ -117,6 +125,9 @@ public:
                 break;
             case DisplayWifiAP:
                 changes = loopWifiAP();
+                break;
+            case DisplayWifiSTA:
+                changes = loopWifiSTA();
                 break;
         }
 
@@ -131,6 +142,12 @@ private:
 
     bool loopWifiAP() {
         drawWifiAP();
+        update();
+        return false; // no changes
+    }
+
+    bool loopWifiSTA() {
+        drawWifiSTA();
         update();
         return false; // no changes
     }
@@ -236,17 +253,22 @@ private:
     }
 
     void drawWifiAP() {
-         const String& ip = _manager.dataStore().getString(SdbKey::SoftApIpStr, "unknown");
-         drawWifiAP(ip);
+         const String& ip = _manager.dataStore().getString(SdbKey::WifiApIpStr, "unknown");
+         drawWifiIP(ip);
     }
 
-    void drawWifiAP(const String& ip) {
+    void drawWifiSTA() {
+         const String& ip = _manager.dataStore().getString(SdbKey::WifiStaIpStr, "unknown");
+         drawWifiIP(ip);
+    }
+
+    void drawWifiIP(const String& ip) {
         int y = abs(_yOffset - 8);
         
         _u8g2.clearBuffer();
         _u8g2.setFont(u8g2_font_t0_22b_tf);
 
-        _u8g2.drawStr(0, y, "SDB Wifi AP");
+        _u8g2.drawStr(0, y, "SDB Wifi: ");
         y += YTXT;
         
         _u8g2.drawStr(0, y, ip.c_str());

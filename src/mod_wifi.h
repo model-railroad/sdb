@@ -37,7 +37,6 @@
 #include <esp_http_server.h>
 #include <Arduino_JSON.h>
 #include <WiFi.h>
-#include <WiFiAP.h>
 #include <WiFiClient.h>
 
 #define MOD_WIFI_NAME "wi"
@@ -61,49 +60,80 @@ public:
     explicit SdbModWifi(SdbModManager& manager) :
         SdbMod(manager, MOD_WIFI_NAME),
         _apMode(false),
-        _wifiStatus(WL_NO_SHIELD)    // start with an "invalid" value
+       _attempConnection(false),
+       _httpdHandle(nullptr),
+       _wifiStaStatus(WL_CONNECTED)    // start with an "invalid" value
     { }
 
     void onStart() override {
         pinMode(FORCE_AP_PIN, INPUT_PULLUP);
-
-        _apMode = checkApMode();
-        bool started = _apMode ? startAP() : startSTA();
-        if (!started) {
-            PANIC_PRINTF( ( "[WIFI] wifi did not start\n" ) );
-        }
+        selectApOrStaMode();
     }
 
     long onLoop() override {
-        wl_status_t status = WiFi.status();
-        if (status != _wifiStatus) {
-            _wifiStatus = status;
-            DEBUG_PRINTF( ("[WIFI] Status changed to %d\n", status) );
+        if (_apMode) {
+            if (_attempConnection) {
+                startAP();
+            }
+        } else {
+            wl_status_t staStatus = WiFi.status();
+
+            if (staStatus != _wifiStaStatus) {
+                DEBUG_PRINTF( ("[WIFI] STA Status changed to %d\n", staStatus) );
+
+                if (staStatus != WL_CONNECTED && _attempConnection) {
+                    startSTA();
+                }
+            }
+            _wifiStaStatus = staStatus;
         }
-        return 2000;
+
+        return _wifiStaStatus == WL_CONNECTED ? 2000 : 500;
     }
 
 private:
     bool _apMode;
-    String _apStatus;
-    wl_status_t _wifiStatus;
+    bool _attempConnection;
+    httpd_handle_t _httpdHandle;
+    String _statusStr;
+    /// Status from WifiSTA
+    wl_status_t _wifiStaStatus;
     // A list of SSID found when scanning. The first letter is E for encryped vs O for open.
     std::vector<String> _wifiNetworks;
 
-    bool checkApMode() {
+    void selectApOrStaMode() {
+        // We'll attempt to connect in AP or STA mode at the next loop.
+        _attempConnection = true;
+
         if (digitalRead(FORCE_AP_PIN) == LOW) {
-            return true;
+            DEBUG_PRINTF( ( "[WIFI] Pin 36 Low ==> AP mode.\n" ) );
+            _apMode = true;
+            return;
         }
 
-        // TBD for now only has AP mode
-        return true;
+        auto ssid = _manager.dataStore().getString(SdbKey::WifiSsidStr, "");
+        auto pass = _manager.dataStore().getString(SdbKey::WifiPassStr, "");
+
+        // AP mode if we have no SSID
+        // AP mode if the SSID requires a password and we don't have one.
+        if (ssid.isEmpty() ||
+            (ssid.charAt(0) == AP_WIFI_ENCRYPTED && pass.isEmpty()) ) {
+            DEBUG_PRINTF( ( "[WIFI] SSID/Pass mismatch ==> AP mode.\n" ) );
+            _apMode = true;
+            return;
+        }
+
+        // STA mode seems possible
+        DEBUG_PRINTF( ( "[WIFI] Start in STA mode.\n" ) );
+        _apMode = false;
     }
 
     bool startAP() {
-        DEBUG_PRINTF( ( "[WIFI] AP mode enabled.\n" ) );
+        DEBUG_PRINTF( ( "[WIFI] start AP mode.\n" ) );
 
         // Scanning networks forces STA mode. Do it before AP mode.
         scanNetworks();
+        DEBUG_PRINTF( ( "[WIFI] End Scan Network.\n" ) );
 
         bool success = WiFi.softAP(AP_SSID, AP_PASS);
         if (!success) {
@@ -113,21 +143,51 @@ private:
 
         const IPAddress ip = WiFi.softAPIP();
         DEBUG_PRINTF( ( "[WIFI] AP IP: %s.\n", ip.toString().c_str() ) );
-        _manager.dataStore().putString(SdbKey::SoftApIpStr, ip.toString());
+        _manager.dataStore().putString(SdbKey::WifiApIpStr, ip.toString());
 
         // Display the wifi info for a few seconds, then back to sensor state.
         _manager.queueEvent(MOD_DISPLAY_NAME, SdbEvent::DisplayWifiAP);
 
         startAPServer();
-        _apStatus = "Ready for configuration";
+        _statusStr = "Ready for configuration";
 
+        _attempConnection = false;
         return true;
     }
 
     bool startSTA() {
-        ERROR_PRINTF( ( "[WIFI] STA mode not implemented yet.\n" ) );
-        _manager.queueEvent(MOD_DISPLAY_NAME, SdbEvent::DisplaySensor);
-        return false;
+        DEBUG_PRINTF( ( "[WIFI] start STA mode.\n" ) );
+
+        // First character of ssid is E or O indicating encrypted vs open.
+        auto ssid = _manager.dataStore().getString(SdbKey::WifiSsidStr, "");
+        auto pass = _manager.dataStore().getString(SdbKey::WifiPassStr, "");
+        const char *ssidptr = ssid.c_str();
+        bool needs_password = ssidptr[0] == AP_WIFI_ENCRYPTED;
+
+        wl_status_t status = WiFi.begin(
+            ssidptr + 1,
+            needs_password ? pass.c_str() : nullptr,
+            /*channel=*/ 0,
+            /*bssid=*/ nullptr,
+            /*connect=*/ true);
+
+        if (status != WL_CONNECTED) {
+            ERROR_PRINTF( ( "[WIFI] STA mode failed: %d.\n", status ) );
+            return false;
+        }
+
+        const IPAddress ip = WiFi.localIP();
+        DEBUG_PRINTF( ( "[WIFI] STA IP: %s.\n", ip.toString().c_str() ) );
+        _manager.dataStore().putString(SdbKey::WifiStaIpStr, ip.toString());
+
+        // Display the wifi info for a few seconds, then back to sensor state.
+        _manager.queueEvent(MOD_DISPLAY_NAME, SdbEvent::DisplayWifiSTA);
+
+        startSTAServer();
+        _statusStr = "Ready for serving";
+
+        _attempConnection = false;
+        return true;
     }
 
     void scanNetworks() {
@@ -145,48 +205,6 @@ private:
         WiFi.scanDelete(); // free memory
     }
 
-    void startAPServer() {
-        // The ESP HTTPD server uses tasks and is all async.
-        httpd_handle_t httpdHandle = NULL;
-        httpd_config_t httpdConfig = HTTPD_DEFAULT_CONFIG();
-        httpdConfig.task_priority = SdbPriority::Network;
-        httpdConfig.core_id = APP_CPU;
-
-        // This can really only fail if the config is invalid, or if
-        // task/memory cannot be allocated, which is all fatal.
-        auto error = httpd_start(&httpdHandle, &httpdConfig);
-        if (error != ESP_OK) {
-            PANIC_PRINTF( ( "[WIFI] httpd_start failed with error %d\n", error ) );
-        }
-
-        auto indexLambda = [this](httpd_req_t *req) -> esp_err_t { return _indexHandler(req); };
-        httpd_uri_t indexUri = {
-            .uri = "/",
-            .method = HTTP_GET,
-            .handler = &_handlerToLambda,
-            .user_ctx = new std::function<esp_err_t(httpd_req_t *)>(indexLambda)
-        };
-        httpd_register_uri_handler(httpdHandle, &indexUri);
-
-        auto getLambda = [this](httpd_req_t *req) -> esp_err_t { return _getHandler(req); };
-        httpd_uri_t getUri = {
-            .uri = "/get",
-            .method = HTTP_GET,
-            .handler = &_handlerToLambda,
-            .user_ctx = new std::function<esp_err_t(httpd_req_t *)>(getLambda)
-        };
-        httpd_register_uri_handler(httpdHandle, &getUri);
-
-        auto setLambda = [this](httpd_req_t *req) -> esp_err_t { return _setHandler(req); };
-        httpd_uri_t setUri = {
-            .uri = "/set",
-            .method = HTTP_POST,
-            .handler = &_handlerToLambda,
-            .user_ctx = new std::function<esp_err_t(httpd_req_t *)>(setLambda)
-        };
-        httpd_register_uri_handler(httpdHandle, &setUri);
-    }
-
     // _handlerToLambda is a static method "trampoline" to invoke the actual handler in the
     // context of this class instance. user_ctx is expected to be the std::function to perform
     // the actual work.
@@ -196,10 +214,63 @@ private:
         return (*lambdaPtr)(req);
     }
 
+    void stopHttpdServer() {
+        if (_httpdHandle != nullptr) {
+            DEBUG_PRINTF( ( "[WIFI] Stop current HTTPd server\n") );
+            httpd_stop(_httpdHandle);
+            _httpdHandle = null;
+        }
+    }
+
+    // ----- AP Server -----
+
+    void startAPServer() {
+        stopHttpdServer();
+
+        // The ESP HTTPD server uses tasks and is all async.
+        httpd_config_t httpdConfig = HTTPD_DEFAULT_CONFIG();
+        httpdConfig.task_priority = SdbPriority::Network;
+        httpdConfig.core_id = APP_CPU;
+
+        // This can really only fail if the config is invalid, or if
+        // task/memory cannot be allocated, which is all fatal.
+        auto error = httpd_start(&_httpdHandle, &httpdConfig);
+        if (error != ESP_OK) {
+            PANIC_PRINTF( ( "[WIFI] httpd_start failed with error %d\n", error ) );
+        }
+
+        auto indexLambda = [this](httpd_req_t *req) -> esp_err_t { return AP_indexHandler(req); };
+        httpd_uri_t indexUri = {
+            .uri = "/",
+            .method = HTTP_GET,
+            .handler = &_handlerToLambda,
+            .user_ctx = new std::function<esp_err_t(httpd_req_t *)>(indexLambda)
+        };
+        httpd_register_uri_handler(_httpdHandle, &indexUri);
+
+        auto getLambda = [this](httpd_req_t *req) -> esp_err_t { return AP_getHandler(req); };
+        httpd_uri_t getUri = {
+            .uri = "/get",
+            .method = HTTP_GET,
+            .handler = &_handlerToLambda,
+            .user_ctx = new std::function<esp_err_t(httpd_req_t *)>(getLambda)
+        };
+        httpd_register_uri_handler(_httpdHandle, &getUri);
+
+        auto setLambda = [this](httpd_req_t *req) -> esp_err_t { return _setHandler(req); };
+        httpd_uri_t setUri = {
+            .uri = "/set",
+            .method = HTTP_POST,
+            .handler = &_handlerToLambda,
+            .user_ctx = new std::function<esp_err_t(httpd_req_t *)>(setLambda)
+        };
+        httpd_register_uri_handler(_httpdHandle, &setUri);
+    }
+
     // Handler for /
-    esp_err_t _indexHandler(httpd_req_t *req) {
+    esp_err_t AP_indexHandler(httpd_req_t *req) {
         // Handlers should return ESP_OK or ESP_FAIL to force closing the underlying socket.
-        DEBUG_PRINTF( ( "[WIFI] _indexHandler for %p.\n", req ) );
+        DEBUG_PRINTF( ( "[WIFI] AP_indexHandler for %p.\n", req ) );
         httpd_resp_set_type(req, "text/html");
         httpd_resp_set_hdr(req, "Content-Encoding", "gzip");
         httpd_resp_send(req, _mod_wifi_ap_index_html_gz, _mod_wifi_ap_index_html_gz_len);
@@ -207,9 +278,9 @@ private:
     }
 
     // Handler for /get
-    esp_err_t _getHandler(httpd_req_t *req) {
+    esp_err_t AP_getHandler(httpd_req_t *req) {
         // Handlers should return ESP_OK or ESP_FAIL to force closing the underlying socket.
-        DEBUG_PRINTF( ( "[WIFI] getHandler for %p.\n", req ) );
+        DEBUG_PRINTF( ( "[WIFI] AP_getHandler for %p.\n", req ) );
         DEBUG_PRINTF( ( "[WIFI] get uri %s.\n", req->uri ) );
         DEBUG_PRINTF( ( "[WIFI] get content_len %d.\n", req->content_len ) );
         httpd_resp_set_type(req, "application/json");
@@ -221,7 +292,7 @@ private:
         JSONVar data;
         data["id"] = ssid;
         data["pw"] = pass.isEmpty() ? "" : "•••••";
-        data["st"] = _apStatus;
+        data["st"] = _statusStr;
         int index = 0;
         for(String& n: _wifiNetworks) {
             data["ls"][index++] = n;
@@ -317,6 +388,61 @@ private:
         _manager.dataStore().putString(SdbKey::WifiPassStr, pw);
         DEBUG_PRINTF( ( "[WIFI] SSID / pass updated in data store.\n" ));
         return true;
+    }
+
+    // ----- STA Server -----
+
+    void startSTAServer() {
+        stopHttpdServer();
+
+        // The ESP HTTPD server uses tasks and is all async.
+        httpd_config_t httpdConfig = HTTPD_DEFAULT_CONFIG();
+        httpdConfig.task_priority = SdbPriority::Network;
+        httpdConfig.core_id = APP_CPU;
+
+        // This can really only fail if the config is invalid, or if
+        // task/memory cannot be allocated, which is all fatal.
+        auto error = httpd_start(&_httpdHandle, &httpdConfig);
+        if (error != ESP_OK) {
+            PANIC_PRINTF( ( "[WIFI] httpd_start failed with error %d\n", error ) );
+        }
+
+        auto indexLambda = [this](httpd_req_t *req) -> esp_err_t { return STA_indexHandler(req); };
+        httpd_uri_t indexUri = {
+            .uri = "/",
+            .method = HTTP_GET,
+            .handler = &_handlerToLambda,
+            .user_ctx = new std::function<esp_err_t(httpd_req_t *)>(indexLambda)
+        };
+        httpd_register_uri_handler(_httpdHandle, &indexUri);
+
+//        auto getLambda = [this](httpd_req_t *req) -> esp_err_t { return AP_getHandler(req); };
+//        httpd_uri_t getUri = {
+//            .uri = "/get",
+//            .method = HTTP_GET,
+//            .handler = &_handlerToLambda,
+//            .user_ctx = new std::function<esp_err_t(httpd_req_t *)>(getLambda)
+//        };
+//        httpd_register_uri_handler(httpdHandle, &getUri);
+//
+//        auto setLambda = [this](httpd_req_t *req) -> esp_err_t { return _setHandler(req); };
+//        httpd_uri_t setUri = {
+//            .uri = "/set",
+//            .method = HTTP_POST,
+//            .handler = &_handlerToLambda,
+//            .user_ctx = new std::function<esp_err_t(httpd_req_t *)>(setLambda)
+//        };
+//        httpd_register_uri_handler(httpdHandle, &setUri);
+    }
+
+    // Handler for /
+    esp_err_t STA_indexHandler(httpd_req_t *req) {
+        // Handlers should return ESP_OK or ESP_FAIL to force closing the underlying socket.
+        DEBUG_PRINTF( ( "[WIFI] STA_indexHandler for %p.\n", req ) );
+        httpd_resp_set_type(req, "text/html");
+        httpd_resp_set_hdr(req, "Content-Encoding", "gzip");
+        httpd_resp_send(req, _mod_wifi_sta_index_html_gz, _mod_wifi_sta_index_html_gz_len);
+        return ESP_OK;
     }
 };
 

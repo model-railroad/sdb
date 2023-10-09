@@ -31,6 +31,7 @@ namespace SdbEvent {
     enum SdbEvent {
         Empty,
         DisplayWifiAP,
+        DisplayWifiSTA,
         DisplaySensor,
     };
 }
