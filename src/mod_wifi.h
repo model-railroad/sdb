@@ -55,12 +55,20 @@
 #include "html/_mod_wifi_ap_index.html.gz.h"
 #include "html/_mod_wifi_sta_index.html.gz.h"
 
+
+enum CnxState {
+    CnxIdle,
+    CnxAttempt,
+    CnxConnecting,
+    CnxConnected,
+};
+
 class SdbModWifi : public SdbMod {
 public:
     explicit SdbModWifi(SdbModManager& manager) :
         SdbMod(manager, MOD_WIFI_NAME),
-        _apMode(false),
-       _attempConnection(false),
+       _apMode(false),
+       _cnxState(CnxIdle),
        _httpdHandle(nullptr),
        _wifiStaStatus(WL_CONNECTED)    // start with an "invalid" value
     { }
@@ -72,7 +80,7 @@ public:
 
     long onLoop() override {
         if (_apMode) {
-            if (_attempConnection) {
+            if (_cnxState == CnxAttempt) {
                 startAP();
             }
         } else {
@@ -81,21 +89,27 @@ public:
             if (staStatus != _wifiStaStatus) {
                 DEBUG_PRINTF( ("[WIFI] STA Status changed to %d\n", staStatus) );
 
-                if (staStatus != WL_CONNECTED && _attempConnection) {
+                if (_cnxState == CnxAttempt && staStatus != WL_CONNECTED) {
+                    DEBUG_PRINTF( ("[WIFI] _cnxState = StaAttempt\n") );
                     startSTA();
+                } else if (_cnxState == CnxConnecting && staStatus == WL_CONNECTED) {
+                    DEBUG_PRINTF( ("[WIFI] _cnxState = StaConnecting\n") );
+                    connectingSTA();
                 }
             }
             _wifiStaStatus = staStatus;
         }
 
-        return _wifiStaStatus == WL_CONNECTED ? 2000 : 500;
+        return _cnxState == CnxConnected ? 2000 : 500;
     }
 
 private:
     bool _apMode;
-    bool _attempConnection;
+    CnxState _cnxState;
     httpd_handle_t _httpdHandle;
     String _statusStr;
+    String _staSsid;
+    String _staPass;
     /// Status from WifiSTA
     wl_status_t _wifiStaStatus;
     // A list of SSID found when scanning. The first letter is E for encryped vs O for open.
@@ -103,7 +117,7 @@ private:
 
     void selectApOrStaMode() {
         // We'll attempt to connect in AP or STA mode at the next loop.
-        _attempConnection = true;
+        _cnxState = CnxAttempt;
 
         if (digitalRead(FORCE_AP_PIN) == LOW) {
             DEBUG_PRINTF( ( "[WIFI] Pin 36 Low ==> AP mode.\n" ) );
@@ -111,13 +125,13 @@ private:
             return;
         }
 
-        auto ssid = _manager.dataStore().getString(SdbKey::WifiSsidStr, "");
-        auto pass = _manager.dataStore().getString(SdbKey::WifiPassStr, "");
+        _staSsid = _manager.dataStore().getString(SdbKey::WifiSsidStr, "");
+        _staPass = _manager.dataStore().getString(SdbKey::WifiPassStr, "");
 
         // AP mode if we have no SSID
         // AP mode if the SSID requires a password and we don't have one.
-        if (ssid.isEmpty() ||
-            (ssid.charAt(0) == AP_WIFI_ENCRYPTED && pass.isEmpty()) ) {
+        if (_staSsid.isEmpty() ||
+            (_staSsid.charAt(0) == AP_WIFI_ENCRYPTED && _staPass.isEmpty()) ) {
             DEBUG_PRINTF( ( "[WIFI] SSID/Pass mismatch ==> AP mode.\n" ) );
             _apMode = true;
             return;
@@ -128,7 +142,7 @@ private:
         _apMode = false;
     }
 
-    bool startAP() {
+    void startAP() {
         DEBUG_PRINTF( ( "[WIFI] start AP mode.\n" ) );
 
         // Scanning networks forces STA mode. Do it before AP mode.
@@ -138,7 +152,7 @@ private:
         bool success = WiFi.softAP(AP_SSID, AP_PASS);
         if (!success) {
             ERROR_PRINTF( ( "[WIFI] AP mode did not successfully start.\n" ) );
-            return false;
+            return;
         }
 
         const IPAddress ip = WiFi.softAPIP();
@@ -151,31 +165,27 @@ private:
         startAPServer();
         _statusStr = "Ready for configuration";
 
-        _attempConnection = false;
-        return true;
+        _cnxState = CnxConnected;
     }
 
-    bool startSTA() {
-        DEBUG_PRINTF( ( "[WIFI] start STA mode.\n" ) );
+    void startSTA() {
+        DEBUG_PRINTF(("[WIFI] start STA mode.\n"));
 
         // First character of ssid is E or O indicating encrypted vs open.
-        auto ssid = _manager.dataStore().getString(SdbKey::WifiSsidStr, "");
-        auto pass = _manager.dataStore().getString(SdbKey::WifiPassStr, "");
-        const char *ssidptr = ssid.c_str();
+        const char *ssidptr = _staSsid.c_str();
         bool needs_password = ssidptr[0] == AP_WIFI_ENCRYPTED;
 
-        wl_status_t status = WiFi.begin(
+        WiFi.begin(
             ssidptr + 1,
-            needs_password ? pass.c_str() : nullptr,
-            /*channel=*/ 0,
-            /*bssid=*/ nullptr,
-            /*connect=*/ true);
+            needs_password ? _staPass.c_str() : nullptr,
+            /*channel=*/0,
+            /*bssid=*/nullptr,
+            /*connect=*/true);
+        WiFi.setAutoReconnect(true);
+        _cnxState = CnxConnecting;
+    }
 
-        if (status != WL_CONNECTED) {
-            ERROR_PRINTF( ( "[WIFI] STA mode failed: %d.\n", status ) );
-            return false;
-        }
-
+    void connectingSTA() {
         const IPAddress ip = WiFi.localIP();
         DEBUG_PRINTF( ( "[WIFI] STA IP: %s.\n", ip.toString().c_str() ) );
         _manager.dataStore().putString(SdbKey::WifiStaIpStr, ip.toString());
@@ -185,9 +195,7 @@ private:
 
         startSTAServer();
         _statusStr = "Ready for serving";
-
-        _attempConnection = false;
-        return true;
+        _cnxState = CnxConnected;
     }
 
     void scanNetworks() {
@@ -285,13 +293,10 @@ private:
         DEBUG_PRINTF( ( "[WIFI] get content_len %d.\n", req->content_len ) );
         httpd_resp_set_type(req, "application/json");
 
-        auto ssid = _manager.dataStore().getString(SdbKey::WifiSsidStr, "");
-        auto pass = _manager.dataStore().getString(SdbKey::WifiPassStr, "");
-
         // Note: we don't need to provide the actual password. Just the fact there's one.
         JSONVar data;
-        data["id"] = ssid;
-        data["pw"] = pass.isEmpty() ? "" : "•••••";
+        data["id"] = _staSsid;
+        data["pw"] = _staPass.isEmpty() ? "" : "•••••";
         data["st"] = _statusStr;
         int index = 0;
         for(String& n: _wifiNetworks) {
@@ -386,6 +391,8 @@ private:
         // Seems valid, write to the data store / NVS.
         _manager.dataStore().putString(SdbKey::WifiSsidStr, ssid);
         _manager.dataStore().putString(SdbKey::WifiPassStr, pw);
+        _staSsid = ssid;
+        _staPass = pw;
         DEBUG_PRINTF( ( "[WIFI] SSID / pass updated in data store.\n" ));
         return true;
     }
