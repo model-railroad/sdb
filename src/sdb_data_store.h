@@ -143,8 +143,9 @@ public:
         }
     }
 
-    /// Retrieves the string reference at the given key, or returns the default value.
-    const String& getString(const SdbKey::SdbKey key, const String& _default) {
+    /// Retrieves the string reference at the given key, or returns nullptr.
+    // Caller must not modify the string directly. It should be considered immutable.
+    const String* getString(const SdbKey::SdbKey key) {
         SdbMutex autoMutex(_lock);
 
         if (key > SdbKey::NvsStart && !loadedFromNvs(key)) {
@@ -170,9 +171,9 @@ public:
 
         auto kvKeyStr = _mapString.find(key);
         if (kvKeyStr == _mapString.end()) {
-            return _default;
+            return nullptr;
         } else {
-            return kvKeyStr->second;
+            return &(kvKeyStr->second);
         }
     }
 

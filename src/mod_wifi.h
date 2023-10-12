@@ -125,8 +125,14 @@ private:
             return;
         }
 
-        _staSsid = _manager.dataStore().getString(SdbKey::WifiSsidStr, "");
-        _staPass = _manager.dataStore().getString(SdbKey::WifiPassStr, "");
+        const String* ssid = _manager.dataStore().getString(SdbKey::WifiSsidStr);
+        const String* pass = _manager.dataStore().getString(SdbKey::WifiPassStr);
+        if (ssid != nullptr) {
+            _staSsid = *ssid;
+        }
+        if (pass != nullptr) {
+            _staPass = *pass;
+        }
 
         // AP mode if we have no SSID
         // AP mode if the SSID requires a password and we don't have one.

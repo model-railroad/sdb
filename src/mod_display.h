@@ -59,6 +59,7 @@ public:
         _ioLock(_manager.ioLock()),
         _dataLock(_manager.dataStore().lock()),
         _lastDistMM(0),
+        _apMode(false),
         _state(DisplaySensor),
 #if defined(USE_DISPLAY_LIB_U8G2)
         // U8G2 INIT -- OLED U8G2 constructor for ESP32 WIFI_KIT_32 I2C bus on I2C pins 4+15+16
@@ -136,17 +137,20 @@ public:
     }
 
 private:
+    bool _apMode;
     SdbLock& _ioLock;
     SdbLock& _dataLock;
     DisplayState _state;
 
     bool loopWifiAP() {
+        _apMode = true;
         drawWifiAP();
         update();
         return false; // no changes
     }
 
     bool loopWifiSTA() {
+        _apMode = false;
         drawWifiSTA();
         update();
         return false; // no changes
@@ -169,7 +173,11 @@ private:
             if (now > _nextTimeOffTS) {
                 turnOff();
             } else if (now > _nextTimeOffTS - DISPLAY_TIME_WIFI_ON_MS) {
-                drawWifiAP();
+                if (_apMode) {
+                    drawWifiAP();
+                } else {
+                    drawWifiSTA();
+                }
                 update();
             } else {
                 drawSensor();
@@ -253,13 +261,17 @@ private:
     }
 
     void drawWifiAP() {
-         const String& ip = _manager.dataStore().getString(SdbKey::WifiApIpStr, "unknown");
-         drawWifiIP(ip);
+         const String* ip = _manager.dataStore().getString(SdbKey::WifiApIpStr);
+         if (ip != nullptr) {
+            drawWifiIP(*ip);
+         }
     }
 
     void drawWifiSTA() {
-         const String& ip = _manager.dataStore().getString(SdbKey::WifiStaIpStr, "unknown");
-         drawWifiIP(ip);
+         const String* ip = _manager.dataStore().getString(SdbKey::WifiStaIpStr);
+         if (ip != nullptr) {
+            drawWifiIP(*ip);
+         }
     }
 
     void drawWifiIP(const String& ip) {
@@ -270,7 +282,6 @@ private:
 
         _u8g2.drawStr(0, y, "SDB Wifi: ");
         y += YTXT;
-        
         _u8g2.drawStr(0, y, ip.c_str());
         y += YTXT;
 
