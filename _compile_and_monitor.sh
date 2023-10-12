@@ -1,1 +1,1 @@
-./_compile.sh $@ && ./_monitor.sh
+./_compile.sh --upload $@ && ./_monitor.sh
