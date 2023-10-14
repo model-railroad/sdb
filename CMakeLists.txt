@@ -31,23 +31,32 @@ set_source_files_properties(${PROJECT_SOURCE_DIR}/sdb.ino PROPERTIES LANGUAGE CX
 set_source_files_properties(${PROJECT_SOURCE_DIR}/sdb.ino PROPERTIES COMPILE_FLAGS "-x c++")
 
 
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -c")
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -D_GNU_SOURCE")
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -D_POSIX_READER_WRITER_LOCKS")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DARDUINO=10607")
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DARDUINO_ARCH_ESP32")
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DARDUINO_BOARD=heltec_wifi_kit_32")
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DARDUINO_heltec_wifi_kit_32")
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DARDUINO_PARTITION_default")
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DARDUINO_VARIANT=heltec_wifi_kit_32")
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DARDUINO=10607")
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DESP_PLATFORM")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DARDUINO_heltec_wifi_kit_32")
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DESP32")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DESP_PLATFORM")
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DF_CPU=240000000L")
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DHAVE_CONFIG_H")
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DIDF_VER=v4.4.3")
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DMBEDTLS_CONFIG_FILE=mbedtls/esp_config.h")
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DUNITY_INCLUDE_CONFIG_H")
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DWITH_POSIX")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -D_GNU_SOURCE")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -D_POSIX_READER_WRITER_LOCKS")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-error=deprecated-declarations")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-error=unused-but-set-variable")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-error=unused-function")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-error=unused-variable")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-frame-address")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-old-style-declaration")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-sign-compare")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-unused-parameter")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wwrite-strings")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -c")
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fdata-sections")
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fexceptions")
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -ffunction-sections")
@@ -63,15 +72,6 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -o")
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=gnu++11")
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=gnu99")
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -w")
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-error=deprecated-declarations")
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-error=unused-but-set-variable")
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-error=unused-function")
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-error=unused-variable")
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-frame-address")
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-old-style-declaration")
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-sign-compare")
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-unused-parameter")
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wwrite-strings")
 
 add_library(SDB ${PROJECT_SOURCE_DIR}/sdb.ino
 src/common.h
@@ -99,6 +99,7 @@ target_include_directories(SDB PRIVATE
 
 ${ARDUINO_DIR}/internal/Adafruit_VL53L0X_1.2.2_cdf8122432c0bee0/Adafruit_VL53L0X/src
 ${ARDUINO_DIR}/internal/Arduino_JSON_0.2.0_5e41cd92c2654bcf/Arduino_JSON/src
+${ARDUINO_DIR}/internal/U8g2_2.33.15_4d7f31a1bd16e90a/U8g2/src
 ${ARDUINO_DIR}/internal/esp32_esp32_2.0.6_f157f53066da67d5/tools/sdk/esp32/dio_qspi/include
 ${ARDUINO_DIR}/internal/esp32_esp32_2.0.6_f157f53066da67d5/tools/sdk/esp32/include/app_trace/include
 ${ARDUINO_DIR}/internal/esp32_esp32_2.0.6_f157f53066da67d5/tools/sdk/esp32/include/app_update/include
@@ -132,6 +133,48 @@ ${ARDUINO_DIR}/internal/esp32_esp32_2.0.6_f157f53066da67d5/tools/sdk/esp32/inclu
 ${ARDUINO_DIR}/internal/esp32_esp32_2.0.6_f157f53066da67d5/tools/sdk/esp32/include/driver/include
 ${ARDUINO_DIR}/internal/esp32_esp32_2.0.6_f157f53066da67d5/tools/sdk/esp32/include/efuse/esp32/include
 ${ARDUINO_DIR}/internal/esp32_esp32_2.0.6_f157f53066da67d5/tools/sdk/esp32/include/efuse/include
+${ARDUINO_DIR}/internal/esp32_esp32_2.0.6_f157f53066da67d5/tools/sdk/esp32/include/esp-dl/include
+${ARDUINO_DIR}/internal/esp32_esp32_2.0.6_f157f53066da67d5/tools/sdk/esp32/include/esp-dl/include/detect
+${ARDUINO_DIR}/internal/esp32_esp32_2.0.6_f157f53066da67d5/tools/sdk/esp32/include/esp-dl/include/image
+${ARDUINO_DIR}/internal/esp32_esp32_2.0.6_f157f53066da67d5/tools/sdk/esp32/include/esp-dl/include/layer
+${ARDUINO_DIR}/internal/esp32_esp32_2.0.6_f157f53066da67d5/tools/sdk/esp32/include/esp-dl/include/math
+${ARDUINO_DIR}/internal/esp32_esp32_2.0.6_f157f53066da67d5/tools/sdk/esp32/include/esp-dl/include/model_zoo
+${ARDUINO_DIR}/internal/esp32_esp32_2.0.6_f157f53066da67d5/tools/sdk/esp32/include/esp-dl/include/nn
+${ARDUINO_DIR}/internal/esp32_esp32_2.0.6_f157f53066da67d5/tools/sdk/esp32/include/esp-dl/include/tool
+${ARDUINO_DIR}/internal/esp32_esp32_2.0.6_f157f53066da67d5/tools/sdk/esp32/include/esp-dl/include/typedef
+${ARDUINO_DIR}/internal/esp32_esp32_2.0.6_f157f53066da67d5/tools/sdk/esp32/include/esp-dsp/modules/common/include
+${ARDUINO_DIR}/internal/esp32_esp32_2.0.6_f157f53066da67d5/tools/sdk/esp32/include/esp-dsp/modules/conv/include
+${ARDUINO_DIR}/internal/esp32_esp32_2.0.6_f157f53066da67d5/tools/sdk/esp32/include/esp-dsp/modules/dct/include
+${ARDUINO_DIR}/internal/esp32_esp32_2.0.6_f157f53066da67d5/tools/sdk/esp32/include/esp-dsp/modules/dotprod/include
+${ARDUINO_DIR}/internal/esp32_esp32_2.0.6_f157f53066da67d5/tools/sdk/esp32/include/esp-dsp/modules/fft/include
+${ARDUINO_DIR}/internal/esp32_esp32_2.0.6_f157f53066da67d5/tools/sdk/esp32/include/esp-dsp/modules/fir/include
+${ARDUINO_DIR}/internal/esp32_esp32_2.0.6_f157f53066da67d5/tools/sdk/esp32/include/esp-dsp/modules/iir/include
+${ARDUINO_DIR}/internal/esp32_esp32_2.0.6_f157f53066da67d5/tools/sdk/esp32/include/esp-dsp/modules/kalman/ekf/include
+${ARDUINO_DIR}/internal/esp32_esp32_2.0.6_f157f53066da67d5/tools/sdk/esp32/include/esp-dsp/modules/kalman/ekf_imu13states/include
+${ARDUINO_DIR}/internal/esp32_esp32_2.0.6_f157f53066da67d5/tools/sdk/esp32/include/esp-dsp/modules/math/add/include
+${ARDUINO_DIR}/internal/esp32_esp32_2.0.6_f157f53066da67d5/tools/sdk/esp32/include/esp-dsp/modules/math/addc/include
+${ARDUINO_DIR}/internal/esp32_esp32_2.0.6_f157f53066da67d5/tools/sdk/esp32/include/esp-dsp/modules/math/include
+${ARDUINO_DIR}/internal/esp32_esp32_2.0.6_f157f53066da67d5/tools/sdk/esp32/include/esp-dsp/modules/math/mul/include
+${ARDUINO_DIR}/internal/esp32_esp32_2.0.6_f157f53066da67d5/tools/sdk/esp32/include/esp-dsp/modules/math/mulc/include
+${ARDUINO_DIR}/internal/esp32_esp32_2.0.6_f157f53066da67d5/tools/sdk/esp32/include/esp-dsp/modules/math/sqrt/include
+${ARDUINO_DIR}/internal/esp32_esp32_2.0.6_f157f53066da67d5/tools/sdk/esp32/include/esp-dsp/modules/math/sub/include
+${ARDUINO_DIR}/internal/esp32_esp32_2.0.6_f157f53066da67d5/tools/sdk/esp32/include/esp-dsp/modules/matrix/include
+${ARDUINO_DIR}/internal/esp32_esp32_2.0.6_f157f53066da67d5/tools/sdk/esp32/include/esp-dsp/modules/support/include
+${ARDUINO_DIR}/internal/esp32_esp32_2.0.6_f157f53066da67d5/tools/sdk/esp32/include/esp-dsp/modules/windows/blackman/include
+${ARDUINO_DIR}/internal/esp32_esp32_2.0.6_f157f53066da67d5/tools/sdk/esp32/include/esp-dsp/modules/windows/blackman_harris/include
+${ARDUINO_DIR}/internal/esp32_esp32_2.0.6_f157f53066da67d5/tools/sdk/esp32/include/esp-dsp/modules/windows/blackman_nuttall/include
+${ARDUINO_DIR}/internal/esp32_esp32_2.0.6_f157f53066da67d5/tools/sdk/esp32/include/esp-dsp/modules/windows/flat_top/include
+${ARDUINO_DIR}/internal/esp32_esp32_2.0.6_f157f53066da67d5/tools/sdk/esp32/include/esp-dsp/modules/windows/hann/include
+${ARDUINO_DIR}/internal/esp32_esp32_2.0.6_f157f53066da67d5/tools/sdk/esp32/include/esp-dsp/modules/windows/include
+${ARDUINO_DIR}/internal/esp32_esp32_2.0.6_f157f53066da67d5/tools/sdk/esp32/include/esp-dsp/modules/windows/nuttall/include
+${ARDUINO_DIR}/internal/esp32_esp32_2.0.6_f157f53066da67d5/tools/sdk/esp32/include/esp-sr/esp-tts/esp_tts_chinese/include
+${ARDUINO_DIR}/internal/esp32_esp32_2.0.6_f157f53066da67d5/tools/sdk/esp32/include/esp-sr/include/esp32
+${ARDUINO_DIR}/internal/esp32_esp32_2.0.6_f157f53066da67d5/tools/sdk/esp32/include/esp-sr/src/include
+${ARDUINO_DIR}/internal/esp32_esp32_2.0.6_f157f53066da67d5/tools/sdk/esp32/include/esp-tls
+${ARDUINO_DIR}/internal/esp32_esp32_2.0.6_f157f53066da67d5/tools/sdk/esp32/include/esp-tls/esp-tls-crypto
+${ARDUINO_DIR}/internal/esp32_esp32_2.0.6_f157f53066da67d5/tools/sdk/esp32/include/esp32-camera/conversions/include
+${ARDUINO_DIR}/internal/esp32_esp32_2.0.6_f157f53066da67d5/tools/sdk/esp32/include/esp32-camera/driver/include
+${ARDUINO_DIR}/internal/esp32_esp32_2.0.6_f157f53066da67d5/tools/sdk/esp32/include/esp32/include
 ${ARDUINO_DIR}/internal/esp32_esp32_2.0.6_f157f53066da67d5/tools/sdk/esp32/include/esp_adc_cal/include
 ${ARDUINO_DIR}/internal/esp32_esp32_2.0.6_f157f53066da67d5/tools/sdk/esp32/include/esp_common/include
 ${ARDUINO_DIR}/internal/esp32_esp32_2.0.6_f157f53066da67d5/tools/sdk/esp32/include/esp_diagnostics/include
@@ -173,50 +216,8 @@ ${ARDUINO_DIR}/internal/esp32_esp32_2.0.6_f157f53066da67d5/tools/sdk/esp32/inclu
 ${ARDUINO_DIR}/internal/esp32_esp32_2.0.6_f157f53066da67d5/tools/sdk/esp32/include/esp_timer/include
 ${ARDUINO_DIR}/internal/esp32_esp32_2.0.6_f157f53066da67d5/tools/sdk/esp32/include/esp_websocket_client/include
 ${ARDUINO_DIR}/internal/esp32_esp32_2.0.6_f157f53066da67d5/tools/sdk/esp32/include/esp_wifi/include
-${ARDUINO_DIR}/internal/esp32_esp32_2.0.6_f157f53066da67d5/tools/sdk/esp32/include/esp32/include
-${ARDUINO_DIR}/internal/esp32_esp32_2.0.6_f157f53066da67d5/tools/sdk/esp32/include/esp32-camera/conversions/include
-${ARDUINO_DIR}/internal/esp32_esp32_2.0.6_f157f53066da67d5/tools/sdk/esp32/include/esp32-camera/driver/include
 ${ARDUINO_DIR}/internal/esp32_esp32_2.0.6_f157f53066da67d5/tools/sdk/esp32/include/espcoredump/include
 ${ARDUINO_DIR}/internal/esp32_esp32_2.0.6_f157f53066da67d5/tools/sdk/esp32/include/espcoredump/include/port/xtensa
-${ARDUINO_DIR}/internal/esp32_esp32_2.0.6_f157f53066da67d5/tools/sdk/esp32/include/esp-dl/include
-${ARDUINO_DIR}/internal/esp32_esp32_2.0.6_f157f53066da67d5/tools/sdk/esp32/include/esp-dl/include/detect
-${ARDUINO_DIR}/internal/esp32_esp32_2.0.6_f157f53066da67d5/tools/sdk/esp32/include/esp-dl/include/image
-${ARDUINO_DIR}/internal/esp32_esp32_2.0.6_f157f53066da67d5/tools/sdk/esp32/include/esp-dl/include/layer
-${ARDUINO_DIR}/internal/esp32_esp32_2.0.6_f157f53066da67d5/tools/sdk/esp32/include/esp-dl/include/math
-${ARDUINO_DIR}/internal/esp32_esp32_2.0.6_f157f53066da67d5/tools/sdk/esp32/include/esp-dl/include/model_zoo
-${ARDUINO_DIR}/internal/esp32_esp32_2.0.6_f157f53066da67d5/tools/sdk/esp32/include/esp-dl/include/nn
-${ARDUINO_DIR}/internal/esp32_esp32_2.0.6_f157f53066da67d5/tools/sdk/esp32/include/esp-dl/include/tool
-${ARDUINO_DIR}/internal/esp32_esp32_2.0.6_f157f53066da67d5/tools/sdk/esp32/include/esp-dl/include/typedef
-${ARDUINO_DIR}/internal/esp32_esp32_2.0.6_f157f53066da67d5/tools/sdk/esp32/include/esp-dsp/modules/common/include
-${ARDUINO_DIR}/internal/esp32_esp32_2.0.6_f157f53066da67d5/tools/sdk/esp32/include/esp-dsp/modules/conv/include
-${ARDUINO_DIR}/internal/esp32_esp32_2.0.6_f157f53066da67d5/tools/sdk/esp32/include/esp-dsp/modules/dct/include
-${ARDUINO_DIR}/internal/esp32_esp32_2.0.6_f157f53066da67d5/tools/sdk/esp32/include/esp-dsp/modules/dotprod/include
-${ARDUINO_DIR}/internal/esp32_esp32_2.0.6_f157f53066da67d5/tools/sdk/esp32/include/esp-dsp/modules/fft/include
-${ARDUINO_DIR}/internal/esp32_esp32_2.0.6_f157f53066da67d5/tools/sdk/esp32/include/esp-dsp/modules/fir/include
-${ARDUINO_DIR}/internal/esp32_esp32_2.0.6_f157f53066da67d5/tools/sdk/esp32/include/esp-dsp/modules/iir/include
-${ARDUINO_DIR}/internal/esp32_esp32_2.0.6_f157f53066da67d5/tools/sdk/esp32/include/esp-dsp/modules/kalman/ekf/include
-${ARDUINO_DIR}/internal/esp32_esp32_2.0.6_f157f53066da67d5/tools/sdk/esp32/include/esp-dsp/modules/kalman/ekf_imu13states/include
-${ARDUINO_DIR}/internal/esp32_esp32_2.0.6_f157f53066da67d5/tools/sdk/esp32/include/esp-dsp/modules/math/add/include
-${ARDUINO_DIR}/internal/esp32_esp32_2.0.6_f157f53066da67d5/tools/sdk/esp32/include/esp-dsp/modules/math/addc/include
-${ARDUINO_DIR}/internal/esp32_esp32_2.0.6_f157f53066da67d5/tools/sdk/esp32/include/esp-dsp/modules/math/include
-${ARDUINO_DIR}/internal/esp32_esp32_2.0.6_f157f53066da67d5/tools/sdk/esp32/include/esp-dsp/modules/math/mul/include
-${ARDUINO_DIR}/internal/esp32_esp32_2.0.6_f157f53066da67d5/tools/sdk/esp32/include/esp-dsp/modules/math/mulc/include
-${ARDUINO_DIR}/internal/esp32_esp32_2.0.6_f157f53066da67d5/tools/sdk/esp32/include/esp-dsp/modules/math/sqrt/include
-${ARDUINO_DIR}/internal/esp32_esp32_2.0.6_f157f53066da67d5/tools/sdk/esp32/include/esp-dsp/modules/math/sub/include
-${ARDUINO_DIR}/internal/esp32_esp32_2.0.6_f157f53066da67d5/tools/sdk/esp32/include/esp-dsp/modules/matrix/include
-${ARDUINO_DIR}/internal/esp32_esp32_2.0.6_f157f53066da67d5/tools/sdk/esp32/include/esp-dsp/modules/support/include
-${ARDUINO_DIR}/internal/esp32_esp32_2.0.6_f157f53066da67d5/tools/sdk/esp32/include/esp-dsp/modules/windows/blackman/include
-${ARDUINO_DIR}/internal/esp32_esp32_2.0.6_f157f53066da67d5/tools/sdk/esp32/include/esp-dsp/modules/windows/blackman_harris/include
-${ARDUINO_DIR}/internal/esp32_esp32_2.0.6_f157f53066da67d5/tools/sdk/esp32/include/esp-dsp/modules/windows/blackman_nuttall/include
-${ARDUINO_DIR}/internal/esp32_esp32_2.0.6_f157f53066da67d5/tools/sdk/esp32/include/esp-dsp/modules/windows/flat_top/include
-${ARDUINO_DIR}/internal/esp32_esp32_2.0.6_f157f53066da67d5/tools/sdk/esp32/include/esp-dsp/modules/windows/hann/include
-${ARDUINO_DIR}/internal/esp32_esp32_2.0.6_f157f53066da67d5/tools/sdk/esp32/include/esp-dsp/modules/windows/include
-${ARDUINO_DIR}/internal/esp32_esp32_2.0.6_f157f53066da67d5/tools/sdk/esp32/include/esp-dsp/modules/windows/nuttall/include
-${ARDUINO_DIR}/internal/esp32_esp32_2.0.6_f157f53066da67d5/tools/sdk/esp32/include/esp-sr/esp-tts/esp_tts_chinese/include
-${ARDUINO_DIR}/internal/esp32_esp32_2.0.6_f157f53066da67d5/tools/sdk/esp32/include/esp-sr/include/esp32
-${ARDUINO_DIR}/internal/esp32_esp32_2.0.6_f157f53066da67d5/tools/sdk/esp32/include/esp-sr/src/include
-${ARDUINO_DIR}/internal/esp32_esp32_2.0.6_f157f53066da67d5/tools/sdk/esp32/include/esp-tls
-${ARDUINO_DIR}/internal/esp32_esp32_2.0.6_f157f53066da67d5/tools/sdk/esp32/include/esp-tls/esp-tls-crypto
 ${ARDUINO_DIR}/internal/esp32_esp32_2.0.6_f157f53066da67d5/tools/sdk/esp32/include/expat/expat/expat/lib
 ${ARDUINO_DIR}/internal/esp32_esp32_2.0.6_f157f53066da67d5/tools/sdk/esp32/include/expat/port/include
 ${ARDUINO_DIR}/internal/esp32_esp32_2.0.6_f157f53066da67d5/tools/sdk/esp32/include/fatfs/diskio
@@ -293,6 +294,5 @@ ${ARDUINO_DIR}/internal/esp32_esp32_2.0.6_f157f53066da67d5/libraries/SPI/src
 ${ARDUINO_DIR}/internal/esp32_esp32_2.0.6_f157f53066da67d5/libraries/WiFi/src
 ${ARDUINO_DIR}/internal/esp32_esp32_2.0.6_f157f53066da67d5/libraries/Wire/src
 ${ARDUINO_DIR}/internal/esp32_esp32_2.0.6_f157f53066da67d5/variants/heltec_wifi_kit_32
-${ARDUINO_DIR}/internal/U8g2_2.33.15_4d7f31a1bd16e90a/U8g2/src
 )
 # ~~
