@@ -1,3 +1,188 @@
-<html>
-<body>Hello world STA page!</body>
-</html>
+<html><head>
+    <link rel="shortcut icon" href="data:," />
+    <style>
+        .warn { background-color: rgb(255, 128, 128);}
+    </style>
+    <title>Software Defined Blocks</title>
+</head><body>
+<h1>Software Defined Blocks</h1>
+<p id="st_warn">SDB Status: <span id="st">Loading...</span></p>
+
+<hr>
+<h2>List of Blocks</h2>
+
+<h3>Block NAME</h3>
+
+Properties:
+<form id="form.block.name" enctype="text/plain" method="post">
+<table>
+    <thead><tr>
+        <th>Name</th>
+        <th>Value</th>
+    </tr></thead>
+    <tr>
+        <td><label for="blockprop1">block.prop.1</label></td>
+        <td><input type="text" id="blockprop1" value="Value 1"></td>
+    </tr>
+    <tr>
+        <td><label for="blockprop2">block.prop.2</label></td>
+        <td><input type="text" id="blockprop2" value="Value 2"></td>
+    </tr>
+</table>
+<button type="submit">Update Changes</button>
+</form>
+
+<hr>
+<h2>List of Sensors</h2>
+
+<h3>Sensor NAME</h3>
+
+Properties:
+<form id="form.sensor.name" enctype="text/plain" method="post">
+    <table>
+        <thead><tr>
+            <th>Name</th>
+            <th>Value</th>
+        </tr></thead>
+        <tr>
+            <td><label for="sensorprop1">sensor.prop.1</label></td>
+            <td><input type="text" id="sensorprop1" value="Value 1"></td>
+        </tr>
+        <tr>
+            <td><label for="sensorprop2">sensor.prop.2</label></td>
+            <td><input type="text" id="sensorprop2" value="Value 2"></td>
+        </tr>
+    </table>
+    <button type="submit">Update Changes</button>
+</form>
+
+<hr>
+
+<script>
+    function fillText(id, value) {
+        const element = document.getElementById(id);
+        element.textContent = value;
+    }
+
+    function statusWarning(warn, text) {
+        fillText("st", text);
+        const element = document.getElementById("st_warn");
+        if (warn) {
+            element.classList.add("warn");
+        } else {
+            element.classList.remove("warn");
+        }
+    }
+
+    function clearTable(id) {
+        const old_tbody = document.querySelector("#" + id + " tbody");
+        const new_tbody = document.createElement("tbody");
+        old_tbody.parentNode.replaceChild(new_tbody, old_tbody);
+    }
+
+    function addRow(table, index, name) {
+        const row = table.insertRow();
+        const tdname = row.insertCell(0);
+        const tdenc = row.insertCell(1);
+        const inp = document.createElement("input");
+        inp.setAttribute("type", "radio");
+        inp.setAttribute("name", "ls");
+        inp.setAttribute("value", name);
+        inp.setAttribute("id", "_ls" + index);
+        tdname.appendChild(inp);
+        const label = document.createElement("label");
+        label.setAttribute("for", "_ls" + index);
+        label.textContent = name.substring(1); // remove the encryption prefix letter
+        tdname.appendChild(label);
+        tdenc.innerHTML = (name.at(0) === "E") ? "&#x1F512; Yes" : "&#x1F513; Open";
+    }
+
+    function fillTable(id, value) {
+        clearTable(id);
+        const table = document.getElementById(id);
+
+        var i = 1;
+        value.forEach((name) => {
+            addRow(table, i++, name);
+        });
+    }
+
+    async function load() {
+        const response = await fetch("/get");
+        if (response.ok) {
+            try {
+                const data = await response.json();
+                fillText("id", data.id || "Not set. Please select one.");
+                fillText("pw", data.pw || "Not set.");
+                fillTable("ls", data.ls || "Empty");
+                statusWarning(false, data.st || "Not Configured Yet.");
+                return;
+            } catch(e) {
+                console.log("@@ fetch error : " + JSON.stringify(e));
+            }
+        }
+        statusWarning(true, "Failed to load data from SDB.");
+    }
+
+    function convertPw(pw) {
+        if (pw) {
+            let result = "";
+            for (const chr of pw) {
+                result += chr.charCodeAt(0).toString(16);
+            }
+            return result;
+        } else {
+            return "";
+        }
+    }
+
+    async function onSubmit(event) {
+        event.preventDefault();
+        statusWarning(false, "Submitting...");
+
+        const form = document.getElementById("fm");
+        const data = new FormData(form);
+
+        // Validate form content
+        const ls = data.get("ls") || "";
+        const pw = convertPw(data.get("pw") || "");
+        if (ls === "") {
+            statusWarning(true, "Please select a WiFi network.");
+            return;
+        } else if (ls.at(0) === "E" && pw === "") {
+            statusWarning(true, "A password is required for '" + ls.substring(1) + "'");
+            return;
+        }
+
+        const payload = JSON.stringify({ ls, pw });
+        const response = await fetch("/set", {
+            method: "POST",
+            cache: "no-cache",
+            headers: { "Content-Type": "application/json" },
+            body: payload,
+        });
+        if (response.ok) {
+            try {
+                const data = await response.json();
+                statusWarning(false, data.st || "??");
+                return;
+            } catch (e) {
+                console.log("@@ fetch error : " + JSON.stringify(e));
+            }
+        }
+        statusWarning(true, "Failed to load data from SDB.");
+    }
+
+    function registerForm() {
+        const form = document.getElementById("fm");
+        form.addEventListener("submit", onSubmit);
+    }
+
+    function init() {
+        load();
+        registerForm();
+    }
+
+    window.addEventListener("load", (event) => init());
+</script>
+</body></html>

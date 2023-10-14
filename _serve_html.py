@@ -3,12 +3,42 @@
 # Python3 local server for AP/STA index, to develop/debug the HTML locally without
 # having to recompile SDB and use an ESP32 deployment.
 
+import argparse
 import json
 import http.server
+
+PARSER = argparse.ArgumentParser()
+ARGS = None
 
 HOST = "localhost"
 PORT = 8080
 AP_INDEX = "src/html/_mod_wifi_ap_index.html"
+STA_INDEX = "src/html/_mod_wifi_sta_index.html"
+INDEX = None
+
+def parse():
+    global ARGS, HOST, PORT, INDEX
+    PARSER.add_argument("-p", "--port", default=PORT)
+    PARSER.add_argument("--host", default=HOST)
+    PARSER.add_argument("-m", "--mode", choices=["ap", "sta"], required=True)
+    ARGS = PARSER.parse_args()
+    PORT = int(ARGS.port)
+    HOST = ARGS.host
+    INDEX = AP_INDEX if ARGS.mode == "ap" else STA_INDEX
+
+
+def serve():
+    webServer = http.server.HTTPServer((HOST, PORT), LocalSdbServer)
+    print("SDB Local Server started at http://%s:%s for %s" % (HOST, PORT, INDEX))
+
+    try:
+        webServer.serve_forever()
+    except KeyboardInterrupt:
+        pass
+
+    webServer.server_close()
+    print("SDB Local Server stopped.")
+
 
 class LocalSdbServer(http.server.BaseHTTPRequestHandler):
     def do_GET(self):
@@ -18,7 +48,7 @@ class LocalSdbServer(http.server.BaseHTTPRequestHandler):
             self.send_response(200)
             self.send_header("Content-type", "text/html")
             self.end_headers()
-            with open(AP_INDEX) as indexFile:
+            with open(INDEX) as indexFile:
                 self.wfile.write(bytes(indexFile.read(), "utf-8"))
         elif path == "/get":
             # This is the only dynamic request currently handled by SDB.
@@ -54,14 +84,6 @@ class LocalSdbServer(http.server.BaseHTTPRequestHandler):
         else:
             self.send_response(404)
 
-if __name__ == "__main__":        
-    webServer = http.server.HTTPServer((HOST, PORT), LocalSdbServer)
-    print("SDB Local Server started at http://%s:%s" % (HOST, PORT))
-
-    try:
-        webServer.serve_forever()
-    except KeyboardInterrupt:
-        pass
-
-    webServer.server_close()
-    print("SDB Local Server stopped.")
+if __name__ == "__main__":
+    parse()
+    serve()

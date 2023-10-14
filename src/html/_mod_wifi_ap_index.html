@@ -8,6 +8,7 @@
 <h1>Software Defined Blocks</h1>
 <p id="st_warn">SDB Status: <span id="st">Loading...</span></p>
 
+<hr>
 <h2>Current Wifi Configuration</h2>
 
 <table>
@@ -22,6 +23,7 @@
     </td></tr>
 </table>
 
+<hr>
 <h2>New Wifi Configuration</h2>
 <form id="fm" enctype="text/plain" method="post">
     <p>List of available Wifi networks: 
@@ -40,9 +42,11 @@
         <input type="text" id="new_pw" name="pw"><br>
     </p>
     <p>
-        <button type="submit">Submit &amp; Connect</button>
+        <button type="submit">Write Changes</button>
     </p>
 </form>
+
+<hr>
 
 <script>
 function fillText(id, value) {
