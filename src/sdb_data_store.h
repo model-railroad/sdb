@@ -33,7 +33,8 @@ namespace SdbKey {
         InMemoryStart = 0,
         WifiApIpStr,
         WifiStaIpStr,
-        TofDistanceMmLong,
+        Tof0DistanceMmLong,
+        Tof1DistanceMmLong,
 
         /// NVS -- WARNING: All NVS keys must be considered constants;
         /// the enum values should not change across updates.

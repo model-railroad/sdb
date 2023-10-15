@@ -29,24 +29,36 @@
 #include <Adafruit_VL53L0X.h>
 #include <Wire.h>
 
-#define OUT_OF_RANGE_MM 2*1000
-
 #define MOD_TOF_NAME "tf"
+
+#define OUT_OF_RANGE_MM (2 * 1000)
+
+#define TOF_NUM 2
+#define TOF_NUM_MAX 2
+
+#define TOF0_I2C_ADDR   0x30
+#define TOF1_I2C_ADDR   0x31
+#define TOF0_XSHUT_PIN  18
+#define TOF1_XSHUT_PIN  23
+
+SdbKey::SdbKey ToFSdbKey[TOF_NUM_MAX] = {
+    SdbKey::Tof0DistanceMmLong,
+    SdbKey::Tof1DistanceMmLong
+};
 
 class SdbModTof : public SdbModTask {
 public:
     explicit SdbModTof(SdbModManager& manager) :
         SdbModTask(manager, MOD_TOF_NAME, "TaskTof", SdbPriority::Sensor),
-        _ioLock(_manager.ioLock()),
-        _tof()
+       _ioLock(_manager.ioLock())
     { }
 
     void onStart() override {
         Wire1.begin(/*SDA*/ 21, /*SLC*/ 22);
-        if (!_tof.begin(/*i2c_addr*/ VL53L0X_I2C_ADDR, /*debug*/ false, /*i2c*/ &Wire1)) {
-            PANIC_PRINTLN("@@ VL53L0X begin failed (disconnected?)");
+        init();
+        for (int n = 0; n < TOF_NUM; n++) {
+            _lastDistMM[n] = _manager.dataStore().putLong(ToFSdbKey[n], OUT_OF_RANGE_MM);
         }
-        _lastDistMM = _manager.dataStore().putLong(SdbKey::TofDistanceMmLong, OUT_OF_RANGE_MM);
         startTask();
     }
 
@@ -55,18 +67,47 @@ public:
     }
 
 private:
-    Adafruit_VL53L0X _tof;
-    VL53L0X_RangingMeasurementData_t _measure;
-    long _lastDistMM;
+    Adafruit_VL53L0X _tof[TOF_NUM];
+    VL53L0X_RangingMeasurementData_t _measure[TOF_NUM]{};
+    long _lastDistMM[TOF_NUM]{};
     SdbLock& _ioLock;
+
+    void init() {
+        pinMode(TOF0_XSHUT_PIN, OUTPUT);
+        pinMode(TOF1_XSHUT_PIN, OUTPUT);
+
+        // Reset all ToF: shutdown, wait 10ms, awake again
+        digitalWrite(TOF0_XSHUT_PIN, LOW);
+        digitalWrite(TOF1_XSHUT_PIN, LOW);
+        delay(10 /*ms*/);
+        digitalWrite(TOF0_XSHUT_PIN, HIGH);
+        digitalWrite(TOF1_XSHUT_PIN, HIGH);
+        delay(10 /*ms*/);
+
+        // Activate TOF0 and keep TOF1 shutdown
+        digitalWrite(TOF0_XSHUT_PIN, HIGH);
+        digitalWrite(TOF1_XSHUT_PIN, LOW);
+        if (!_tof[0].begin(/*i2c_addr*/ TOF0_I2C_ADDR, /*debug*/ false, /*i2c*/ &Wire1)) {
+            PANIC_PRINTLN("@@ VL53L0X ToF-0 begin failed (disconnected?)");
+        }
+        delay(10 /*ms*/);
+
+        if (TOF_NUM > 1) {
+            // Keep TOF0 and activate TOF1
+            digitalWrite(TOF1_XSHUT_PIN, HIGH);
+            if (!_tof[1].begin(/*i2c_addr*/ TOF1_I2C_ADDR, /*debug*/ false, /*i2c*/ &Wire1)) {
+                PANIC_PRINTLN("@@ VL53L0X ToF-1 begin failed (disconnected?)");
+            }
+            delay(10 /*ms*/);
+        }
+    }
 
     [[noreturn]] void onTaskRun() override {
         while(true) {
-            long distMM = measure_tof();
-            update_data_store(distMM);
+            long minDistMM = measure_tof();
 
             // Make refresh rate dynamic: faster when target is closer to sensor.
-            long delayMS = max(50L, min(250L, distMM / 10));
+            long delayMS = max(50L, min(250L, minDistMM / 10));
             rtDelay(delayMS);
         }
     }
@@ -74,25 +115,28 @@ private:
     long measure_tof() {
         {
             SdbMutex ioMutex(_ioLock);
-            _tof.rangingTest(&_measure, /*debug*/ false);
-        }
-        
-        int newDistMM;
-        if (_measure.RangeStatus != 4) {
-            newDistMM = _measure.RangeMilliMeter;
-            // DEBUG_PRINTF( ("[TOF] dist %ld mm\n", newDistMM) );
-        } else {
-            // phase failures have incorrect data
-            newDistMM = OUT_OF_RANGE_MM;
+            for (int n = 0; n < TOF_NUM; n++) {
+                _tof[n].rangingTest(&_measure[n], /*debug*/ false);
+            }
         }
 
-        return newDistMM;
-    }
+        long minDistMM = OUT_OF_RANGE_MM;
+        for (int n = 0; n < TOF_NUM; n++) {
+            int newDistMM;
+            if (_measure[n].RangeStatus != 4) {
+                newDistMM = _measure[n].RangeMilliMeter;
+            } else {
+                // phase failures have incorrect data
+                newDistMM = OUT_OF_RANGE_MM;
+            }
+            minDistMM = MIN(minDistMM, newDistMM);
 
-    void update_data_store(long newDistMM) {
-        if (_lastDistMM != newDistMM) {
-            _lastDistMM = _manager.dataStore().putLong(SdbKey::TofDistanceMmLong, newDistMM);
+            if (_lastDistMM[n] != newDistMM) {
+                _lastDistMM[n] = _manager.dataStore().putLong(ToFSdbKey[n], newDistMM);
+            }
         }
+
+        return minDistMM;
     }
 };
 

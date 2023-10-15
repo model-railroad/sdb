@@ -53,6 +53,13 @@
     { Serial.println( F(x) ); \
       Serial.printf("\nESP Error %02d: %s\n", (err), esp_err_to_name(err)); } }
 
+#ifndef MIN
+    #define MIN(a,b) ( (a) <= (b) ? (a) : (b) )
+#endif
+#ifndef MAX
+    #define MAX(a,b) ( (a) >= (b) ? (a) : (b) )
+#endif
+
 // CPU affinity for ESP32
 #define PRO_CPU 0       // Wifi
 #define APP_CPU 1       // Main app

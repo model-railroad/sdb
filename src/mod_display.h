@@ -58,7 +58,6 @@ public:
         SdbMod(manager, MOD_DISPLAY_NAME),
         _ioLock(_manager.ioLock()),
         _dataLock(_manager.dataStore().lock()),
-        _lastDistMM(0),
         _apMode(false),
         _state(DisplaySensor),
 #if defined(USE_DISPLAY_LIB_U8G2)
@@ -158,11 +157,15 @@ private:
 
     bool loopSensor() {
         bool changes = false;
-        long newDistMM = _manager.dataStore().getLong(SdbKey::TofDistanceMmLong, OUT_OF_RANGE_MM);
-        if (_lastDistMM != newDistMM) {
-            changes = true;
+        for (int n = 0; n < TOF_NUM; n++) {
+            long newDistMM = _manager.dataStore().getLong(ToFSdbKey[n], OUT_OF_RANGE_MM);
+            if (_lastDistMM[n] != newDistMM) {
+                changes = true;
+                _lastDistMM[n] = newDistMM;
+            }
+        }
+        if (changes) {
             _isOn = true;
-            _lastDistMM = newDistMM;
             setNextTimeOff();
         }
 
@@ -194,8 +197,7 @@ private:
     Adafruit_SSD1306 _display;
 #endif
     int _yOffset;
-    long _lastDistMM;
-    long* _sharedDistMM;
+    long _lastDistMM[TOF_NUM]{};
     long _nextTimeOffTS;
     bool _isOn;
     
@@ -231,14 +233,22 @@ private:
         _u8g2.drawStr(0, y, "SDB: VL53L0X");
         y += YTXT;
         
-        String dt = String(_lastDistMM) + " mm";
+        String dt = String(_lastDistMM[0]);
+        if (TOF_NUM > 1) {
+            dt += "/";
+            dt += String(_lastDistMM[1]);
+        }
+        dt += " mm";
         _u8g2.drawStr(0, y, dt.c_str());
         y += YTXT;
 
         // Frame is an empty Box. Box is filled.
-        _u8g2.drawFrame(0, y, 128, 8);
-        float w = (128.0f / 2000.0f) * _lastDistMM;
-        _u8g2.drawBox(0, y, min(128, max(0, (int)w)), 8);
+        for (int n = 0; n < TOF_NUM; n++) {
+            _u8g2.drawFrame(0, y, 128, 8);
+            float w = 128.0f / 2000.0f * _lastDistMM[n];
+            _u8g2.drawBox(0, y, min(128, max(0, (int)w)), 8);
+            y += 10;
+        }
 #elif defined(USE_DISPLAY_LIB_AF_GFX)
         _display.clearDisplay();
 
