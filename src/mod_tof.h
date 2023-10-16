@@ -26,6 +26,7 @@
 #include "common.h"
 #include "sdb_lock.h"
 #include "sdb_mod.h"
+#include "sdb_sensor.h"
 #include <Adafruit_VL53L0X.h>
 #include <Wire.h>
 
@@ -46,19 +47,68 @@ SdbKey::SdbKey ToFSdbKey[TOF_NUM_MAX] = {
     SdbKey::Tof1DistanceMmLong
 };
 
+class SdbSensorTof : public SdbSensor {
+public:
+    SdbSensorTof(SdbModManager& manager, const String& name, SdbKey::SdbKey dataKey, uint8_t i2cAddr) :
+       SdbSensor(manager, name),
+       _dataKey(dataKey),
+       _i2cAddr(i2cAddr),
+       _lastDistMM(OUT_OF_RANGE_MM)
+    { }
+
+    SdbKey::SdbKey dataKey() {
+        return _dataKey;
+    }
+
+    void init() {
+        _lastDistMM = _manager.dataStore().putLong(_dataKey, OUT_OF_RANGE_MM);
+
+        if (!_tof.begin(_i2cAddr, /*debug*/ false, /*i2c*/ &Wire1)) {
+            PANIC_PRINTF( ("@@ VL53L0X ToF %s begin failed (disconnected?)", name().c_str()) );
+        }
+    }
+
+    void rangingTest() {
+        _tof.rangingTest(&_measure, /*debug*/ false);
+    }
+
+    int measure() {
+        int newDistMM;
+        if (_measure.RangeStatus != 4) {
+            newDistMM = _measure.RangeMilliMeter;
+        } else {
+            // phase failures have incorrect data
+            newDistMM = OUT_OF_RANGE_MM;
+        }
+
+        if (_lastDistMM != newDistMM) {
+            _lastDistMM = _manager.dataStore().putLong(_dataKey, newDistMM);
+        }
+
+        return newDistMM;
+    }
+
+private:
+    SdbKey::SdbKey _dataKey;
+    uint8_t _i2cAddr;
+    Adafruit_VL53L0X _tof;
+    VL53L0X_RangingMeasurementData_t _measure{};
+    long _lastDistMM;
+};
+
 class SdbModTof : public SdbModTask {
 public:
     explicit SdbModTof(SdbModManager& manager) :
         SdbModTask(manager, MOD_TOF_NAME, "TaskTof", SdbPriority::Sensor),
-       _ioLock(_manager.ioLock())
-    { }
+       _ioLock(_manager.ioLock()),
+       _tof{
+           {manager, "tof0", SdbKey::Tof0DistanceMmLong, TOF0_I2C_ADDR},
+           {manager, "tof1", SdbKey::Tof1DistanceMmLong, TOF1_I2C_ADDR}  }
+        { }
 
     void onStart() override {
         Wire1.begin(/*SDA*/ 21, /*SLC*/ 22);
         init();
-        for (int n = 0; n < TOF_NUM; n++) {
-            _lastDistMM[n] = _manager.dataStore().putLong(ToFSdbKey[n], OUT_OF_RANGE_MM);
-        }
         startTask();
     }
 
@@ -67,9 +117,7 @@ public:
     }
 
 private:
-    Adafruit_VL53L0X _tof[TOF_NUM];
-    VL53L0X_RangingMeasurementData_t _measure[TOF_NUM]{};
-    long _lastDistMM[TOF_NUM]{};
+    SdbSensorTof _tof[TOF_NUM];
     SdbLock& _ioLock;
 
     void init() {
@@ -87,17 +135,13 @@ private:
         // Activate TOF0 and keep TOF1 shutdown
         digitalWrite(TOF0_XSHUT_PIN, HIGH);
         digitalWrite(TOF1_XSHUT_PIN, LOW);
-        if (!_tof[0].begin(/*i2c_addr*/ TOF0_I2C_ADDR, /*debug*/ false, /*i2c*/ &Wire1)) {
-            PANIC_PRINTLN("@@ VL53L0X ToF-0 begin failed (disconnected?)");
-        }
+        _tof[0].init();
         delay(10 /*ms*/);
 
         if (TOF_NUM > 1) {
             // Keep TOF0 and activate TOF1
             digitalWrite(TOF1_XSHUT_PIN, HIGH);
-            if (!_tof[1].begin(/*i2c_addr*/ TOF1_I2C_ADDR, /*debug*/ false, /*i2c*/ &Wire1)) {
-                PANIC_PRINTLN("@@ VL53L0X ToF-1 begin failed (disconnected?)");
-            }
+            _tof[1].init();
             delay(10 /*ms*/);
         }
     }
@@ -115,25 +159,16 @@ private:
     long measure_tof() {
         {
             SdbMutex ioMutex(_ioLock);
-            for (int n = 0; n < TOF_NUM; n++) {
-                _tof[n].rangingTest(&_measure[n], /*debug*/ false);
+
+            for (auto& tof : _tof) {
+                tof.rangingTest();
             }
         }
 
         long minDistMM = OUT_OF_RANGE_MM;
-        for (int n = 0; n < TOF_NUM; n++) {
-            int newDistMM;
-            if (_measure[n].RangeStatus != 4) {
-                newDistMM = _measure[n].RangeMilliMeter;
-            } else {
-                // phase failures have incorrect data
-                newDistMM = OUT_OF_RANGE_MM;
-            }
+        for (auto& tof : _tof) {
+            int newDistMM = tof.measure();
             minDistMM = MIN(minDistMM, newDistMM);
-
-            if (_lastDistMM[n] != newDistMM) {
-                _lastDistMM[n] = _manager.dataStore().putLong(ToFSdbKey[n], newDistMM);
-            }
         }
 
         return minDistMM;
