@@ -26,9 +26,8 @@
 #include "common.h"
 #include "sdb_lock.h"
 #include "sdb_mod.h"
+#include "sdb_sensor.h"
 #include "mod_tof.h"
-
-#define USE_DISPLAY_LIB_U8G2
 
 #if defined(USE_DISPLAY_LIB_U8G2)
 #include <U8g2lib.h>
@@ -45,6 +44,7 @@ enum DisplayState {
     DisplayWifiSTA,
 };
 
+
 class SdbModDisplay : public SdbMod {
 public:
     explicit SdbModDisplay(SdbModManager& manager) :
@@ -52,6 +52,7 @@ public:
         _ioLock(_manager.ioLock()),
         _dataLock(_manager.dataStore().lock()),
         _apMode(false),
+        _lastRefresh(0),
         _state(DisplaySensor),
 #if defined(USE_DISPLAY_LIB_U8G2)
         // U8G2 INIT -- OLED U8G2 constructor for ESP32 WIFI_KIT_32 I2C bus on I2C pins 4+15+16
@@ -123,6 +124,13 @@ private:
     SdbLock& _ioLock;
     SdbLock& _dataLock;
     DisplayState _state;
+    int _yOffset;
+    long _lastRefresh;
+    long _nextTimeOffTS;
+    bool _isOn;
+    #if defined(USE_DISPLAY_LIB_U8G2)
+        U8G2_SSD1306_128X64_NONAME_F_HW_I2C _u8g2;
+    #endif
 
     bool loopWifiAP() {
         _apMode = true;
@@ -139,16 +147,17 @@ private:
     }
 
     bool loopSensor() {
-        bool changes = false;
-        for (int n = 0; n < TOF_NUM; n++) {
-            long newDistMM = _manager.dataStore().getLong(ToFSdbKey[n], OUT_OF_RANGE_MM);
-            if (_lastDistMM[n] != newDistMM) {
-                changes = true;
-                _lastDistMM[n] = newDistMM;
-            }
+        long _newRefresh = 0;
+        for(SdbSensor* sp: _manager.sensors()) {
+            SdbSensorTof* tp = reinterpret_cast<SdbSensorTof*>(sp);
+            long newDistMM = tp->lastDistMM();
+            _newRefresh = _newRefresh * 1000 + newDistMM;
         }
+        bool changes = _lastRefresh != _newRefresh;
+
         if (changes) {
             _isOn = true;
+            _lastRefresh = _newRefresh;
             setNextTimeOff();
         }
 
@@ -174,14 +183,6 @@ private:
         return changes;
     }
 
-#if defined(USE_DISPLAY_LIB_U8G2)
-    U8G2_SSD1306_128X64_NONAME_F_HW_I2C _u8g2;
-#endif
-    int _yOffset;
-    long _lastDistMM[TOF_NUM]{};
-    long _nextTimeOffTS;
-    bool _isOn;
-    
     void setNextTimeOff() {
         _nextTimeOffTS = millis() + DISPLAY_TIME_SENSOR_ON_MS;
     }
@@ -200,7 +201,7 @@ private:
     void drawSensor() {
         _isOn = true;
         int y = abs(_yOffset - 8);
-        
+
 #if defined(USE_DISPLAY_LIB_U8G2)
         _u8g2.clearBuffer();
 
@@ -210,22 +211,10 @@ private:
 
         _u8g2.drawStr(0, y, "SDB: VL53L0X");
         y += YTXT;
-        
-        String dt = String(_lastDistMM[0]);
-        if (TOF_NUM > 1) {
-            dt += "/";
-            dt += String(_lastDistMM[1]);
-        }
-        dt += " mm";
-        _u8g2.drawStr(0, y, dt.c_str());
-        y += YTXT;
 
-        // Frame is an empty Box. Box is filled.
-        for (int n = 0; n < TOF_NUM; n++) {
-            _u8g2.drawFrame(0, y, 128, 8);
-            float w = 128.0f / 2000.0f * _lastDistMM[n];
-            _u8g2.drawBox(0, y, min(128, max(0, (int)w)), 8);
-            y += 10;
+        for(SdbSensor* sp: _manager.sensors()) {
+            sp->draw(_u8g2, y);
+            y += YTXT;
         }
 #endif
         

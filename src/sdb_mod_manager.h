@@ -23,6 +23,7 @@
 #include "sdb_data_store.h"
 #include "sdb_lock.h"
 #include "sdb_mod.h"
+#include "sdb_sensor.h"
 #include <algorithm>
 #include <functional>
 #include <map>
@@ -46,6 +47,14 @@ public:
 
     void registerMod(SdbMod* mod) {
         _mods[mod->name()] = mod;
+    }
+
+    void registerSensor(SdbSensor* sensor) {
+        _sensors.push_back(sensor);
+    }
+
+    std::vector<SdbSensor*> sensors() {
+        return _sensors;
     }
 
     SdbMod* modByName(const String& modName) {
@@ -149,6 +158,7 @@ private:
     SdbLock _ioLock;
     SdbDataStore _dataStore;
     std::map<String, SdbMod*> _mods;
+    std::vector<SdbSensor*> _sensors;
     long _debug_printf;
 
     struct Scheduled {

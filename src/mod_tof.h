@@ -35,17 +35,12 @@
 #define OUT_OF_RANGE_MM (2 * 1000)
 
 #define TOF_NUM 2
-#define TOF_NUM_MAX 2
 
 #define TOF0_I2C_ADDR   0x30
 #define TOF1_I2C_ADDR   0x31
 #define TOF0_XSHUT_PIN  18
 #define TOF1_XSHUT_PIN  23
 
-SdbKey::SdbKey ToFSdbKey[TOF_NUM_MAX] = {
-    SdbKey::Tof0DistanceMmLong,
-    SdbKey::Tof1DistanceMmLong
-};
 
 class SdbSensorTof : public SdbSensor {
 public:
@@ -88,6 +83,24 @@ public:
         return newDistMM;
     }
 
+    long lastDistMM() const {
+        return _lastDistMM;
+    }
+
+#if defined(USE_DISPLAY_LIB_U8G2)
+    void draw(U8G2_SSD1306_128X64_NONAME_F_HW_I2C& _u8g2, int y) override {
+        long value = _lastDistMM;
+        String dt = String(value);
+        _u8g2.drawStr(0, y, dt.c_str());
+
+        // Frame is an empty Box. Box is filled.
+        _u8g2.drawFrame(64, y, 128, 8);
+        float w = 64.0f / 2000.0f * value;
+        _u8g2.drawBox(64, y, min(64, max(0, (int)w)), 8);
+    }
+#endif
+
+
 private:
     SdbKey::SdbKey _dataKey;
     uint8_t _i2cAddr;
@@ -104,7 +117,11 @@ public:
        _tof{
            {manager, "tof0", SdbKey::Tof0DistanceMmLong, TOF0_I2C_ADDR},
            {manager, "tof1", SdbKey::Tof1DistanceMmLong, TOF1_I2C_ADDR}  }
-        { }
+    {
+        for(auto& t: _tof) {
+            _manager.registerSensor(&t);
+        }
+    }
 
     void onStart() override {
         Wire1.begin(/*SDA*/ 21, /*SLC*/ 22);

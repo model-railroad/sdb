@@ -16,37 +16,20 @@
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef INC_SDB_SENSOR_H
-#define INC_SDB_SENSOR_H
+#ifndef INC_CONFIG_H
+#define INC_CONFIG_H
 
-class SdbModManager;
+#if !defined(ESP32)
+    #warning ESP32 is not defined. Defining it here.
+    #define ESP32 1
+#endif
 
-#include <U8g2lib.h>
+// Graphics Library being used (if any)
+#define USE_DISPLAY_LIB_U8G2
 
-#include <vector>
+// CPU affinity for ESP32
+#define PRO_CPU 0       // Wifi
+#define APP_CPU 1       // Main app
 
-#include "common.h"
-#include "sdb_mod_manager.h"
 
-class SdbSensor {
-public:
-    SdbSensor(SdbModManager& manager, const String& name) :
-        _manager(manager),
-        _sensorName(name)
-    { }
-
-    const String& name() {
-        return _sensorName;
-    }
-
-    #if defined(USE_DISPLAY_LIB_U8G2)
-    // Warning: this executes in the display task.
-    virtual void draw(U8G2_SSD1306_128X64_NONAME_F_HW_I2C& _u8g2, int yOffset) = 0;
-    #endif
-
-protected:
-    SdbModManager& _manager;
-    const String _sensorName;
-};
-
-#endif // INC_SDB_SENSOR_H
+#endif // INC_CONFIG_H
