@@ -29,16 +29,9 @@
 #include "mod_tof.h"
 
 #define USE_DISPLAY_LIB_U8G2
-#undef  USE_DISPLAY_LIB_AF_GFX
-// #undef  USE_DISPLAY_LIB_U8G2
-// #define USE_DISPLAY_LIB_AF_GFX
 
 #if defined(USE_DISPLAY_LIB_U8G2)
 #include <U8g2lib.h>
-#elif defined(USE_DISPLAY_LIB_AF_GFX)
-#include <Wire.h>
-#include <Adafruit_GFX.h>
-#include <Adafruit_SSD1306.h>
 #endif
 
 #define DISPLAY_TIME_SENSOR_ON_MS (15*1000)
@@ -64,8 +57,6 @@ public:
         // U8G2 INIT -- OLED U8G2 constructor for ESP32 WIFI_KIT_32 I2C bus on I2C pins 4+15+16
         // _u8g2(U8G2_R0, /*SCL*/ 15, /*SDA*/ 4, /*RESET*/ 16), // for U8G2_SSD1306_128X64_NONAME_F_SW_I2C
         _u8g2(U8G2_R0, /*RESET*/ 16, /*SCL*/ 15, /*SDA*/ 4), // for U8G2_SSD1306_128X64_NONAME_F_HW_I2C
-#elif defined(USE_DISPLAY_LIB_AF_GFX)
-        _display(/*w*/ 128, /*h*/ 64, /*twi*/ &Wire, /*rst_pin*/ 16),
 #endif
         _yOffset(0),
         _isOn(true),
@@ -82,14 +73,6 @@ public:
         _u8g2.setDrawColor(1);
         _u8g2.setFontPosTop();
         _u8g2.setFontDirection(0);
-#elif defined(USE_DISPLAY_LIB_AF_GFX)
-        Wire.begin(/*SDA*/ 4, /*SLC*/ 15);
-        _display.begin(SSD1306_SWITCHCAPVCC, 0x3C);
-        // init done
-        _display.display();
-        
-        _display.setTextSize(2);
-        _display.setTextColor(WHITE);
 #endif
 
         setNextTimeOff();
@@ -193,8 +176,6 @@ private:
 
 #if defined(USE_DISPLAY_LIB_U8G2)
     U8G2_SSD1306_128X64_NONAME_F_HW_I2C _u8g2;
-#elif defined(USE_DISPLAY_LIB_AF_GFX)
-    Adafruit_SSD1306 _display;
 #endif
     int _yOffset;
     long _lastDistMM[TOF_NUM]{};
@@ -211,9 +192,6 @@ private:
 #if defined(USE_DISPLAY_LIB_U8G2)
             _u8g2.clearBuffer();
             _u8g2.sendBuffer();
-#elif defined(USE_DISPLAY_LIB_AF_GFX)
-            _display.clearDisplay();
-            _display.display();
 #endif
         }
     }
@@ -249,22 +227,6 @@ private:
             _u8g2.drawBox(0, y, min(128, max(0, (int)w)), 8);
             y += 10;
         }
-#elif defined(USE_DISPLAY_LIB_AF_GFX)
-        _display.clearDisplay();
-
-        _display.setCursor(0,y);
-        _display.print("VL53L0X");
-        y += YTXT;
-
-        String dt = String(_lastDistMM) + " mm";
-        _display.setCursor(0,y);
-        _display.print(dt.c_str());
-        y += YTXT;
-
-        // Frame is an empty Box. Box is filled.
-        _display.drawRect(0, y, 128, 8, WHITE);
-        float w = (128.0f / 2000.0f) * _lastDistMM;
-        _display.fillRect(0, y, min(128, max(0, (int)w)), 8, WHITE);
 #endif
         
         _yOffset = (_yOffset + 1) % 16;
@@ -302,8 +264,6 @@ private:
         SdbMutex io_mutex(_ioLock);
 #if defined(USE_DISPLAY_LIB_U8G2)
         _u8g2.sendBuffer();
-#elif defined(USE_DISPLAY_LIB_AF_GFX)
-        _display.display();
 #endif
     }
 };
