@@ -429,23 +429,32 @@ private:
         };
         httpd_register_uri_handler(_httpdHandle, &indexUri);
 
-//        auto getLambda = [this](httpd_req_t *req) -> esp_err_t { return AP_getHandler(req); };
-//        httpd_uri_t getUri = {
-//            .uri = "/get",
-//            .method = HTTP_GET,
-//            .handler = &_handlerToLambda,
-//            .user_ctx = new std::function<esp_err_t(httpd_req_t *)>(getLambda)
-//        };
-//        httpd_register_uri_handler(httpdHandle, &getUri);
-//
-//        auto setLambda = [this](httpd_req_t *req) -> esp_err_t { return _setHandler(req); };
-//        httpd_uri_t setUri = {
-//            .uri = "/set",
-//            .method = HTTP_POST,
-//            .handler = &_handlerToLambda,
-//            .user_ctx = new std::function<esp_err_t(httpd_req_t *)>(setLambda)
-//        };
-//        httpd_register_uri_handler(httpdHandle, &setUri);
+        auto getLambda = [this](httpd_req_t *req) -> esp_err_t { return STA_getHandler(req); };
+        httpd_uri_t getUri = {
+            .uri = "/get",
+            .method = HTTP_GET,
+            .handler = &_handlerToLambda,
+            .user_ctx = new std::function<esp_err_t(httpd_req_t *)>(getLambda)
+        };
+        httpd_register_uri_handler(_httpdHandle, &getUri);
+
+        auto getPropsLambda = [this](httpd_req_t *req) -> esp_err_t { return STA_getPropsHandler(req); };
+        httpd_uri_t getPropsUri = {
+            .uri = "/props",
+            .method = HTTP_GET,
+            .handler = &_handlerToLambda,
+            .user_ctx = new std::function<esp_err_t(httpd_req_t *)>(getPropsLambda)
+        };
+        httpd_register_uri_handler(_httpdHandle, &getPropsUri);
+
+        auto setPropsLambda = [this](httpd_req_t *req) -> esp_err_t { return STA_setPropsHandler(req); };
+        httpd_uri_t setPropsUri = {
+            .uri = "/props",
+            .method = HTTP_POST,
+            .handler = &_handlerToLambda,
+            .user_ctx = new std::function<esp_err_t(httpd_req_t *)>(setPropsLambda)
+        };
+        httpd_register_uri_handler(_httpdHandle, &setPropsUri);
     }
 
     // Handler for /
@@ -455,6 +464,149 @@ private:
         httpd_resp_set_type(req, "text/html");
         httpd_resp_set_hdr(req, "Content-Encoding", "gzip");
         httpd_resp_send(req, _mod_wifi_sta_index_html_gz, _mod_wifi_sta_index_html_gz_len);
+        return ESP_OK;
+    }
+
+    // Handler for /get
+    esp_err_t STA_getHandler(httpd_req_t *req) {
+        // Handlers should return ESP_OK or ESP_FAIL to force closing the underlying socket.
+        DEBUG_PRINTF( ( "[WIFI] STA_getHandler for %p.\n", req ) );
+        httpd_resp_set_type(req, "application/json");
+
+        JSONVar data = JSON.parse("{}");
+
+        // data["blocks"][0] = ...;
+
+        int index = 0;
+        for(auto* s: _manager.sensors()) {
+            data["sensors"][index++] = s->name();
+        }
+
+        // data["servers"][0] = ...;
+
+        const char* content = JSON.stringify(data).c_str();
+        DEBUG_PRINTF( ( "[WIFI] get JSON %s\n", content ) );
+        httpd_resp_sendstr(req, content == nullptr ? "" : content);
+        return ESP_OK;
+    }
+
+    // Handler for GET /props
+    esp_err_t STA_getPropsHandler(httpd_req_t *req) {
+        // Handlers should return ESP_OK or ESP_FAIL to force closing the underlying socket.
+        DEBUG_PRINTF( ( "[WIFI] STA_getPropsHandler for %p.\n", req ) );
+        DEBUG_PRINTF( ( "[WIFI] get uri %s.\n", req->uri ) );
+        DEBUG_PRINTF( ( "[WIFI] get content_len %d.\n", req->content_len ) );
+        httpd_resp_set_type(req, "application/json");
+
+        String type;
+        String name;
+        size_t buf_len = httpd_req_get_url_query_len(req) + 1;
+        if (buf_len > 1) {
+            std::unique_ptr<char[]> buffer(new char[buf_len]);
+            char* query = buffer.get();
+            if (httpd_req_get_url_query_str(req, query, buf_len) == ESP_OK) {
+                char param[32];
+                if (httpd_query_key_value(query, "t", param, sizeof(param)) == ESP_OK) {
+                    type = param;
+                    DEBUG_PRINTF( ( "[WIFI] get FOUND type '%s'\n", type.c_str() ) );
+                }
+                if (httpd_query_key_value(query, "n", param, sizeof(param)) == ESP_OK) {
+                    name = param;
+                    DEBUG_PRINTF( ( "[WIFI] get FOUND name '%s'\n", name.c_str() ) );
+                }
+            }
+        }
+        DEBUG_PRINTF( ( "[WIFI] get type '%s' --> name '%s'.\n", type.c_str(), name.c_str() ) );
+
+        JSONVar data = JSON.parse("{}");
+
+        if (type == "sensor") {
+            DEBUG_PRINTF( ( "[WIFI] get CHECK sensor\n" ) );
+            for (auto *s : _manager.sensors()) {
+                DEBUG_PRINTF( ( "[WIFI] get CHECK sensor %p\n", s ) );
+                DEBUG_PRINTF( ( "[WIFI] get CHECK sensor %p name %s\n", s, s->name().c_str() ) );
+                if (s->name() == name) {
+                    DEBUG_PRINTF( ( "[WIFI] get GOT sensor %p, getProperties\n", s ) );
+                    JSONVar temp;
+                    data["props"] = s->getProperties(temp);
+                    DEBUG_PRINTF( ( "[WIFI] get GOT getProperties\n", JSON.stringify(temp).c_str() ) );
+                    break;
+                }
+            }
+        }
+
+        const char* content = JSON.stringify(data).c_str();
+        DEBUG_PRINTF( ( "[WIFI] get JSON '%s'\n", content == nullptr ? "@NULL-CONTENT" : content ) );
+        httpd_resp_sendstr(req, content == nullptr ? "" : content);
+        return ESP_OK;
+    }
+
+    // Handler for POST /props
+    esp_err_t STA_setPropsHandler(httpd_req_t *req) {
+        // Handlers should return ESP_OK or ESP_FAIL to force closing the underlying socket.
+        DEBUG_PRINTF( ( "[WIFI] STA_setPropsHandler for %p.\n", req ) );
+        DEBUG_PRINTF( ( "[WIFI] set uri %s.\n", req->uri ) );
+        DEBUG_PRINTF( ( "[WIFI] set content_len %d.\n", req->content_len ) );
+
+        String type;
+        String name;
+        size_t buf_len = httpd_req_get_url_query_len(req) + 1;
+        if (buf_len > 1) {
+            std::unique_ptr<char[]> buffer(new char[buf_len]);
+            char* query = buffer.get();
+            if (httpd_req_get_url_query_str(req, query, buf_len) == ESP_OK) {
+                char param[32];
+                if (httpd_query_key_value(query, "t", param, sizeof(param)) == ESP_OK) {
+                    type = param;
+                }
+                if (httpd_query_key_value(query, "n", param, sizeof(param)) == ESP_OK) {
+                    name = param;
+                }
+            }
+        }
+        DEBUG_PRINTF( ( "[WIFI] set type %s --> name %s.\n", type.c_str(), name.c_str() ) );
+
+        // Constraint body content length to something reasonable
+        size_t body_len = req->content_len + 1;
+        if (body_len > 512) { body_len = 512; }
+        std::unique_ptr<char[]> buffer(new char[body_len]);
+        char* content = buffer.get();
+
+        int ret = httpd_req_recv(req, content, body_len);
+        if (ret <= 0) {
+            // On success, ret is number of bytes read, > 0.
+            // 0 value indicates connection closed.
+            // < 0 values are error codes.>
+            if (ret == HTTPD_SOCK_ERR_TIMEOUT) {
+                httpd_resp_send_408(req);
+            } else {
+                httpd_resp_send_500(req);
+            }
+            // Nothing more can be done here.
+            return ESP_FAIL;
+        }
+
+        content[body_len - 1] = 0;
+        DEBUG_PRINTF( ( "[WIFI] set BODY = %s.\n", content) );
+        JSONVar input = JSON.parse(content);
+
+        bool success = false;
+
+        if (type == "sensor") {
+            for (auto *s : _manager.sensors()) {
+                if (s->name() == name) {
+                    DEBUG_PRINTF( ( "[WIFI] set sensor %p\n", s ) );
+                    s->setProperties(input);
+                    success = true;
+                    break;
+                }
+            }
+        }
+
+        JSONVar response;
+        response["st"] = success ? "Properties Saved" : "Invalid Data";
+        httpd_resp_set_type(req, "application/json");
+        httpd_resp_sendstr(req, JSON.stringify(response).c_str());
         return ESP_OK;
     }
 };
