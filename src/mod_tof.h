@@ -27,7 +27,9 @@
 #include "sdb_lock.h"
 #include "sdb_mod.h"
 #include "sdb_sensor.h"
+
 #include <Adafruit_VL53L0X.h>
+#include <Arduino_JSON.h>
 #include <Wire.h>
 
 #define MOD_TOF_NAME "tf"
@@ -41,23 +43,21 @@
 #define TOF0_XSHUT_PIN  18
 #define TOF1_XSHUT_PIN  23
 
+//-----------------------------------
 
 class SdbSensorTof : public SdbSensor {
 public:
-    SdbSensorTof(SdbModManager& manager, const String& name, SdbKey::SdbKey dataKey, uint8_t i2cAddr) :
-       SdbSensor(manager, name),
-       _dataKey(dataKey),
+    SdbSensorTof(SdbModManager& manager, String&& name, uint8_t i2cAddr,
+              SdbKey::SdbKey minKey,
+              SdbKey::SdbKey maxKey) :
+       SdbSensor(manager, std::forward<String>(name)),
+       _minKey(minKey),
+       _maxKey(maxKey),
        _i2cAddr(i2cAddr),
        _lastDistMM(OUT_OF_RANGE_MM)
     { }
 
-    SdbKey::SdbKey dataKey() {
-        return _dataKey;
-    }
-
     void init() {
-        _lastDistMM = _manager.dataStore().putLong(_dataKey, OUT_OF_RANGE_MM);
-
         if (!_tof.begin(_i2cAddr, /*debug*/ false, /*i2c*/ &Wire1)) {
             PANIC_PRINTF( ("@@ VL53L0X ToF %s begin failed (disconnected?)", name().c_str()) );
         }
@@ -67,17 +67,13 @@ public:
         _tof.rangingTest(&_measure, /*debug*/ false);
     }
 
-    int measure() {
+    int measure() const {
         int newDistMM;
         if (_measure.RangeStatus != 4) {
             newDistMM = _measure.RangeMilliMeter;
         } else {
             // phase failures have incorrect data
             newDistMM = OUT_OF_RANGE_MM;
-        }
-
-        if (_lastDistMM != newDistMM) {
-            _lastDistMM = _manager.dataStore().putLong(_dataKey, newDistMM);
         }
 
         return newDistMM;
@@ -100,14 +96,57 @@ public:
     }
 #endif
 
+    /// Get current properties and fill in JSON var.
+    JSONVar& getProperties(JSONVar &output) override {
+        JSONVar temp;
 
-private:
-    SdbKey::SdbKey _dataKey;
+        long minThreshold = _manager.dataStore().getLong(_minKey, 0);
+        long maxThreshold = _manager.dataStore().getLong(_maxKey, OUT_OF_RANGE_MM);
+
+        output["sr.name.s" ] = mkProp(temp, "Name",                 name());
+        output["sr.desc.s" ] = mkProp(temp, "Description",          "Adafruit VL53L0X ToF");
+        output["sr.min.i"  ] = mkProp(temp, "Min Threshold (mm)",   String(minThreshold));
+        output["sr.max.i"  ] = mkProp(temp, "Max Threshold (mm)",   String(maxThreshold));
+        output["sr!value.i"] = mkProp(temp, "Distance (mm)",        String(_lastDistMM));
+
+        return output;
+    }
+
+    static const JSONVar& mkProp(JSONVar& var, const char* label, const String& val) {
+        var["l"] = label;
+        var["v"] = val.c_str();
+        return var;
+    }
+
+    /// Store new properties provided by the JSON var.
+    void setProperties(JSONVar &input) override {
+        String newMin = input["sr.min.i"];      // empty if not set
+        String newMax = input["sr.max.i"];      // empty if not set
+
+        newMin.trim();
+        newMax.trim();
+
+        if (!newMin.isEmpty()) {
+            long minThreshold = newMin.toInt();
+            _manager.dataStore().putLong(_minKey, minThreshold);
+        }
+        if (!newMax.isEmpty()) {
+            long maxThreshold = newMax.toInt();
+            _manager.dataStore().putLong(_maxKey, maxThreshold);
+        }
+    }
+
+
+   private:
+    SdbKey::SdbKey _minKey;
+    SdbKey::SdbKey _maxKey;
     uint8_t _i2cAddr;
     Adafruit_VL53L0X _tof;
     VL53L0X_RangingMeasurementData_t _measure{};
     long _lastDistMM;
 };
+
+//-----------------------------------
 
 class SdbModTof : public SdbModTask {
 public:
@@ -115,8 +154,8 @@ public:
         SdbModTask(manager, MOD_TOF_NAME, "TaskTof", SdbPriority::Sensor),
        _ioLock(_manager.ioLock()),
        _tof{
-           {manager, "tof0", SdbKey::Tof0DistanceMmLong, TOF0_I2C_ADDR},
-           {manager, "tof1", SdbKey::Tof1DistanceMmLong, TOF1_I2C_ADDR}  }
+           {manager, "tof0", TOF0_I2C_ADDR, SdbKey::Tof0MinMmLong, SdbKey::Tof0MaxMmLong},
+           {manager, "tof1", TOF1_I2C_ADDR, SdbKey::Tof1MinMmLong, SdbKey::Tof1MaxMmLong}  }
     {
         for(auto& t: _tof) {
             _manager.registerSensor(&t);

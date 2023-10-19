@@ -21,23 +21,32 @@
 
 class SdbModManager;
 
-#include <U8g2lib.h>
-
-#include <vector>
-
 #include "common.h"
 #include "sdb_mod_manager.h"
 
+#include <Arduino_JSON.h>
+#include <U8g2lib.h>
+#include <vector>
+
+
+//---------------
+
 class SdbSensor {
 public:
-    SdbSensor(SdbModManager& manager, const String& name) :
+    SdbSensor(SdbModManager& manager, String&& name) :
         _manager(manager),
         _sensorName(name)
     { }
 
-    const String& name() {
+    const String& name() const {
         return _sensorName;
     }
+
+    /// Read current properties and fill in JSON var.
+    virtual JSONVar& getProperties(JSONVar &output) = 0;
+
+    /// Parse JSON var and store new mutable properties. Ignore non-mutable properties.
+    virtual void setProperties(JSONVar &input) = 0;
 
     #if defined(USE_DISPLAY_LIB_U8G2)
     // Warning: this executes in the display task.
@@ -46,6 +55,8 @@ public:
 
 protected:
     SdbModManager& _manager;
+
+private:
     const String _sensorName;
 };
 

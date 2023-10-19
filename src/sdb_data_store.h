@@ -41,6 +41,11 @@ namespace SdbKey {
         NvsStart        = 0x8000,
         WifiSsidStr     = 0x8001,
         WifiPassStr     = 0x8002,
+
+        Tof0MinMmLong   = 0x8100,
+        Tof0MaxMmLong   = 0x8101,
+        Tof1MinMmLong   = 0x8110,
+        Tof1MaxMmLong   = 0x8111,
     };
 }
 
