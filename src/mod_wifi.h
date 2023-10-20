@@ -223,7 +223,6 @@ private:
     // context of this class instance. user_ctx is expected to be the std::function to perform
     // the actual work.
     static esp_err_t _handlerToLambda(httpd_req_t *req) {
-        DEBUG_PRINTF( ( "[WIFI] _handlerLambda for %p -> %p.\n", req, req->user_ctx ) );
         auto lambdaPtr = static_cast< std::function<esp_err_t(httpd_req_t *)>* >(req->user_ctx);
         return (*lambdaPtr)(req);
     }
@@ -295,8 +294,6 @@ private:
     esp_err_t AP_getHandler(httpd_req_t *req) {
         // Handlers should return ESP_OK or ESP_FAIL to force closing the underlying socket.
         DEBUG_PRINTF( ( "[WIFI] AP_getHandler for %p.\n", req ) );
-        DEBUG_PRINTF( ( "[WIFI] get uri %s.\n", req->uri ) );
-        DEBUG_PRINTF( ( "[WIFI] get content_len %d.\n", req->content_len ) );
         httpd_resp_set_type(req, "application/json");
 
         // Note: we don't need to provide the actual password. Just the fact there's one.
@@ -309,8 +306,9 @@ private:
             data["ls"][index++] = n;
         }
 
-        DEBUG_PRINTF( ( "[WIFI] get JSON %s\n", JSON.stringify(data).c_str() ) );
-        httpd_resp_sendstr(req, JSON.stringify(data).c_str());
+        String response = JSON.stringify(data);
+        DEBUG_PRINTF( ( "[WIFI] get JSON %s\n", response.c_str() ) );
+        httpd_resp_sendstr(req, response.c_str());
         return ESP_OK;
     }
 
@@ -318,8 +316,6 @@ private:
     esp_err_t _setHandler(httpd_req_t *req) {
         // Handlers should return ESP_OK or ESP_FAIL to force closing the underlying socket.
         DEBUG_PRINTF( ( "[WIFI] setHandler for %p.\n", req ) );
-        DEBUG_PRINTF( ( "[WIFI] set uri %s.\n", req->uri ) );
-        DEBUG_PRINTF( ( "[WIFI] set content_len %d.\n", req->content_len ) );
 
         // Constraint body content length to something reasonable
         size_t body_len = req->content_len + 1;
@@ -342,7 +338,6 @@ private:
         }
 
         content[body_len - 1] = 0;
-        DEBUG_PRINTF( ( "[WIFI] set BODY = %s.\n", content) );
         JSONVar input = JSON.parse(content);
         String selectedSsid = input["ls"];  // or empty if not set
         String selectedPass = input["pw"];  // or empty if not set
@@ -350,10 +345,11 @@ private:
         DEBUG_PRINTF( ( "[WIFI] Selected pass: %s\n", selectedPass.c_str() ));
         bool success = memorizeNewSsid(selectedSsid, selectedPass);
 
-        JSONVar response;
-        response["st"] = success ? "Memorized" : "Invalid Data";
+        JSONVar responseJson;
+        responseJson["st"] = success ? "Memorized" : "Invalid Data";
+        String response = JSON.stringify(responseJson);
         httpd_resp_set_type(req, "application/json");
-        httpd_resp_sendstr(req, JSON.stringify(response).c_str());
+        httpd_resp_sendstr(req, response.c_str());
         return ESP_OK;
     }
 
@@ -417,7 +413,7 @@ private:
         // task/memory cannot be allocated, which is all fatal.
         auto error = httpd_start(&_httpdHandle, &httpdConfig);
         if (error != ESP_OK) {
-            PANIC_PRINTF( ( "[WIFI] httpd_start failed with error %d\n", error ) );
+            PANIC_PRINTF( ( "[WIFI] STA httpd_start failed with error %d\n", error ) );
         }
 
         auto indexLambda = [this](httpd_req_t *req) -> esp_err_t { return STA_indexHandler(req); };
@@ -484,9 +480,9 @@ private:
 
         // data["servers"][0] = ...;
 
-        const char* content = JSON.stringify(data).c_str();
-        DEBUG_PRINTF( ( "[WIFI] get JSON %s\n", content ) );
-        httpd_resp_sendstr(req, content == nullptr ? "" : content);
+        String response = JSON.stringify(data);
+        DEBUG_PRINTF( ( "[WIFI] get JSON %s\n", response.c_str() ) );
+        httpd_resp_sendstr(req, response.c_str());
         return ESP_OK;
     }
 
@@ -494,8 +490,6 @@ private:
     esp_err_t STA_getPropsHandler(httpd_req_t *req) {
         // Handlers should return ESP_OK or ESP_FAIL to force closing the underlying socket.
         DEBUG_PRINTF( ( "[WIFI] STA_getPropsHandler for %p.\n", req ) );
-        DEBUG_PRINTF( ( "[WIFI] get uri %s.\n", req->uri ) );
-        DEBUG_PRINTF( ( "[WIFI] get content_len %d.\n", req->content_len ) );
         httpd_resp_set_type(req, "application/json");
 
         String type;
@@ -508,36 +502,28 @@ private:
                 char param[32];
                 if (httpd_query_key_value(query, "t", param, sizeof(param)) == ESP_OK) {
                     type = param;
-                    DEBUG_PRINTF( ( "[WIFI] get FOUND type '%s'\n", type.c_str() ) );
                 }
                 if (httpd_query_key_value(query, "n", param, sizeof(param)) == ESP_OK) {
                     name = param;
-                    DEBUG_PRINTF( ( "[WIFI] get FOUND name '%s'\n", name.c_str() ) );
                 }
             }
         }
-        DEBUG_PRINTF( ( "[WIFI] get type '%s' --> name '%s'.\n", type.c_str(), name.c_str() ) );
 
         JSONVar data = JSON.parse("{}");
 
         if (type == "sensor") {
-            DEBUG_PRINTF( ( "[WIFI] get CHECK sensor\n" ) );
             for (auto *s : _manager.sensors()) {
-                DEBUG_PRINTF( ( "[WIFI] get CHECK sensor %p\n", s ) );
-                DEBUG_PRINTF( ( "[WIFI] get CHECK sensor %p name %s\n", s, s->name().c_str() ) );
                 if (s->name() == name) {
-                    DEBUG_PRINTF( ( "[WIFI] get GOT sensor %p, getProperties\n", s ) );
                     JSONVar temp;
                     data["props"] = s->getProperties(temp);
-                    DEBUG_PRINTF( ( "[WIFI] get GOT getProperties\n", JSON.stringify(temp).c_str() ) );
                     break;
                 }
             }
         }
 
-        const char* content = JSON.stringify(data).c_str();
-        DEBUG_PRINTF( ( "[WIFI] get JSON '%s'\n", content == nullptr ? "@NULL-CONTENT" : content ) );
-        httpd_resp_sendstr(req, content == nullptr ? "" : content);
+        String response = JSON.stringify(data);
+        DEBUG_PRINTF( ( "[WIFI] get JSON '%s'\n", response.c_str() ) );
+        httpd_resp_sendstr(req, response.c_str());
         return ESP_OK;
     }
 
@@ -545,8 +531,6 @@ private:
     esp_err_t STA_setPropsHandler(httpd_req_t *req) {
         // Handlers should return ESP_OK or ESP_FAIL to force closing the underlying socket.
         DEBUG_PRINTF( ( "[WIFI] STA_setPropsHandler for %p.\n", req ) );
-        DEBUG_PRINTF( ( "[WIFI] set uri %s.\n", req->uri ) );
-        DEBUG_PRINTF( ( "[WIFI] set content_len %d.\n", req->content_len ) );
 
         String type;
         String name;
@@ -603,10 +587,11 @@ private:
             }
         }
 
-        JSONVar response;
-        response["st"] = success ? "Properties Saved" : "Invalid Data";
+        JSONVar responseJson;
+        responseJson["st"] = success ? "Properties Saved" : "Invalid Data";
+        String response = JSON.stringify(responseJson);
         httpd_resp_set_type(req, "application/json");
-        httpd_resp_sendstr(req, JSON.stringify(response).c_str());
+        httpd_resp_sendstr(req, response.c_str());
         return ESP_OK;
     }
 };
