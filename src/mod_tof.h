@@ -63,11 +63,14 @@ public:
         }
     }
 
+    /// Performs a Ranging Test; uses I2C. Should be wrapped in an IOLock mutex.
     void rangingTest() {
         _tof.rangingTest(&_measure, /*debug*/ false);
     }
 
-    int measure() const {
+    /// Converts the result of the last rangingTest() call into a distance.
+    /// Updates _lastDistMM and returns that value.
+    int measure() {
         int newDistMM;
         if (_measure.RangeStatus != 4) {
             newDistMM = _measure.RangeMilliMeter;
@@ -76,9 +79,11 @@ public:
             newDistMM = OUT_OF_RANGE_MM;
         }
 
+        _lastDistMM = newDistMM;
         return newDistMM;
     }
 
+    /// Returns the last distance computed by measure().
     long lastDistMM() const {
         return _lastDistMM;
     }
@@ -213,12 +218,9 @@ private:
     }
 
     long measure_tof() {
-        {
+        for (auto& tof : _tof) {
             SdbMutex ioMutex(_ioLock);
-
-            for (auto& tof : _tof) {
-                tof.rangingTest();
-            }
+            tof.rangingTest();
         }
 
         long minDistMM = OUT_OF_RANGE_MM;
