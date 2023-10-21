@@ -2,6 +2,10 @@
     <link rel="shortcut icon" href="data:," />
     <style>
         .warn { background-color: rgb(255, 128, 128);}
+        .hide { display: none }
+        .capitalize::first-letter {
+            text-transform:capitalize;
+        }
     </style>
     <title>Software Defined Blocks</title>
 </head><body>
@@ -11,52 +15,42 @@
 <hr>
 <h2>List of Blocks</h2>
 
-<h3>Block NAME</h3>
-
-Properties:
-<form id="form.block.name" enctype="text/plain" method="post">
-<table>
-    <thead><tr>
-        <th>Name</th>
-        <th>Value</th>
-    </tr></thead>
-    <tr>
-        <td><label for="blockprop1">block.prop.1</label></td>
-        <td><input type="text" id="blockprop1" value="Value 1"></td>
-    </tr>
-    <tr>
-        <td><label for="blockprop2">block.prop.2</label></td>
-        <td><input type="text" id="blockprop2" value="Value 2"></td>
-    </tr>
-</table>
-<button type="submit">Update Changes</button>
-</form>
+<div id="block_list">Placeholder</div>
 
 <hr>
 <h2>List of Sensors</h2>
 
-<h3>Sensor NAME</h3>
+<div id="sensor_list">Placeholder</div>
+
+<hr>
+<h2>List of Servers</h2>
+
+<div id="server_list">Placeholder</div>
+
+<hr>
+
+<div class="hide" id="template_group">
+<h3 class="capitalize" id="title_">@Type '@Name'</h3>
 
 Properties:
-<form id="form.sensor.name" enctype="text/plain" method="post">
+<form id="form_" enctype="text/plain" method="post">
     <table>
         <thead><tr>
             <th>Name</th>
             <th>Value</th>
         </tr></thead>
-        <tr>
-            <td><label for="sensorprop1">sensor.prop.1</label></td>
-            <td><input type="text" id="sensorprop1" value="Value 1"></td>
-        </tr>
-        <tr>
-            <td><label for="sensorprop2">sensor.prop.2</label></td>
-            <td><input type="text" id="sensorprop2" value="Value 2"></td>
-        </tr>
+        <tbody></tbody>
     </table>
     <button type="submit">Update Changes</button>
 </form>
+</div>
 
-<hr>
+<table class="hide">
+<tr class="hide" id="template_tr">
+    <td><label for="prop_" id="label_" title="@Prop">@Label</label></td>
+    <td><input type="text" id="prop_" value="@Value"></td>
+</tr>
+</table>
 
 <script>
     function fillText(id, value) {
@@ -74,37 +68,85 @@ Properties:
         }
     }
 
-    function clearTable(id) {
-        const old_tbody = document.querySelector("#" + id + " tbody");
-        const new_tbody = document.createElement("tbody");
-        old_tbody.parentNode.replaceChild(new_tbody, old_tbody);
+    async function onSubmit(event, type, name) {
+        event.preventDefault();
+        statusWarning(false, "Submitting... " + type + " " + name);
+
+        const form = document.getElementById("form_" + type + "_" + name);
+        const data = new FormData(form);
+
+        console.log("@@ SUBMIT DATA for " + type + " " + name + " : " + JSON.stringify(data.entries()));
     }
 
-    function addRow(table, index, name) {
-        const row = table.insertRow();
-        const tdname = row.insertCell(0);
-        const tdenc = row.insertCell(1);
-        const inp = document.createElement("input");
-        inp.setAttribute("type", "radio");
-        inp.setAttribute("name", "ls");
-        inp.setAttribute("value", name);
-        inp.setAttribute("id", "_ls" + index);
-        tdname.appendChild(inp);
-        const label = document.createElement("label");
-        label.setAttribute("for", "_ls" + index);
-        label.textContent = name.substring(1); // remove the encryption prefix letter
-        tdname.appendChild(label);
-        tdenc.innerHTML = (name.at(0) === "E") ? "&#x1F512; Yes" : "&#x1F513; Open";
-    }
+    function createList(type, names) {
+        console.log("@@ createList for " + type + " with "  + JSON.stringify(names));
+        const container = document.getElementById(type + "_list");
+        const template_group = document.getElementById("template_group");
 
-    function fillTable(id, value) {
-        clearTable(id);
-        const table = document.getElementById(id);
+        container.innerText = "";
 
-        var i = 1;
-        value.forEach((name) => {
-            addRow(table, i++, name);
+        if (names === undefined) return;
+        names.forEach((name) => {
+            const group = template_group.cloneNode(/*deep=*/ true);
+            group.classList.remove("hide");
+            group.id = "group_" + type + "_" + name;
+
+            let title = group.querySelector("#title_");
+            title.id = "title_" + type + "_" + name;
+            let t = title.innerText;
+            t = t.replace("@Type", type);
+            t = t.replace("@Name", name);
+            title.innerText = t;
+
+            let form = group.querySelector("#form_");
+            form.id = "form_" + type + "_" + name;
+
+            form.addEventListener("submit", (event) => onSubmit(event, type, name) );
+
+            container.appendChild(group);
         });
+    }
+
+    async function fillListName(type, name) {
+        const response = await fetch("/props?t=" + type + "&n=" + name);
+        if (response.ok) {
+            const template_tr = document.getElementById("template_tr");
+            const tbody = document.querySelector("#form_" + type + "_" + name + " tbody");
+
+            const data = await response.json();
+            console.log("@@ /props RESULT : " + JSON.stringify(data));
+
+            const props = data.props || {};
+
+            for (const [prop, values] of Object.entries(props)) {
+                const label = values.l || "";
+                const value = values.v || "";
+
+                const prop_id = type + "_" + prop.replaceAll(/[^a-z]+/g, "_");
+
+                const tr = template_tr.cloneNode(/*deep=*/ true);
+                tr.classList.remove("hide");
+                tr.id = "tr_" + prop_id;
+
+                let elem_label = tr.querySelector("#label_");
+                elem_label.id = "label_" + prop_id;
+                elem_label.htmlFor = "prop_" + prop_id;
+                elem_label.innerText = elem_label.innerText.replace("@Label", label);
+                elem_label.title = prop;
+
+                let elem_input = tr.querySelector("#prop_")
+                elem_input.id = "prop_" + prop_id;
+                elem_input.name = prop;
+                elem_input.setAttribute("value", value);
+
+                tbody.appendChild(tr);
+            }
+        }
+    }
+
+    async function fillList(type, names) {
+        if (names === undefined) return;
+        names.forEach((name) => fillListName(type, name) );
     }
 
     async function load() {
@@ -112,75 +154,71 @@ Properties:
         if (response.ok) {
             try {
                 const data = await response.json();
-                fillText("id", data.id || "Not set. Please select one.");
-                fillText("pw", data.pw || "Not set.");
-                fillTable("ls", data.ls || "Empty");
+                console.log("@@ /get RESULT : " + JSON.stringify(data));
+
+                createList("block", data.blocks);
+                createList("sensor", data.sensors);
+                createList("server", data.servers);
+
+                await fillList("block", data.blocks);
+                await fillList("sensor", data.sensors);
+                await fillList("server", data.servers);
+
                 statusWarning(false, data.st || "Not Configured Yet.");
                 return;
             } catch(e) {
                 console.log("@@ fetch error : " + JSON.stringify(e));
+                throw(e);
             }
         }
         statusWarning(true, "Failed to load data from SDB.");
     }
 
-    function convertPw(pw) {
-        if (pw) {
-            let result = "";
-            for (const chr of pw) {
-                result += chr.charCodeAt(0).toString(16);
-            }
-            return result;
-        } else {
-            return "";
-        }
-    }
+    // async function onSubmit(event) {
+    //     event.preventDefault();
+    //     statusWarning(false, "Submitting...");
+    //
+    //     const form = document.getElementById("fm");
+    //     const data = new FormData(form);
+    //
+    //     // Validate form content
+    //     const ls = data.get("ls") || "";
+    //     const pw = convertPw(data.get("pw") || "");
+    //     if (ls === "") {
+    //         statusWarning(true, "Please select a WiFi network.");
+    //         return;
+    //     } else if (ls.at(0) === "E" && pw === "") {
+    //         statusWarning(true, "A password is required for '" + ls.substring(1) + "'");
+    //         return;
+    //     }
+    //
+    //     const payload = JSON.stringify({ ls, pw });
+    //     const response = await fetch("/set", {
+    //         method: "POST",
+    //         cache: "no-cache",
+    //         headers: { "Content-Type": "application/json" },
+    //         body: payload,
+    //     });
+    //     if (response.ok) {
+    //         try {
+    //             const data = await response.json();
+    //             statusWarning(false, data.st || "??");
+    //             return;
+    //         } catch (e) {
+    //             console.log("@@ fetch error : " + JSON.stringify(e));
+    //         }
+    //     }
+    //     statusWarning(true, "Failed to load data from SDB.");
+    // }
 
-    async function onSubmit(event) {
-        event.preventDefault();
-        statusWarning(false, "Submitting...");
-
-        const form = document.getElementById("fm");
-        const data = new FormData(form);
-
-        // Validate form content
-        const ls = data.get("ls") || "";
-        const pw = convertPw(data.get("pw") || "");
-        if (ls === "") {
-            statusWarning(true, "Please select a WiFi network.");
-            return;
-        } else if (ls.at(0) === "E" && pw === "") {
-            statusWarning(true, "A password is required for '" + ls.substring(1) + "'");
-            return;
-        }
-
-        const payload = JSON.stringify({ ls, pw });
-        const response = await fetch("/set", {
-            method: "POST",
-            cache: "no-cache",
-            headers: { "Content-Type": "application/json" },
-            body: payload,
-        });
-        if (response.ok) {
-            try {
-                const data = await response.json();
-                statusWarning(false, data.st || "??");
-                return;
-            } catch (e) {
-                console.log("@@ fetch error : " + JSON.stringify(e));
-            }
-        }
-        statusWarning(true, "Failed to load data from SDB.");
-    }
-
-    function registerForm() {
-        const form = document.getElementById("fm");
-        form.addEventListener("submit", onSubmit);
-    }
+    // function registerForm() {
+    //     const form = document.getElementById("fm");
+    //     form.addEventListener("submit", onSubmit);
+    // }
 
     function init() {
         load();
-        registerForm();
+        //registerForm();
     }
 
     window.addEventListener("load", (event) => init());
