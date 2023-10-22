@@ -573,6 +573,7 @@ private:
         content[body_len - 1] = 0;
         DEBUG_PRINTF( ( "[WIFI] set BODY = %s.\n", content) );
         JSONVar input = JSON.parse(content);
+        JSONVar props = input["props"];
 
         bool success = false;
 
@@ -580,7 +581,7 @@ private:
             for (auto *s : _manager.sensors()) {
                 if (s->name() == name) {
                     DEBUG_PRINTF( ( "[WIFI] set sensor %p\n", s ) );
-                    s->setProperties(input);
+                    s->setProperties(props);
                     success = true;
                     break;
                 }

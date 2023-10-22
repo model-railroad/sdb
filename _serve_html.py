@@ -16,6 +16,7 @@ PORT = 8080
 AP_INDEX = "src/html/_mod_wifi_ap_index.html"
 STA_INDEX = "src/html/_mod_wifi_sta_index.html"
 INDEX = None
+COUNTER = 1
 
 def parse():
     global ARGS, HOST, PORT, INDEX
@@ -42,6 +43,7 @@ def serve():
 
 
 class LocalSdbServer(http.server.BaseHTTPRequestHandler):
+
     def do_GET(self):
         path = self.path
         if path == "/":
@@ -86,13 +88,14 @@ class LocalSdbServer(http.server.BaseHTTPRequestHandler):
 
     def sta_get(self):
         data = {
-            "blocks": ["block0", "block1"],
+            "blocks": ["block0", "block1", "block2"],
             "sensors": ["tof0","tof1"],
             "servers": ["jmri", "mqtt"]
         }
         return data
 
     def sta_props(self):
+        global COUNTER
         url = urllib.parse.urlparse(self.path)
         params = urllib.parse.parse_qs(url.query)
         type = params.get("t")
@@ -102,7 +105,7 @@ class LocalSdbServer(http.server.BaseHTTPRequestHandler):
         data = {}
 
         if type == "block":
-            if name in [ "block0", "block1" ]:
+            if name in [ "block0", "block1", "block2" ]:
                 data = {
                     "props": {
                         "bl.name.s":    {"l": "Name",               "v": name},
@@ -111,9 +114,10 @@ class LocalSdbServer(http.server.BaseHTTPRequestHandler):
                         "bl.sensor.s":  {"l": "Sensor Name",        "v": name.replace("block", "tof")},
                         "bl.jmname.s":  {"l": "JMRI Sensor Name",   "v": "NS752"},
                         "bl.mqtopic.s": {"l": "MQTT Topic",         "v": "/some/topic"},
-                        "bl!state.b":   {"l": "Current State",      "v": "1"}
+                        "bl!state.b":   {"l": "Current State",      "v": str(COUNTER % 2)}
                     }
                 }
+                COUNTER += 1
         elif type == "sensor":
             if name in [ "tof0", "tof1" ]:
                 data = {
@@ -122,9 +126,10 @@ class LocalSdbServer(http.server.BaseHTTPRequestHandler):
                         "sr.desc.s":    {"l": "Description",        "v": "Adafruit VL53L0X ToF"},
                         "sr.min.i":     {"l": "Min Threshold (mm)", "v": "0"},
                         "sr.max.i":     {"l": "Max Threshold (mm)", "v": "2000"},
-                        "sr!value.i":   {"l": "Distance (mm)",      "v": "2000"}
+                        "sr!value.i":   {"l": "Distance (mm)",      "v": str(COUNTER % 2001)}
                     }
                 }
+                COUNTER += 1
         elif type == "server":
             if name in [ "jmri", "mqtt" ]:
                 data = {
@@ -141,7 +146,9 @@ class LocalSdbServer(http.server.BaseHTTPRequestHandler):
 
     def do_POST(self):
         path = self.path
-        if path == "/set":
+        if path == "/set" or path.startswith("/props"):
+            url = urllib.parse.urlparse(self.path)
+            print("SDB POST path:" + str(url))
             print("SDB POST headers:" + str(self.headers))
             # get the body for the POST
             content_length = int(self.headers.get('Content-Length'))

@@ -75,7 +75,31 @@ Properties:
         const form = document.getElementById("form_" + type + "_" + name);
         const data = new FormData(form);
 
-        console.log("@@ SUBMIT DATA for " + type + " " + name + " : " + JSON.stringify(data.entries()));
+        const props = {}
+        for (const [key, value] of data.entries()) {
+            if (key.indexOf("!") === -1) {
+                props[key] = value;
+            }
+        }
+
+        const payload = { props: props };
+
+        const response = await fetch("/props?t=" + type + "&n=" + name, {
+            method: "POST",
+            cache: "no-cache",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(payload),
+        });
+        if (response.ok) {
+            try {
+                const data = await response.json();
+                statusWarning(false, data.st || "??");
+                return;
+            } catch (e) {
+                console.log("@@ fetch error : " + JSON.stringify(e));
+            }
+        }
+        statusWarning(true, "Failed to load data from SDB.");
     }
 
     function createList(type, names) {
@@ -107,14 +131,13 @@ Properties:
         });
     }
 
-    async function fillListName(type, name) {
+    async function fillEntry(type, name) {
         const response = await fetch("/props?t=" + type + "&n=" + name);
         if (response.ok) {
             const template_tr = document.getElementById("template_tr");
             const tbody = document.querySelector("#form_" + type + "_" + name + " tbody");
 
             const data = await response.json();
-            console.log("@@ /props RESULT : " + JSON.stringify(data));
 
             const props = data.props || {};
 
@@ -122,7 +145,7 @@ Properties:
                 const label = values.l || "";
                 const value = values.v || "";
 
-                const prop_id = type + "_" + prop.replaceAll(/[^a-z]+/g, "_");
+                const prop_id = type + "_" + name + "_" + prop.replaceAll(/[^a-z]+/g, "_");
 
                 const tr = template_tr.cloneNode(/*deep=*/ true);
                 tr.classList.remove("hide");
@@ -138,18 +161,65 @@ Properties:
                 elem_input.id = "prop_" + prop_id;
                 elem_input.name = prop;
                 elem_input.setAttribute("value", value);
+                elem_input.readOnly = prop.indexOf("!") !== -1;
 
                 tbody.appendChild(tr);
             }
         }
     }
 
+    async function refreshEntry(type, name) {
+        const response = await fetch("/props?t=" + type + "&n=" + name);
+        if (response.ok) {
+            const data = await response.json();
+            const props = data.props || {};
+
+            for (const [prop, values] of Object.entries(props)) {
+                if (prop.indexOf("!") !== -1) {
+                    const value = values.v || "";
+                    if (value !== "") {
+                        const prop_id = type + "_" + name + "_" + prop.replaceAll(/[^a-z]+/g, "_");
+                        let elem_input = document.getElementById("prop_" + prop_id);
+                        if (elem_input) {
+                            elem_input.setAttribute("value", value);
+                        }
+                    }
+                }
+            }
+        }
+    }
+
     async function fillList(type, names) {
         if (names === undefined) return;
-        names.forEach((name) => fillListName(type, name) );
+        names.forEach((name) => fillEntry(type, name) );
+    }
+
+    function refreshList(type, names) {
+        if (names === undefined) return;
+        names.forEach((name) => refreshEntry(type, name) );
+    }
+
+    function clearRefresh() {
+        if (window.sdb_refresh_id !== undefined) {
+            clearTimeout(window.sdb_refresh_id);
+            window.sdb_refresh_id = undefined;
+        }
+    }
+
+    function startRefresh() {
+        if (document.hidden) {
+            clearRefresh();
+        }
+        if (window.sdb_refresh_func !== undefined) {
+            window.sdb_refresh_id = setTimeout(
+                window.sdb_refresh_func,
+                5 * 1000
+            );
+        }
     }
 
     async function load() {
+        clearRefresh();
         const response = await fetch("/get");
         if (response.ok) {
             try {
@@ -164,6 +234,19 @@ Properties:
                 await fillList("sensor", data.sensors);
                 await fillList("server", data.servers);
 
+                window.sdb_refresh_func = undefined;
+                if (data.blocks !== undefined || data.sensors !== undefined || data.servers !== undefined) {
+                    window.sdb_refresh_func = () => {
+                        refreshList("block", data.blocks);
+                        refreshList("sensor", data.sensors);
+                        refreshList("server", data.servers);
+                        startRefresh();
+                    }
+                    startRefresh();
+
+                    document.addEventListener("visibilitychange", () => startRefresh());
+                }
+
                 statusWarning(false, data.st || "Not Configured Yet.");
                 return;
             } catch(e) {
@@ -174,51 +257,8 @@ Properties:
         statusWarning(true, "Failed to load data from SDB.");
     }
 
-    // async function onSubmit(event) {
-    //     event.preventDefault();
-    //     statusWarning(false, "Submitting...");
-    //
-    //     const form = document.getElementById("fm");
-    //     const data = new FormData(form);
-    //
-    //     // Validate form content
-    //     const ls = data.get("ls") || "";
-    //     const pw = convertPw(data.get("pw") || "");
-    //     if (ls === "") {
-    //         statusWarning(true, "Please select a WiFi network.");
-    //         return;
-    //     } else if (ls.at(0) === "E" && pw === "") {
-    //         statusWarning(true, "A password is required for '" + ls.substring(1) + "'");
-    //         return;
-    //     }
-    //
-    //     const payload = JSON.stringify({ ls, pw });
-    //     const response = await fetch("/set", {
-    //         method: "POST",
-    //         cache: "no-cache",
-    //         headers: { "Content-Type": "application/json" },
-    //         body: payload,
-    //     });
-    //     if (response.ok) {
-    //         try {
-    //             const data = await response.json();
-    //             statusWarning(false, data.st || "??");
-    //             return;
-    //         } catch (e) {
-    //             console.log("@@ fetch error : " + JSON.stringify(e));
-    //         }
-    //     }
-    //     statusWarning(true, "Failed to load data from SDB.");
-    // }
-
-    // function registerForm() {
-    //     const form = document.getElementById("fm");
-    //     form.addEventListener("submit", onSubmit);
-    // }
-
     function init() {
         load();
-        //registerForm();
     }
 
     window.addEventListener("load", (event) => init());
