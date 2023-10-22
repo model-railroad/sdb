@@ -29,7 +29,24 @@
 
 <hr>
 
-<div class="hide" id="template_group">
+<div class="hide" id="refresh_div">
+<h2>Options</h2>
+<fieldset>
+    <legend>Refresh:</legend>
+    <input type="radio" id="refresh_none" name="refresh" value="0" checked />
+    <label for="refresh_none">None</label>
+    <input type="radio" id="refresh_1s" name="refresh" value="1" />
+    <label for="refresh_1s">1 s</label>
+    <input type="radio" id="refresh_2s" name="refresh" value="2" />
+    <label for="refresh_2s">2 s</label>
+    <input type="radio" id="refresh_5s" name="refresh" value="5" />
+    <label for="refresh_5s">5 s</label>
+    <input type="radio" id="refresh_10s" name="refresh" value="10" />
+    <label for="refresh_10s">10 s</label>
+</fieldset>
+</div>
+
+<div class="hide" id="template_div">
 <h3 class="capitalize" id="title_">@Type '@Name'</h3>
 
 Properties:
@@ -105,13 +122,13 @@ Properties:
     function createList(type, names) {
         console.log("@@ createList for " + type + " with "  + JSON.stringify(names));
         const container = document.getElementById(type + "_list");
-        const template_group = document.getElementById("template_group");
+        const template_div = document.getElementById("template_div");
 
         container.innerText = "";
 
         if (names === undefined) return;
         names.forEach((name) => {
-            const group = template_group.cloneNode(/*deep=*/ true);
+            const group = template_div.cloneNode(/*deep=*/ true);
             group.classList.remove("hide");
             group.id = "group_" + type + "_" + name;
 
@@ -207,14 +224,50 @@ Properties:
     }
 
     function startRefresh() {
+        clearRefresh();
         if (document.hidden) {
-            clearRefresh();
+            console.log("@@ skip refresh on document hidden");
+            return;
         }
         if (window.sdb_refresh_func !== undefined) {
-            window.sdb_refresh_id = setTimeout(
-                window.sdb_refresh_func,
-                5 * 1000
-            );
+            const refresh_inputs = document.querySelectorAll("#refresh_div input");
+            let seconds = 0;
+            refresh_inputs.forEach( (elem) => {
+                if (elem.checked) {
+                    seconds = parseInt(elem.value);
+                }
+            } );
+
+            if (seconds > 0) {
+                window.sdb_refresh_id = setTimeout(
+                    window.sdb_refresh_func,
+                    seconds * 1000
+                );
+            }
+        }
+    }
+
+    function setupRefresh(data) {
+        window.sdb_refresh_func = undefined;
+        if (data.blocks !== undefined || data.sensors !== undefined || data.servers !== undefined) {
+            window.sdb_refresh_func = () => {
+                refreshList("block", data.blocks);
+                refreshList("sensor", data.sensors);
+                refreshList("server", data.servers);
+                startRefresh();
+            }
+
+            const refresh_div = document.querySelector("#refresh_div");
+            refresh_div.classList.remove("hide");
+
+            const refresh_inputs = document.querySelectorAll("#refresh_div input");
+            refresh_inputs.forEach( (elem) => {
+                elem.addEventListener("change", () => startRefresh() );
+            });
+
+            startRefresh();
+            document.addEventListener("visibilitychange", () => startRefresh());
+
         }
     }
 
@@ -234,18 +287,7 @@ Properties:
                 await fillList("sensor", data.sensors);
                 await fillList("server", data.servers);
 
-                window.sdb_refresh_func = undefined;
-                if (data.blocks !== undefined || data.sensors !== undefined || data.servers !== undefined) {
-                    window.sdb_refresh_func = () => {
-                        refreshList("block", data.blocks);
-                        refreshList("sensor", data.sensors);
-                        refreshList("server", data.servers);
-                        startRefresh();
-                    }
-                    startRefresh();
-
-                    document.addEventListener("visibilitychange", () => startRefresh());
-                }
+                setupRefresh(data);
 
                 statusWarning(false, data.st || "Not Configured Yet.");
                 return;
