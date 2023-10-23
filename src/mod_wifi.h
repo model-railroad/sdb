@@ -471,9 +471,12 @@ private:
 
         JSONVar data = JSON.parse("{}");
 
-        // data["blocks"][0] = ...;
-
         int index = 0;
+        for(auto* b: _manager.blocks()) {
+            data["v"][index++] = b->name();
+        }
+
+        index = 0;
         for(auto* s: _manager.sensors()) {
             data["sensors"][index++] = s->name();
         }
@@ -516,6 +519,14 @@ private:
                 if (s->name() == name) {
                     JSONVar temp;
                     data["props"] = s->getProperties(temp);
+                    break;
+                }
+            }
+        } else if (type == "block") {
+            for (auto *b : _manager.blocks()) {
+                if (b->name() == name) {
+                    JSONVar temp;
+                    data["props"] = b->getProperties(temp);
                     break;
                 }
             }
@@ -582,6 +593,15 @@ private:
                 if (s->name() == name) {
                     DEBUG_PRINTF( ( "[WIFI] set sensor %p\n", s ) );
                     s->setProperties(props);
+                    success = true;
+                    break;
+                }
+            }
+        } else if (type == "block") {
+            for (auto *b : _manager.sensors()) {
+                if (b->name() == name) {
+                    DEBUG_PRINTF( ( "[WIFI] set block %p\n", b ) );
+                    b->setProperties(props);
                     success = true;
                     break;
                 }

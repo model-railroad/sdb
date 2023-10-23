@@ -26,6 +26,7 @@
 #include "common.h"
 #include "sdb_lock.h"
 #include "sdb_mod.h"
+#include "sdb_props.h"
 #include "sdb_sensor.h"
 
 #include <Adafruit_VL53L0X.h>
@@ -42,6 +43,7 @@
 #define TOF1_I2C_ADDR   0x31
 #define TOF0_XSHUT_PIN  18
 #define TOF1_XSHUT_PIN  23
+
 
 //-----------------------------------
 
@@ -61,6 +63,9 @@ public:
         if (!_tof.begin(_i2cAddr, /*debug*/ false, /*i2c*/ &Wire1)) {
             PANIC_PRINTF( ("@@ VL53L0X ToF %s begin failed (disconnected?)", name().c_str()) );
         }
+
+        _minThreshold = _manager.dataStore().getLong(_minKey, 0);
+        _maxThreshold = _manager.dataStore().getLong(_maxKey, OUT_OF_RANGE_MM);
     }
 
     /// Performs a Ranging Test; uses I2C. Should be wrapped in an IOLock mutex.
@@ -105,22 +110,13 @@ public:
     JSONVar& getProperties(JSONVar &output) override {
         JSONVar temp;
 
-        long minThreshold = _manager.dataStore().getLong(_minKey, 0);
-        long maxThreshold = _manager.dataStore().getLong(_maxKey, OUT_OF_RANGE_MM);
-
         output["sr.name.s" ] = mkProp(temp, "Name",                 name());
         output["sr.desc.s" ] = mkProp(temp, "Description",          "Adafruit VL53L0X ToF");
-        output["sr.min.i"  ] = mkProp(temp, "Min Threshold (mm)",   String(minThreshold));
-        output["sr.max.i"  ] = mkProp(temp, "Max Threshold (mm)",   String(maxThreshold));
+        output["sr.min.i"  ] = mkProp(temp, "Min Threshold (mm)",   String(_minThreshold));
+        output["sr.max.i"  ] = mkProp(temp, "Max Threshold (mm)",   String(_maxThreshold));
         output["sr!value.i"] = mkProp(temp, "Distance (mm)",        String(_lastDistMM));
 
         return output;
-    }
-
-    static const JSONVar& mkProp(JSONVar& var, const char* label, const String& val) {
-        var["l"] = label;
-        var["v"] = val.c_str();
-        return var;
     }
 
     /// Store new properties provided by the JSON var.
@@ -132,23 +128,29 @@ public:
         newMax.trim();
 
         if (!newMin.isEmpty()) {
-            long minThreshold = newMin.toInt();
-            _manager.dataStore().putLong(_minKey, minThreshold);
+            _minThreshold = newMin.toInt();
+            _manager.dataStore().putLong(_minKey, _minThreshold);
         }
         if (!newMax.isEmpty()) {
-            long maxThreshold = newMax.toInt();
-            _manager.dataStore().putLong(_maxKey, maxThreshold);
+            _maxThreshold = newMax.toInt();
+            _manager.dataStore().putLong(_maxKey, _maxThreshold);
         }
     }
 
+    bool state() const override {
+        return _minThreshold <= _lastDistMM && _lastDistMM <= _maxThreshold;
+    }
 
-   private:
+
+private:
     SdbKey::SdbKey _minKey;
     SdbKey::SdbKey _maxKey;
     uint8_t _i2cAddr;
     Adafruit_VL53L0X _tof;
     VL53L0X_RangingMeasurementData_t _measure{};
     long _lastDistMM;
+    long _minThreshold;
+    long _maxThreshold;
 };
 
 //-----------------------------------
@@ -161,15 +163,16 @@ public:
        _tof{
            {manager, "tof0", TOF0_I2C_ADDR, SdbKey::Tof0MinMmLong, SdbKey::Tof0MaxMmLong},
            {manager, "tof1", TOF1_I2C_ADDR, SdbKey::Tof1MinMmLong, SdbKey::Tof1MaxMmLong}  }
-    {
-        for(auto& t: _tof) {
-            _manager.registerSensor(&t);
-        }
-    }
+    { }
 
     void onStart() override {
         Wire1.begin(/*SDA*/ 21, /*SLC*/ 22);
         init();
+
+        for(auto& t: _tof) {
+            _manager.registerSensor(&t);
+        }
+
         startTask();
     }
 

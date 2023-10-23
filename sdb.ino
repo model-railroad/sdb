@@ -3,6 +3,7 @@
 
 #include "src/sdb_mod_manager.h"
 #include "src/mod_blinky.h"
+#include "src/mod_blocks.h"
 #include "src/mod_display.h"
 #include "src/mod_tof.h"
 #include "src/mod_wifi.h"
@@ -47,6 +48,7 @@ void setup() {
         __cplusplus) );
     DEBUG_PRINTF( ("Wifi on Core %d\n", WIFI_TASK_CORE_ID) );
 
+    auto blocks = new SdbModBlocks(_gSdbModManager);
     auto blinky = new SdbModBlinky(_gSdbModManager);
     auto display = new SdbModDisplay(_gSdbModManager);
     auto tof = new SdbModTof(_gSdbModManager);
@@ -54,6 +56,7 @@ void setup() {
     _gSdbModManager.registerMod(blinky);
     _gSdbModManager.registerMod(display);
     _gSdbModManager.registerMod(tof);
+    _gSdbModManager.registerMod(blocks); // after sensors modules
     _gSdbModManager.registerMod(wifi);
     _gSdbModManager.onStart();
 }

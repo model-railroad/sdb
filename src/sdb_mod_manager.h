@@ -24,6 +24,7 @@
 #include "sdb_lock.h"
 #include "sdb_mod.h"
 #include "sdb_sensor.h"
+#include "sdb_block.h"
 #include <algorithm>
 #include <functional>
 #include <map>
@@ -45,25 +46,49 @@ public:
         return _dataStore;
     }
 
+    /// Registers a new module.
+    /// Synchronization: None. This MUST be called at init or start time.
     void registerMod(SdbMod* mod) {
         _mods[mod->name()] = mod;
     }
 
-    void registerSensor(SdbSensor* sensor) {
-        _sensors.push_back(sensor);
-    }
-
-    std::vector<SdbSensor*> sensors() {
-        return _sensors;
-    }
-
-    SdbMod* modByName(const String& modName) {
+    SdbMod* modByName(const String& modName) const {
         auto kvNameMod = _mods.find(modName);
         if (kvNameMod == _mods.end()) {
             return NULL;
         } else {
             return kvNameMod->second;
         }
+    }
+
+    /// Registers a new sensor.
+    /// Synchronization: None. This MUST be called at init or start time.
+    void registerSensor(SdbSensor* sensor) {
+        _sensors.push_back(sensor);
+    }
+
+    const std::vector<SdbSensor*>& sensors() const {
+        return _sensors;
+    }
+
+    SdbSensor* sensorByName(const String& sensorName) const {
+        for (auto* sensor: _sensors) {
+            if (sensorName == sensor->name()) {
+                return sensor;
+            }
+        }
+        return null;
+    }
+
+    /// Registers a new block.
+    /// Synchronization: None. This MUST be called at init or start time.
+    /// TBD: later add synchronization so that it can be dynamic.
+    void registerBlock(SdbBlock* block) {
+        _blocks.push_back(block);
+    }
+
+    const std::vector<SdbBlock*>& blocks() const {
+        return _blocks;
     }
 
     void queueEvent(const String& modName, const SdbEvent::SdbEvent event) {
@@ -159,6 +184,7 @@ private:
     SdbDataStore _dataStore;
     std::map<String, SdbMod*> _mods;
     std::vector<SdbSensor*> _sensors;
+    std::vector<SdbBlock*> _blocks;
     long _debug_printf;
 
     struct Scheduled {

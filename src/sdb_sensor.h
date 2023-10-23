@@ -33,7 +33,7 @@ class SdbModManager;
 
 class SdbSensor {
 public:
-    SdbSensor(SdbModManager& manager, String&& name) :
+    explicit SdbSensor(SdbModManager& manager, String&& name) :
         _manager(manager),
         _sensorName(name)
     { }
@@ -41,6 +41,8 @@ public:
     const String& name() const {
         return _sensorName;
     }
+
+    virtual bool state() const = 0;
 
     /// Read current properties and fill in JSON var.
     virtual JSONVar& getProperties(JSONVar &output) = 0;
