@@ -5,12 +5,14 @@
 #include "src/mod_blinky.h"
 #include "src/mod_blocks.h"
 #include "src/mod_display.h"
+#include "src/mod_jmri.h"
+#include "src/mod_mqtt.h"
 #include "src/mod_tof.h"
 #include "src/mod_wifi.h"
 
 SdbModManager _gSdbModManager;
 
-void sdbPanic(char* msg) {
+[[noreturn]] void sdbPanic(char* msg) {
     if (msg != NULL) {
         ERROR_PRINTF( ("[SDB] PANIC! Cause: %s\n", msg ) );
     } else {
@@ -48,14 +50,19 @@ void setup() {
         __cplusplus) );
     DEBUG_PRINTF( ("Wifi on Core %d\n", WIFI_TASK_CORE_ID) );
 
-    auto blocks = new SdbModBlocks(_gSdbModManager);
-    auto blinky = new SdbModBlinky(_gSdbModManager);
+    auto blocks  = new SdbModBlocks(_gSdbModManager);
+    auto blinky  = new SdbModBlinky(_gSdbModManager);
     auto display = new SdbModDisplay(_gSdbModManager);
-    auto tof = new SdbModTof(_gSdbModManager);
-    auto wifi = new SdbModWifi(_gSdbModManager);
+    auto jmri    = new SdbModJmri(_gSdbModManager);
+    auto mqtt    = new SdbModMqtt(_gSdbModManager);
+    auto tof     = new SdbModTof(_gSdbModManager);
+    auto wifi    = new SdbModWifi(_gSdbModManager);
+    // Note: order of registration dictates order of execution for onStart() and onLoop().
     _gSdbModManager.registerMod(blinky);
     _gSdbModManager.registerMod(display);
     _gSdbModManager.registerMod(tof);
+    _gSdbModManager.registerMod(jmri);
+    _gSdbModManager.registerMod(mqtt);
     _gSdbModManager.registerMod(blocks); // after sensors modules
     _gSdbModManager.registerMod(wifi);
     _gSdbModManager.onStart();

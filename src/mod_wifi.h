@@ -481,7 +481,10 @@ private:
             data["sensors"][index++] = s->name();
         }
 
-        // data["servers"][0] = ...;
+        index = 0;
+        for(auto* s: _manager.servers()) {
+            data["servers"][index++] = s->name();
+        }
 
         String response = JSON.stringify(data);
         DEBUG_PRINTF( ( "[WIFI] get JSON %s\n", response.c_str() ) );
@@ -514,7 +517,15 @@ private:
 
         JSONVar data = JSON.parse("{}");
 
-        if (type == "sensor") {
+        if (type == "block") {
+            for (auto *b : _manager.blocks()) {
+                if (b->name() == name) {
+                    JSONVar temp;
+                    data["props"] = b->getProperties(temp);
+                    break;
+                }
+            }
+        } else if (type == "sensor") {
             for (auto *s : _manager.sensors()) {
                 if (s->name() == name) {
                     JSONVar temp;
@@ -522,11 +533,11 @@ private:
                     break;
                 }
             }
-        } else if (type == "block") {
-            for (auto *b : _manager.blocks()) {
-                if (b->name() == name) {
+        } else if (type == "server") {
+            for (auto *s : _manager.servers()) {
+                if (s->name() == name) {
                     JSONVar temp;
-                    data["props"] = b->getProperties(temp);
+                    data["props"] = s->getProperties(temp);
                     break;
                 }
             }
@@ -588,7 +599,16 @@ private:
 
         bool success = false;
 
-        if (type == "sensor") {
+        if (type == "block") {
+            for (auto *b : _manager.blocks()) {
+                if (b->name() == name) {
+                    DEBUG_PRINTF( ( "[WIFI] set block %p\n", b ) );
+                    b->setProperties(props);
+                    success = true;
+                    break;
+                }
+            }
+        } else if (type == "sensor") {
             for (auto *s : _manager.sensors()) {
                 if (s->name() == name) {
                     DEBUG_PRINTF( ( "[WIFI] set sensor %p\n", s ) );
@@ -597,11 +617,11 @@ private:
                     break;
                 }
             }
-        } else if (type == "block") {
-            for (auto *b : _manager.sensors()) {
-                if (b->name() == name) {
-                    DEBUG_PRINTF( ( "[WIFI] set block %p\n", b ) );
-                    b->setProperties(props);
+        } else if (type == "server") {
+            for (auto *s : _manager.servers()) {
+                if (s->name() == name) {
+                    DEBUG_PRINTF( ( "[WIFI] set server %p\n", s ) );
+                    s->setProperties(props);
                     success = true;
                     break;
                 }

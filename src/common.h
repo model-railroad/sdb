@@ -59,6 +59,6 @@
 #endif
 
 // In main INO... a global panic method.
-void sdbPanic(char* msg = NULL);
+[[noreturn]] void sdbPanic(char* msg = NULL);
 
 #endif // INC_COMMON_H

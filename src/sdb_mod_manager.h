@@ -24,6 +24,7 @@
 #include "sdb_lock.h"
 #include "sdb_mod.h"
 #include "sdb_sensor.h"
+#include "sdb_server.h"
 #include "sdb_block.h"
 #include <algorithm>
 #include <functional>
@@ -81,6 +82,16 @@ public:
             }
         }
         return null;
+    }
+
+    /// Registers a new server.
+    /// Synchronization: None. This MUST be called at init or start time.
+    void registerServer(SdbServer* server) {
+        _servers.push_back(server);
+    }
+
+    const std::vector<SdbServer*>& servers() const {
+        return _servers;
     }
 
     /// Registers a new block.
@@ -190,6 +201,7 @@ private:
     std::vector<SdbMod*> _mods;
     std::map<String, SdbMod*> _modsmap;
     std::vector<SdbSensor*> _sensors;
+    std::vector<SdbServer*> _servers;
     std::vector<SdbBlock*> _blocks;
     long _debug_printf;
 
