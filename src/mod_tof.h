@@ -110,8 +110,8 @@ public:
     JSONVar& getProperties(JSONVar &output) override {
         JSONVar temp;
 
-        output["sr.name.s" ] = mkProp(temp, "Name",                 name());
-        output["sr.desc.s" ] = mkProp(temp, "Description",          "Adafruit VL53L0X ToF");
+        output["sr:name.s" ] = mkProp(temp, "Name",                 name());
+        output["sr:desc.s" ] = mkProp(temp, "Description",          "Adafruit VL53L0X ToF");
         output["sr.min.i"  ] = mkProp(temp, "Min Threshold (mm)",   String(_minThreshold));
         output["sr.max.i"  ] = mkProp(temp, "Max Threshold (mm)",   String(_maxThreshold));
         output["sr!value.i"] = mkProp(temp, "Distance (mm)",        String(_lastDistMM));

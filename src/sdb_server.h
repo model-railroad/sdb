@@ -43,8 +43,8 @@ public:
     JSONVar& getProperties(JSONVar &output) {
         JSONVar temp;
 
-        output["sv.name.s"  ] = mkProp(temp, "Name",        _serverName);
-        output["sv.desc.s"  ] = mkProp(temp, "Description", _description);
+        output["sv:name.s"  ] = mkProp(temp, "Name",        _serverName);
+        output["sv:desc.s"  ] = mkProp(temp, "Description", _description);
         output["sv.host.s"  ] = mkProp(temp, "Host IP",     _host);
         output["sv.port.i"  ] = mkProp(temp, "Port",        String(_port));
 
