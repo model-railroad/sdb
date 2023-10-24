@@ -473,7 +473,7 @@ private:
 
         int index = 0;
         for(auto* b: _manager.blocks()) {
-            data["v"][index++] = b->name();
+            data["blocks"][index++] = b->name();
         }
 
         index = 0;

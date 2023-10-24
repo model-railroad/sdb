@@ -38,7 +38,7 @@ public:
         _state(false)
     {
         if (sensor == nullptr) {
-            PANIC_PRINTF( ( "Invalid sensor for block '%s'", name.c_str()) );
+            PANIC_PRINTF( ( "SdbBlock: Invalid sensor for block '%s'\n", name.c_str()) );
         }
     }
 

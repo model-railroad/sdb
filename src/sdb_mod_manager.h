@@ -47,15 +47,18 @@ public:
     }
 
     /// Registers a new module.
+    /// Modules are executed in the order they are defined.
     /// Synchronization: None. This MUST be called at init or start time.
     void registerMod(SdbMod* mod) {
-        _mods[mod->name()] = mod;
+        _mods.push_back(mod);
+        _modsmap[mod->name()] = mod;
     }
 
     SdbMod* modByName(const String& modName) const {
-        auto kvNameMod = _mods.find(modName);
-        if (kvNameMod == _mods.end()) {
-            return NULL;
+        // Optimize this using a map, as its used by queueEvent().
+        auto kvNameMod = _modsmap.find(modName);
+        if (kvNameMod == _modsmap.end()) {
+            return nullptr;
         } else {
             return kvNameMod->second;
         }
@@ -93,7 +96,9 @@ public:
 
     void queueEvent(const String& modName, const SdbEvent::SdbEvent event) {
         SdbMod* mod = modByName(modName);
-        assert(mod != NULL);
+        if (mod == nullptr) {
+            PANIC_PRINTF( ("QueueEvent: Unknown mod name '%s'\n", modName.c_str()) );
+        }
         mod->queueEvent(event);
     }
 
@@ -120,9 +125,9 @@ public:
 
     void onStart() {
         _dataStore.onStart();
-        for(auto kvNameMod : _mods) {
-            DEBUG_PRINTF( ("Start module [%s]\n", kvNameMod.first.c_str()) );
-            kvNameMod.second->onStart();
+        for(auto* mod: _mods) {
+            DEBUG_PRINTF( ("Start module [%s]\n", mod->name().c_str()) );
+            mod->onStart();
         }
     }
 
@@ -154,9 +159,9 @@ public:
             delete last;
         }
     
-        for (auto kvNameMod : _mods) {
+        for (auto* mod : _mods) {
             long modMS = millis();
-            long ms = kvNameMod.second->onLoop();
+            long ms = mod->onLoop();
             if (ms > 0) {
                 modMS += ms;
             }
@@ -182,7 +187,8 @@ public:
 private:
     SdbLock _ioLock;
     SdbDataStore _dataStore;
-    std::map<String, SdbMod*> _mods;
+    std::vector<SdbMod*> _mods;
+    std::map<String, SdbMod*> _modsmap;
     std::vector<SdbSensor*> _sensors;
     std::vector<SdbBlock*> _blocks;
     long _debug_printf;
