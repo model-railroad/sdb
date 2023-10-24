@@ -50,11 +50,11 @@
 class SdbSensorTof : public SdbSensor {
 public:
     SdbSensorTof(SdbModManager& manager, String&& name, uint8_t i2cAddr,
-              SdbKey::SdbKey minKey,
-              SdbKey::SdbKey maxKey) :
+              SdbKey::SdbKey keyMin,
+              SdbKey::SdbKey keyMax) :
        SdbSensor(manager, std::forward<String>(name)),
-       _minKey(minKey),
-       _maxKey(maxKey),
+       _keyMin(keyMin),
+       _keyMax(keyMax),
        _i2cAddr(i2cAddr),
        _lastDistMM(OUT_OF_RANGE_MM)
     { }
@@ -64,8 +64,8 @@ public:
             PANIC_PRINTF( ("@@ VL53L0X ToF %s begin failed (disconnected?)", name().c_str()) );
         }
 
-        _minThreshold = _manager.dataStore().getLong(_minKey, 0);
-        _maxThreshold = _manager.dataStore().getLong(_maxKey, OUT_OF_RANGE_MM);
+        _minThreshold = _manager.dataStore().getLong(_keyMin, 0);
+        _maxThreshold = _manager.dataStore().getLong(_keyMax, OUT_OF_RANGE_MM);
     }
 
     /// Performs a Ranging Test; uses I2C. Should be wrapped in an IOLock mutex.
@@ -129,11 +129,11 @@ public:
 
         if (!newMin.isEmpty()) {
             _minThreshold = newMin.toInt();
-            _manager.dataStore().putLong(_minKey, _minThreshold);
+            _manager.dataStore().putLong(_keyMin, _minThreshold);
         }
         if (!newMax.isEmpty()) {
             _maxThreshold = newMax.toInt();
-            _manager.dataStore().putLong(_maxKey, _maxThreshold);
+            _manager.dataStore().putLong(_keyMax, _maxThreshold);
         }
     }
 
@@ -143,8 +143,8 @@ public:
 
 
 private:
-    SdbKey::SdbKey _minKey;
-    SdbKey::SdbKey _maxKey;
+    SdbKey::SdbKey _keyMin;
+    SdbKey::SdbKey _keyMax;
     uint8_t _i2cAddr;
     Adafruit_VL53L0X _tof;
     VL53L0X_RangingMeasurementData_t _measure{};
@@ -161,8 +161,16 @@ public:
         SdbModTask(manager, MOD_TOF_NAME, "TaskTof", SdbPriority::Sensor),
        _ioLock(_manager.ioLock()),
        _tof{
-           {manager, "tof0", TOF0_I2C_ADDR, SdbKey::Tof0MinMmLong, SdbKey::Tof0MaxMmLong},
-           {manager, "tof1", TOF1_I2C_ADDR, SdbKey::Tof1MinMmLong, SdbKey::Tof1MaxMmLong}  }
+           {manager, "tof0",
+            TOF0_I2C_ADDR,
+            SdbKey::Tof0MinMmLong,
+            SdbKey::Tof0MaxMmLong},
+           {manager,
+            "tof1",
+            TOF1_I2C_ADDR,
+            static_cast<SdbKey::SdbKey>(SdbKey::Tof0MinMmLong + 1),
+            static_cast<SdbKey::SdbKey>(SdbKey::Tof0MaxMmLong + 1)}
+       }
     { }
 
     void onStart() override {

@@ -22,6 +22,7 @@
 #include "common.h"
 #include "sdb_mod.h"
 #include "sdb_block.h"
+#include "sdb_data_store.h"
 
 #define MOD_BLOCKS_NAME "bl"
 
@@ -34,8 +35,24 @@ public:
 
     void onStart() override {
         // TBD: register 2 static blocks. This will be dynamic later.
-        _manager.registerBlock(new SdbBlock("block0", _manager.sensorByName("tof0")));
-        _manager.registerBlock(new SdbBlock("block1", _manager.sensorByName("tof1")));
+        _manager.registerBlock(
+            new SdbBlock(_manager,
+                         "block0",
+                         _manager.sensorByName("tof0"),
+                         SdbKey::Block0NegateLong,
+                         SdbKey::Block0JmriNameStr,
+                         SdbKey::Block0MqttTopicStr));
+        _manager.registerBlock(
+            new SdbBlock(_manager,
+                         "block1",
+                         _manager.sensorByName("tof1"),
+                         static_cast<SdbKey::SdbKey>(SdbKey::Block0NegateLong + 1),
+                         static_cast<SdbKey::SdbKey>(SdbKey::Block0JmriNameStr + 1),
+                         static_cast<SdbKey::SdbKey>(SdbKey::Block0MqttTopicStr + 1)));
+
+        for (auto* b : _manager.blocks()) {
+            b->onStart();
+        }
     }
 
     long onLoop() override {
@@ -51,6 +68,7 @@ private:
     int _index;
 
     SdbBlock* nextBlock() {
+        // TBD synchronize when blocks() becomes dynamic.
         auto& vector = _manager.blocks();
         int len = vector.size();
         if (len <= 0) return nullptr;

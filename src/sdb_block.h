@@ -23,6 +23,7 @@
 #include "sdb_mod_manager.h"
 #include "sdb_props.h"
 #include "sdb_sensor.h"
+#include "sdb_data_store.h"
 
 #include <Arduino_JSON.h>
 
@@ -31,11 +32,20 @@
 
 class SdbBlock {
 public:
-    explicit SdbBlock(String&& name, SdbSensor* sensor) :
+    explicit SdbBlock(SdbModManager& manager,
+                   String&& name,
+                   SdbSensor* sensor,
+                   SdbKey::SdbKey keyNegate,
+                   SdbKey::SdbKey keyJmriName,
+                   SdbKey::SdbKey keyMqttTopic) :
+        _manager(manager),
         _blockName(name),
         _sensor(sensor),
         _negate(false),
-        _state(false)
+        _state(false),
+        _keyNegate(keyNegate),
+        _keyJmriName(keyJmriName),
+        _keyMqttTopic(keyMqttTopic)
     {
         if (sensor == nullptr) {
             PANIC_PRINTF( ( "SdbBlock: Invalid sensor for block '%s'\n", name.c_str()) );
@@ -44,6 +54,16 @@ public:
 
     const String& name() const {
         return _blockName;
+    }
+
+    void onStart() {
+        _negate = _manager.dataStore().getLong(_keyNegate, 0) != 0;
+
+        auto* jmriName = _manager.dataStore().getString(_keyJmriName);
+        if (jmriName != nullptr) { _jmriName = *jmriName; }
+
+        auto* mqttTopic = _manager.dataStore().getString(_keyMqttTopic);
+        if (mqttTopic != nullptr) { _mqttTopic = *mqttTopic; }
     }
 
     /// Read current properties and fill in JSON var.
@@ -68,18 +88,19 @@ public:
         String mqTopic = input["bl.mqtopic.s"];     // empty if not set
 
         negate.trim();
-        //sensor.trim();
         jmName.trim();
         mqTopic.trim();
 
-        // TBD validate
-        _negate = negate == "1";
-        //--_sensorName = sensor;
-        _jmriName = jmName;
-        _mqttTopic = mqTopic;
+        if (!negate.isEmpty()) {
+            _negate = negate.toInt() != 0;
+            _manager.dataStore().putLong(_keyNegate, _negate ? 1 : 0);
+        }
 
-        // TBD init from NVS, save to NVS
-        //  ...  _manager.dataStore().putLong(_maxKey, maxThreshold);
+        _jmriName = jmName;
+        _manager.dataStore().putString(_keyJmriName, _jmriName);
+
+        _mqttTopic = mqTopic;
+        _manager.dataStore().putString(_keyMqttTopic, _mqttTopic);
     }
 
     /// Update and indicates if state has changed.
@@ -90,8 +111,12 @@ public:
     }
 
 private:
+    SdbModManager& _manager;
     const String _blockName;
     const SdbSensor* _sensor;
+    SdbKey::SdbKey _keyNegate;
+    SdbKey::SdbKey _keyJmriName;
+    SdbKey::SdbKey _keyMqttTopic;
     String _jmriName;
     String _mqttTopic;
     bool _negate;

@@ -30,13 +30,27 @@
 
 class SdbServer {
 public:
-    explicit SdbServer(String&& name, String&& description) :
+    explicit SdbServer(SdbModManager& manager,
+                    String&& name,
+                    String&& description,
+                    SdbKey::SdbKey keyHost,
+                    SdbKey::SdbKey keyPort) :
+        _manager(manager),
         _serverName(name),
-       _description(description)
+        _description(description),
+        _keyHost(keyHost),
+        _keyPort(keyPort)
     { }
 
     const String& name() const {
         return _serverName;
+    }
+
+    void onStart() {
+        _port = _manager.dataStore().getLong(_keyPort, 0);
+
+        auto* host = _manager.dataStore().getString(_keyHost);
+        if (host != nullptr) { _host = *host; }
     }
 
     /// Read current properties and fill in JSON var.
@@ -59,13 +73,21 @@ public:
         host.trim();
         port.trim();
 
-        // TBD init from NVS, save to NVS
-        //  ...  _manager.dataStore().putLong(_maxKey, maxThreshold);
+        _host = host;
+        _manager.dataStore().putString(_keyHost, _host);
+
+        if (!port.isEmpty()) {
+            _port = port.toInt();
+            _manager.dataStore().putLong(_keyPort, _port);
+        }
     }
 
 private:
+    SdbModManager& _manager;
     const String _serverName;
     const String _description;
+    SdbKey::SdbKey _keyHost;
+    SdbKey::SdbKey _keyPort;
     String _host;
     int _port;
 };

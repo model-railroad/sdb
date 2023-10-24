@@ -42,10 +42,20 @@ namespace SdbKey {
         WifiSsidStr     = 0x8001,
         WifiPassStr     = 0x8002,
 
-        Tof0MinMmLong   = 0x8100,
-        Tof0MaxMmLong   = 0x8101,
-        Tof1MinMmLong   = 0x8110,
-        Tof1MaxMmLong   = 0x8111,
+        // There can be up to 255 (0xFF) sensors starting at these indices.
+        Tof0MinMmLong   = 0xD000,
+        Tof0MaxMmLong   = 0xD100,
+
+        // There can be up to 255 (0xFF) blocks starting at these indices.
+        Block0NegateLong    = 0xE000,
+        Block0JmriNameStr   = 0xE100,
+        Block0MqttTopicStr  = 0xE200,
+
+        // There can be up to 255 (0xFF) servers starting at these indices.
+        ServerJmriHostStr  = 0xF000,
+        ServerJmriPortLong = 0xF100,
+        ServerMqttHostStr  = 0xF001,
+        ServerMqttPortLong = 0xF101,
     };
 }
 

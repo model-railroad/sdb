@@ -26,9 +26,12 @@
 //   provides pages for configuration, and sent its state to a JMIR or MQTT server.
 
 #include "common.h"
+#include "sdb_block.h"
+#include "mod_display.h"
 #include "sdb_lock.h"
 #include "sdb_mod.h"
-#include "mod_display.h"
+#include "sdb_sensor.h"
+#include "sdb_server.h"
 
 #include <algorithm>
 #include <functional>

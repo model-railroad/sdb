@@ -24,12 +24,13 @@
 #include "sdb_lock.h"
 #include "sdb_mod.h"
 #include "sdb_sensor.h"
-#include "sdb_server.h"
-#include "sdb_block.h"
 #include <algorithm>
 #include <functional>
 #include <map>
 #include <vector>
+
+class SdbBlock;     // avoid #include "sdb_block.h"  due to circular inclusions.
+class SdbServer;    // avoid #include "sdb_server.h" due to circular inclusions.
 
 class SdbModManager {
 public:

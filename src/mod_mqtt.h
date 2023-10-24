@@ -29,8 +29,12 @@
 
 class SdbServerMqtt : public SdbServer {
 public:
-    explicit SdbServerMqtt() :
-       SdbServer("mqtt", "MQTT Server")
+    explicit SdbServerMqtt(SdbModManager& manager) :
+       SdbServer(manager,
+                 "mqtt",
+                 "MQTT Server",
+                 SdbKey::ServerMqttHostStr,
+                 SdbKey::ServerMqttPortLong)
     { }
 
     // TBD customize stuff
@@ -41,11 +45,13 @@ public:
 class SdbModMqtt : public SdbMod {
 public:
     explicit SdbModMqtt(SdbModManager& manager) :
-       SdbMod(manager, MOD_MQTT_NAME)
+        SdbMod(manager, MOD_MQTT_NAME),
+        _server(manager)
     { }
 
     void onStart() override {
         _manager.registerServer(&_server);
+        _server.onStart();
     }
 
     long onLoop() override {

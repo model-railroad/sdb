@@ -29,8 +29,12 @@
 
 class SdbServerJmri : public SdbServer {
 public:
-    explicit SdbServerJmri() :
-       SdbServer("jmri", "JMRI Server")
+    explicit SdbServerJmri(SdbModManager& manager) :
+       SdbServer(manager,
+                 "jmri",
+                 "JMRI Server",
+                 SdbKey::ServerJmriHostStr,
+                 SdbKey::ServerJmriPortLong)
     { }
 
     // TBD customize stuff
@@ -41,11 +45,13 @@ public:
 class SdbModJmri : public SdbMod {
 public:
     explicit SdbModJmri(SdbModManager& manager) :
-       SdbMod(manager, MOD_JMRI_NAME)
+        SdbMod(manager, MOD_JMRI_NAME),
+        _server(manager)
     { }
 
     void onStart() override {
         _manager.registerServer(&_server);
+        _server.onStart();
     }
 
     long onLoop() override {
