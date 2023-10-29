@@ -28,13 +28,28 @@ class SdbModManager;
 #include <vector>
 
 namespace SdbEvent {
-    enum SdbEvent {
+    enum Type {
         Empty,
         DisplayWifiAP,
         DisplayWifiSTA,
         DisplaySensor,
+        BlockChanged,
+    };
+
+    class SdbEvent {
+    public:
+     SdbEvent(Type type)
+         : type(type), state(false), payload(nullptr) {}
+
+     SdbEvent(Type type, bool state, const char* payload)
+         : type(type), state(state), payload(payload) {}
+
+        Type type;
+        bool state;
+        const char* payload;
     };
 }
+
 
 class SdbMod {
 public:
@@ -65,10 +80,10 @@ protected:
     std::vector<SdbEvent::SdbEvent> _events;
     SdbLock _eventLock;
 
-    const SdbEvent::SdbEvent dequeueEvent() {
+    SdbEvent::SdbEvent dequeueEvent() {
         SdbMutex eventMutex(_eventLock);
         if (_events.empty()) {
-            return SdbEvent::Empty;
+            return SdbEvent::SdbEvent(SdbEvent::Empty);
         }
         auto result = _events.front();
         _events.erase(_events.begin());

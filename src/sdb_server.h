@@ -82,7 +82,7 @@ public:
         }
     }
 
-private:
+protected:
     SdbModManager& _manager;
     const String _serverName;
     const String _description;

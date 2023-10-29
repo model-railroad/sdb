@@ -58,7 +58,9 @@ public:
     long onLoop() override {
         auto* block = nextBlock();
         if (block != nullptr) {
-            block->update();
+            if (block->update()) {
+                block->notify();
+            }
         }
 
         return 1000;

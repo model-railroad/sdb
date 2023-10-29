@@ -23,7 +23,14 @@
 #include "sdb_mod.h"
 #include "sdb_server.h"
 
+#include <WiFiClient.h>
+#include <ArduinoHttpClient.h>
+
 #define MOD_JMRI_NAME "jm"
+
+#define JMRI_ACTIVE "2"
+#define JMRI_INACTIVE "4"
+
 
 // --------------------------------
 
@@ -37,7 +44,30 @@ public:
                  SdbKey::ServerJmriPortLong)
     { }
 
-    // TBD customize stuff
+    void send(bool state, const String& jmriSystemName) {
+        DEBUG_PRINTF( ("@@ JMRI host %s, port %d\n", _host.c_str(), _port) );
+
+        // curl -d '{ "state": 4 }' -H "Content-Type: application/json" -X POST http://192.168.1.31:12080/json/sensor/NS785
+
+        String payload("{ \"state\": ");
+        payload += state ? JMRI_ACTIVE : JMRI_INACTIVE;
+        payload += "}";
+
+        String header("Content-Type: application/json");
+
+        String path("/json/sensor/");
+        path += jmriSystemName;
+
+        HttpClient client = HttpClient(wifi, _host, _port);
+        client.post(path, header, payload);
+
+        int statusCode = client.responseStatusCode();
+        String response = client.responseBody();
+        DEBUG_PRINTF( ("@@ JMRI response code: %d -- %s\n", statusCode, response.c_str()) );
+    }
+
+private:
+    WiFiClient wifi;
 };
 
 // --------------------------------
@@ -55,7 +85,21 @@ public:
     }
 
     long onLoop() override {
-        return 2000;
+        for(;;) {
+            auto event = dequeueEvent();
+            switch(event.type) {
+                case SdbEvent::Empty:
+                    return 1000;
+                case SdbEvent::BlockChanged:
+                    _server.send(event.state, event.payload);
+                    break;
+                default:
+                    // drop
+                    break;
+            }
+        }
+
+        return 1000;
     }
 
 private:

@@ -106,7 +106,7 @@ public:
         return _blocks;
     }
 
-    void queueEvent(const String& modName, const SdbEvent::SdbEvent event) {
+    void queueEvent(const String& modName, const SdbEvent::SdbEvent& event) {
         SdbMod* mod = modByName(modName);
         if (mod == nullptr) {
             PANIC_PRINTF( ("QueueEvent: Unknown mod name '%s'\n", modName.c_str()) );

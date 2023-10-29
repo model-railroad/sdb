@@ -19,14 +19,16 @@
 #ifndef INC_SDB_BLOCK_H
 #define INC_SDB_BLOCK_H
 
+#include <Arduino_JSON.h>
+
 #include "common.h"
+#include "mod_jmri.h"
+#include "mod_mqtt.h"
+#include "sdb_data_store.h"
 #include "sdb_mod_manager.h"
 #include "sdb_props.h"
 #include "sdb_sensor.h"
-#include "sdb_data_store.h"
-
-#include <Arduino_JSON.h>
-
+#include "sdb_server.h"
 
 //---------------
 
@@ -108,6 +110,23 @@ public:
         bool oldState = _state;
         _state = _sensor->state();
         return oldState != _state;
+    }
+
+    void notify() {
+        if (!_jmriName.isEmpty()) {
+            _manager.queueEvent(
+                MOD_JMRI_NAME,
+                SdbEvent::SdbEvent(SdbEvent::BlockChanged,
+                                   _state,
+                                   _jmriName.c_str()));
+        }
+        if (!_mqttTopic.isEmpty()) {
+            _manager.queueEvent(
+                MOD_MQTT_NAME,
+                SdbEvent::SdbEvent(SdbEvent::BlockChanged,
+                                   _state,
+                                   _mqttTopic.c_str()));
+        }
     }
 
 private:

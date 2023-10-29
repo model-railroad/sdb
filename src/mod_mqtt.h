@@ -37,7 +37,12 @@ public:
                  SdbKey::ServerMqttPortLong)
     { }
 
-    // TBD customize stuff
+    void send(bool state, const String& mqttTopic) {
+        DEBUG_PRINTF( ("@@ MQTT host %s, port %d\n", _host.c_str(), _port) );
+
+        // TBD customize stuff
+    }
+
 };
 
 // --------------------------------
@@ -55,7 +60,21 @@ public:
     }
 
     long onLoop() override {
-        return 2000;
+        for(;;) {
+            auto event = dequeueEvent();
+            switch(event.type) {
+                case SdbEvent::Empty:
+                    return 1000;
+                case SdbEvent::BlockChanged:
+                    _server.send(event.state, event.payload);
+                    break;
+                default:
+                    // drop
+                    break;
+            }
+        }
+
+        return 1000;
     }
 
 private:

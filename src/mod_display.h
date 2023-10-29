@@ -83,7 +83,7 @@ public:
         bool changes = false;
 
         auto event = dequeueEvent();
-        switch(event) {
+        switch(event.type) {
             case SdbEvent::DisplaySensor:
                 _state = DisplaySensor;
                 break;
