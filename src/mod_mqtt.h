@@ -66,7 +66,7 @@ public:
                 case SdbEvent::Empty:
                     return 1000;
                 case SdbEvent::BlockChanged:
-                    _server.send(event.state, event.payload);
+                    _server.send(event.state, *event.data);
                     break;
                 default:
                     // drop

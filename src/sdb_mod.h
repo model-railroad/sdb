@@ -39,15 +39,17 @@ namespace SdbEvent {
     class SdbEvent {
     public:
      SdbEvent(Type type)
-         : type(type), state(false), payload(nullptr) {}
+         : type(type), state(false), data(nullptr) {}
 
-     SdbEvent(Type type, bool state, const char* payload)
-         : type(type), state(state), payload(payload) {}
+     SdbEvent(Type type, bool state, const String* data)
+         : type(type), state(state), data(data) {}
 
         Type type;
         bool state;
-        const char* payload;
+        const String* data;
     };
+
+    static SdbEvent EMPTY(Empty);
 }
 
 
@@ -83,7 +85,7 @@ protected:
     SdbEvent::SdbEvent dequeueEvent() {
         SdbMutex eventMutex(_eventLock);
         if (_events.empty()) {
-            return SdbEvent::SdbEvent(SdbEvent::Empty);
+            return SdbEvent::EMPTY;
         }
         auto result = _events.front();
         _events.erase(_events.begin());

@@ -118,14 +118,14 @@ public:
                 MOD_JMRI_NAME,
                 SdbEvent::SdbEvent(SdbEvent::BlockChanged,
                                    _state,
-                                   _jmriName.c_str()));
+                                   &_jmriName));
         }
         if (!_mqttTopic.isEmpty()) {
             _manager.queueEvent(
                 MOD_MQTT_NAME,
                 SdbEvent::SdbEvent(SdbEvent::BlockChanged,
                                    _state,
-                                   _mqttTopic.c_str()));
+                                   &_mqttTopic));
         }
     }
 
