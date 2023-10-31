@@ -26,11 +26,10 @@
 
 #define MOD_BLOCKS_NAME "bl"
 
-class SdbModBlocks : public SdbMod {
+class SdbModBlocks : public SdbModTask {
 public:
     explicit SdbModBlocks(SdbModManager& manager) :
-       SdbMod(manager, MOD_BLOCKS_NAME),
-        _index(0)
+       SdbModTask(manager, MOD_BLOCKS_NAME, "TaskBlocks", SdbPriority::Logic)
     { }
 
     void onStart() override {
@@ -53,29 +52,28 @@ public:
         for (auto* b : _manager.blocks()) {
             b->onStart();
         }
+
+        startTask();
     }
 
     long onLoop() override {
-        auto* block = nextBlock();
-        if (block != nullptr) {
-            if (block->update()) {
-                block->notify();
-            }
-        }
-
-        return 1000;
+        return 2000;
     }
 
 private:
-    int _index;
+    [[noreturn]] void onTaskRun() override {
+        while(true) {
+            // TBD synchronize when blocks() becomes dynamic.
+            auto& vector = _manager.blocks();
 
-    SdbBlock* nextBlock() {
-        // TBD synchronize when blocks() becomes dynamic.
-        auto& vector = _manager.blocks();
-        int len = vector.size();
-        if (len <= 0) return nullptr;
-        if (_index >= len) _index = 0;
-        return vector.at(_index++);
+            for (auto* block : vector) {
+                if (block->update()) {
+                    block->notify();
+                }
+            }
+
+            rtDelay(50L);
+        }
     }
 };
 

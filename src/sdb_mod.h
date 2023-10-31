@@ -38,7 +38,10 @@ namespace SdbEvent {
 
     class SdbEvent {
     public:
-     SdbEvent(Type type)
+     SdbEvent()
+         : type(Empty), state(false), data(nullptr) {}
+
+     SdbEvent(Type type) //NOLINT (we want the implicit constructor)
          : type(type), state(false), data(nullptr) {}
 
      SdbEvent(Type type, bool state, const String* data)
@@ -49,7 +52,7 @@ namespace SdbEvent {
         const String* data;
     };
 
-    static SdbEvent EMPTY(Empty);
+    static SdbEvent EMPTY;
 }
 
 
@@ -81,6 +84,11 @@ protected:
     const String _modName;
     std::vector<SdbEvent::SdbEvent> _events;
     SdbLock _eventLock;
+
+    bool hasEvents() {
+        SdbMutex eventMutex(_eventLock);
+        return !_events.empty();
+    }
 
     SdbEvent::SdbEvent dequeueEvent() {
         SdbMutex eventMutex(_eventLock);

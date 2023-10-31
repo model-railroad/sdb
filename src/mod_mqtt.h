@@ -47,38 +47,47 @@ public:
 
 // --------------------------------
 
-class SdbModMqtt : public SdbMod {
+class SdbModMqtt : public SdbModTask {
 public:
     explicit SdbModMqtt(SdbModManager& manager) :
-        SdbMod(manager, MOD_MQTT_NAME),
+       SdbModTask(manager, MOD_MQTT_NAME, "TaskMqtt", SdbPriority::Network),
         _server(manager)
     { }
 
     void onStart() override {
         _manager.registerServer(&_server);
         _server.onStart();
+        startTask();
     }
 
     long onLoop() override {
-        for(;;) {
-            auto event = dequeueEvent();
-            switch(event.type) {
-                case SdbEvent::Empty:
-                    return 1000;
-                case SdbEvent::BlockChanged:
-                    _server.send(event.state, *event.data);
-                    break;
-                default:
-                    // drop
-                    break;
-            }
-        }
-
-        return 1000;
+        return 2000;
     }
 
 private:
     SdbServerMqtt _server;
+
+    [[noreturn]] void onTaskRun() override {
+       while(true) {
+
+           if (hasEvents()) {
+               SdbEvent::SdbEvent blockEvent;
+
+               do {
+                   auto event = dequeueEvent();
+                   if (event.type == SdbEvent::BlockChanged) {
+                       blockEvent = event;
+                   }
+               } while (hasEvents());
+
+               if (blockEvent.type == SdbEvent::BlockChanged) {
+                   _server.send(blockEvent.state, *blockEvent.data);
+               }
+           }
+
+           rtDelay(250L);
+       }
+    }
 
 };
 

@@ -63,7 +63,10 @@ public:
 
         int statusCode = client.responseStatusCode();
         String response = client.responseBody();
-        DEBUG_PRINTF( ("@@ JMRI response code: %d -- %s\n", statusCode, response.c_str()) );
+        DEBUG_PRINTF( ("@@ JMRI [%s = %s] response code: %d -- %s\n",
+                      jmriSystemName.c_str(), (state ? "Active" : "Inact"),
+                      statusCode, response.c_str()) );
+
     }
 
 private:
@@ -72,39 +75,47 @@ private:
 
 // --------------------------------
 
-class SdbModJmri : public SdbMod {
+class SdbModJmri : public SdbModTask {
 public:
     explicit SdbModJmri(SdbModManager& manager) :
-        SdbMod(manager, MOD_JMRI_NAME),
+       SdbModTask(manager, MOD_JMRI_NAME, "TaskJmri", SdbPriority::Network),
         _server(manager)
     { }
 
     void onStart() override {
         _manager.registerServer(&_server);
         _server.onStart();
+        startTask();
     }
 
     long onLoop() override {
-        for(;;) {
-            auto event = dequeueEvent();
-            switch(event.type) {
-                case SdbEvent::Empty:
-                    return 1000;
-                case SdbEvent::BlockChanged:
-                    _server.send(event.state, *event.data);
-                    break;
-                default:
-                    // drop
-                    break;
-            }
-        }
-
-        return 1000;
+        return 2000;
     }
 
 private:
     SdbServerJmri _server;
 
+    [[noreturn]] void onTaskRun() override {
+        while(true) {
+
+            if (hasEvents()) {
+                SdbEvent::SdbEvent blockEvent;
+
+                do {
+                    auto event = dequeueEvent();
+                    if (event.type == SdbEvent::BlockChanged) {
+                        blockEvent = event;
+                    }
+                } while (hasEvents());
+
+                if (blockEvent.type == SdbEvent::BlockChanged) {
+                    _server.send(blockEvent.state, *blockEvent.data);
+                }
+            }
+
+            rtDelay(250L);
+        }
+    }
 };
 
 
