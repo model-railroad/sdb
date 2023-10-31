@@ -47,7 +47,9 @@ public:
         _state(false),
         _keyNegate(keyNegate),
         _keyJmriName(keyJmriName),
-        _keyMqttTopic(keyMqttTopic)
+        _keyMqttTopic(keyMqttTopic),
+        _lastNotifyTS(0),
+        _refreshMS(5000)
     {
         if (sensor == nullptr) {
             PANIC_PRINTF( ( "SdbBlock: Invalid sensor for block '%s'\n", name.c_str()) );
@@ -113,6 +115,9 @@ public:
     }
 
     void notify() {
+        _lastNotifyTS = millis();
+        DEBUG_PRINTF( ("@@ block %p notify [% 8d] %s -- state %d\n",
+                      this, _lastNotifyTS, _jmriName.c_str(), _state) );
         if (!_jmriName.isEmpty()) {
             _manager.queueEvent(
                 MOD_JMRI_NAME,
@@ -129,6 +134,10 @@ public:
         }
     }
 
+    bool needsRefresh() const {
+        return (millis() - _lastNotifyTS) > _refreshMS;
+    }
+
 private:
     SdbModManager& _manager;
     const String _blockName;
@@ -140,6 +149,8 @@ private:
     String _mqttTopic;
     bool _negate;
     bool _state;
+    unsigned long _lastNotifyTS;
+    unsigned long _refreshMS;
 };
 
 #endif // INC_SDB_BLOCK_H

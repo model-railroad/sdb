@@ -126,7 +126,7 @@ private:
     DisplayState _state;
     int _yOffset;
     long _lastRefresh;
-    long _nextTimeOffTS;
+    unsigned long _nextTimeOffTS;
     bool _isOn;
     #if defined(USE_DISPLAY_LIB_U8G2)
         U8G2_SSD1306_128X64_NONAME_F_HW_I2C _u8g2;
@@ -164,7 +164,7 @@ private:
         if (_isOn) {
             // In sensor mode, turn off display after some inactivity.
             // But before that, display the wifi state for 2 seconds.
-            long now = millis();
+            unsigned long now = millis();
             if (now > _nextTimeOffTS) {
                 turnOff();
             } else if (now > _nextTimeOffTS - DISPLAY_TIME_WIFI_ON_MS) {

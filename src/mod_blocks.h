@@ -67,7 +67,7 @@ private:
             auto& vector = _manager.blocks();
 
             for (auto* block : vector) {
-                if (block->update()) {
+                if (block->update() || block->needsRefresh()) {
                     block->notify();
                 }
             }

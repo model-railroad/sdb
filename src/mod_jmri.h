@@ -94,23 +94,24 @@ public:
 
 private:
     SdbServerJmri _server;
+    std::map<String, SdbEvent::SdbEvent> _events;
 
     [[noreturn]] void onTaskRun() override {
         while(true) {
 
             if (hasEvents()) {
-                SdbEvent::SdbEvent blockEvent;
-
+                _events.clear();
                 do {
                     auto event = dequeueEvent();
                     if (event.type == SdbEvent::BlockChanged) {
-                        blockEvent = event;
+                        _events[*event.data] = event;
                     }
                 } while (hasEvents());
 
-                if (blockEvent.type == SdbEvent::BlockChanged) {
-                    _server.send(blockEvent.state, *blockEvent.data);
+                for (const auto& [key, event]: _events) {
+                    _server.send(event.state, key);
                 }
+                _events.clear();
             }
 
             rtDelay(250L);
