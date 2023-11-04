@@ -44,10 +44,17 @@ public:
         _manager.registerBlock(
             new SdbBlock(_manager,
                          "block1",
-                         _manager.sensorByName("tof1"),
+                         _manager.sensorByName("tof0"),
                          static_cast<SdbKey::SdbKey>(SdbKey::Block0NegateLong + 1),
                          static_cast<SdbKey::SdbKey>(SdbKey::Block0JmriNameStr + 1),
                          static_cast<SdbKey::SdbKey>(SdbKey::Block0MqttTopicStr + 1)));
+        _manager.registerBlock(
+            new SdbBlock(_manager,
+                         "block2",
+                         _manager.sensorByName("tof0"),
+                         static_cast<SdbKey::SdbKey>(SdbKey::Block0NegateLong + 2),
+                         static_cast<SdbKey::SdbKey>(SdbKey::Block0JmriNameStr + 2),
+                         static_cast<SdbKey::SdbKey>(SdbKey::Block0MqttTopicStr + 2)));
 
         for (auto* b : _manager.blocks()) {
             b->onStart();

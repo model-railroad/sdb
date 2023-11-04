@@ -37,7 +37,7 @@
 
 #define OUT_OF_RANGE_MM (2 * 1000)
 
-#define TOF_NUM 2
+#define TOF_NUM 1
 
 #define TOF0_I2C_ADDR   0x30
 #define TOF1_I2C_ADDR   0x31
@@ -165,11 +165,13 @@ public:
             TOF0_I2C_ADDR,
             SdbKey::Tof0MinMmLong,
             SdbKey::Tof0MaxMmLong},
+#if TOF_NUM > 1
            {manager,
             "tof1",
             TOF1_I2C_ADDR,
             static_cast<SdbKey::SdbKey>(SdbKey::Tof0MinMmLong + 1),
             static_cast<SdbKey::SdbKey>(SdbKey::Tof0MaxMmLong + 1)}
+#endif
        }
     { }
 
@@ -210,12 +212,12 @@ private:
         _tof[0].init();
         delay(10 /*ms*/);
 
-        if (TOF_NUM > 1) {
+#if TOF_NUM > 1
             // Keep TOF0 and activate TOF1
             digitalWrite(TOF1_XSHUT_PIN, HIGH);
             _tof[1].init();
             delay(10 /*ms*/);
-        }
+#endif
     }
 
     [[noreturn]] void onTaskRun() override {
