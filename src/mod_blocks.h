@@ -38,21 +38,24 @@ public:
             new SdbBlock(_manager,
                          "block0",
                          _manager.sensorByName("tof0"),
-                         SdbKey::Block0NegateLong,
+                         SdbKey::Block0InvertLong,
+                         SdbKey::Block0RefreshLong,
                          SdbKey::Block0JmriNameStr,
                          SdbKey::Block0MqttTopicStr));
         _manager.registerBlock(
             new SdbBlock(_manager,
                          "block1",
                          _manager.sensorByName("tof0"),
-                         static_cast<SdbKey::SdbKey>(SdbKey::Block0NegateLong + 1),
+                         static_cast<SdbKey::SdbKey>(SdbKey::Block0InvertLong + 1),
+                         static_cast<SdbKey::SdbKey>(SdbKey::Block0RefreshLong + 1),
                          static_cast<SdbKey::SdbKey>(SdbKey::Block0JmriNameStr + 1),
                          static_cast<SdbKey::SdbKey>(SdbKey::Block0MqttTopicStr + 1)));
         _manager.registerBlock(
             new SdbBlock(_manager,
                          "block2",
                          _manager.sensorByName("tof0"),
-                         static_cast<SdbKey::SdbKey>(SdbKey::Block0NegateLong + 2),
+                         static_cast<SdbKey::SdbKey>(SdbKey::Block0InvertLong + 2),
+                         static_cast<SdbKey::SdbKey>(SdbKey::Block0RefreshLong + 2),
                          static_cast<SdbKey::SdbKey>(SdbKey::Block0JmriNameStr + 2),
                          static_cast<SdbKey::SdbKey>(SdbKey::Block0MqttTopicStr + 2)));
 

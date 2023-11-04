@@ -30,11 +30,9 @@ namespace SdbKey {
     /// Keys for SdbDataStore
     enum SdbKey {
         /// In-memory keys, not backed into NVS.
-        InMemoryStart = 0,
+        InMemoryStart __attribute__((unused)) = 0,
         WifiApIpStr,
         WifiStaIpStr,
-        Tof0DistanceMmLong,
-        Tof1DistanceMmLong,
 
         /// NVS -- WARNING: All NVS keys must be considered constants;
         /// the enum values should not change across updates.
@@ -47,9 +45,10 @@ namespace SdbKey {
         Tof0MaxMmLong   = 0xD100,
 
         // There can be up to 255 (0xFF) blocks starting at these indices.
-        Block0NegateLong    = 0xE000,
+        Block0InvertLong    = 0xE000,
         Block0JmriNameStr   = 0xE100,
         Block0MqttTopicStr  = 0xE200,
+        Block0RefreshLong   = 0xE300,
 
         // There can be up to 255 (0xFF) servers starting at these indices.
         ServerJmriHostStr  = 0xF000,

@@ -37,17 +37,19 @@ public:
     explicit SdbBlock(SdbModManager& manager,
                    String&& name,
                    SdbSensor* sensor,
-                   SdbKey::SdbKey keyNegate,
+                   SdbKey::SdbKey keyInvert,
+                   SdbKey::SdbKey keyRefresh,
                    SdbKey::SdbKey keyJmriName,
                    SdbKey::SdbKey keyMqttTopic) :
         _manager(manager),
         _blockName(name),
         _sensor(sensor),
-        _negate(false),
+        _invert(false),
         _state(false),
-        _keyNegate(keyNegate),
-        _keyJmriName(keyJmriName),
-        _keyMqttTopic(keyMqttTopic),
+        _keyInvertLong(keyInvert),
+        _keyRefreshLong(keyRefresh),
+        _keyJmriNameStr(keyJmriName),
+        _keyMqttTopicStr(keyMqttTopic),
         _lastNotifyTS(0),
         _refreshMS(5000)
     {
@@ -61,12 +63,13 @@ public:
     }
 
     void onStart() {
-        _negate = _manager.dataStore().getLong(_keyNegate, 0) != 0;
+        _invert = _manager.dataStore().getLong(_keyInvertLong, 0) != 0;
+        _refreshMS = _manager.dataStore().getLong(_keyRefreshLong, _refreshMS);
 
-        auto* jmriName = _manager.dataStore().getString(_keyJmriName);
+        auto* jmriName = _manager.dataStore().getString(_keyJmriNameStr);
         if (jmriName != nullptr) { _jmriName = *jmriName; }
 
-        auto* mqttTopic = _manager.dataStore().getString(_keyMqttTopic);
+        auto* mqttTopic = _manager.dataStore().getString(_keyMqttTopicStr);
         if (mqttTopic != nullptr) { _mqttTopic = *mqttTopic; }
     }
 
@@ -76,8 +79,9 @@ public:
 
         output["bl:name.s"   ] = mkProp(temp, "Name",               name());
         output["bl:desc.s"   ] = mkProp(temp, "Description",        "Block Logic");
-        output["bl.negate.b" ] = mkProp(temp, "Negate Output",      _negate ? "1" : "0");
         output["bl:sensor.s" ] = mkProp(temp, "Sensor Name",        _sensor->name());
+        output["bl.refresh.i"] = mkProp(temp, "Refresh (ms)",       String(_refreshMS));
+        output["bl.invert.b" ] = mkProp(temp, "Invert Output",      _invert ? "1" : "0");
         output["bl.jmname.s" ] = mkProp(temp, "JMRI System Name",   _jmriName);
         output["bl.mqtopic.s"] = mkProp(temp, "MQTT Topic",         _mqttTopic);
         output["bl!state.b"  ] = mkProp(temp, "State",              _state ? "1" : "0");
@@ -87,24 +91,31 @@ public:
 
     /// Parse JSON var and store new mutable properties. Ignore non-mutable properties.
     void setProperties(JSONVar &input) {
-        String negate = input["bl.negate.b"];       // empty if not set
+        String invert = input["bl.invert.b"];       // empty if not set
         String jmName = input["bl.jmname.s"];       // empty if not set
         String mqTopic = input["bl.mqtopic.s"];     // empty if not set
+        String refresh = input["bl.refresh.i"];     // empty if not set
 
-        negate.trim();
+        invert.trim();
         jmName.trim();
         mqTopic.trim();
+        refresh.trim();
 
-        if (!negate.isEmpty()) {
-            _negate = negate.toInt() != 0;
-            _manager.dataStore().putLong(_keyNegate, _negate ? 1 : 0);
+        if (!invert.isEmpty()) {
+            _invert = invert.toInt() != 0;
+            _manager.dataStore().putLong(_keyInvertLong, _invert ? 1 : 0);
+        }
+
+        if (!refresh.isEmpty()) {
+            _refreshMS = refresh.toInt();
+            _manager.dataStore().putLong(_keyRefreshLong, _refreshMS);
         }
 
         _jmriName = jmName;
-        _manager.dataStore().putString(_keyJmriName, _jmriName);
+        _manager.dataStore().putString(_keyJmriNameStr, _jmriName);
 
         _mqttTopic = mqTopic;
-        _manager.dataStore().putString(_keyMqttTopic, _mqttTopic);
+        _manager.dataStore().putString(_keyMqttTopicStr, _mqttTopic);
     }
 
     /// Update and indicates if state has changed.
@@ -135,6 +146,8 @@ public:
     }
 
     bool needsRefresh() const {
+        if (_lastNotifyTS == 0) return true;
+        if (_refreshMS <= 0) return false;
         return (millis() - _lastNotifyTS) > _refreshMS;
     }
 
@@ -142,12 +155,13 @@ private:
     SdbModManager& _manager;
     const String _blockName;
     const SdbSensor* _sensor;
-    SdbKey::SdbKey _keyNegate;
-    SdbKey::SdbKey _keyJmriName;
-    SdbKey::SdbKey _keyMqttTopic;
+    SdbKey::SdbKey _keyInvertLong;
+    SdbKey::SdbKey _keyRefreshLong;
+    SdbKey::SdbKey _keyJmriNameStr;
+    SdbKey::SdbKey _keyMqttTopicStr;
     String _jmriName;
     String _mqttTopic;
-    bool _negate;
+    bool _invert;
     bool _state;
     unsigned long _lastNotifyTS;
     unsigned long _refreshMS;
