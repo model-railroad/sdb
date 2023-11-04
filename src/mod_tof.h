@@ -47,25 +47,26 @@
 
 //-----------------------------------
 
+class SdbSensorTof;
+static ISdbSensorBlockLogic* makeSdbSensorBlockLogicTof(
+    SdbModManager& manager, SdbSensorTof* sensor, int blockIndex);
+
 class SdbSensorTof : public SdbSensor {
 public:
-    SdbSensorTof(SdbModManager& manager, String&& name, uint8_t i2cAddr,
-              SdbKey::SdbKey keyMin,
-              SdbKey::SdbKey keyMax) :
+    SdbSensorTof(SdbModManager& manager, String&& name, uint8_t i2cAddr) :
        SdbSensor(manager, std::forward<String>(name)),
-       _keyMin(keyMin),
-       _keyMax(keyMax),
        _i2cAddr(i2cAddr),
        _lastDistMM(OUT_OF_RANGE_MM)
     { }
+
+    ISdbSensorBlockLogic* makeLogic(int blockIndex) override {
+        return makeSdbSensorBlockLogicTof(_manager, this, blockIndex);
+    }
 
     void init() {
         if (!_tof.begin(_i2cAddr, /*debug*/ false, /*i2c*/ &Wire1)) {
             PANIC_PRINTF( ("@@ VL53L0X ToF %s begin failed (disconnected?)", name().c_str()) );
         }
-
-        _minThreshold = _manager.dataStore().getLong(_keyMin, 0);
-        _maxThreshold = _manager.dataStore().getLong(_keyMax, OUT_OF_RANGE_MM);
     }
 
     /// Performs a Ranging Test; uses I2C. Should be wrapped in an IOLock mutex.
@@ -112,14 +113,54 @@ public:
 
         output["sr:name.s" ] = mkProp(temp, "Name",                 name());
         output["sr:desc.s" ] = mkProp(temp, "Description",          "Adafruit VL53L0X ToF");
-        output["sr.min.i"  ] = mkProp(temp, "Min Threshold (mm)",   String(_minThreshold));
-        output["sr.max.i"  ] = mkProp(temp, "Max Threshold (mm)",   String(_maxThreshold));
         output["sr!value.i"] = mkProp(temp, "Distance (mm)",        String(_lastDistMM));
 
         return output;
     }
 
     /// Store new properties provided by the JSON var.
+    void setProperties(JSONVar &input) override {
+        // no-op
+    }
+
+private:
+    uint8_t _i2cAddr;
+    Adafruit_VL53L0X _tof;
+    VL53L0X_RangingMeasurementData_t _measure{};
+    long _lastDistMM;
+};
+
+//-----------------------------------
+
+class SdbSensorBlockLogicTof : public SdbSensorBlockLogic<SdbSensorTof> {
+   public:
+    SdbSensorBlockLogicTof(SdbModManager& manager, SdbSensorTof* sensor,
+                           int blockIndex) :
+          SdbSensorBlockLogic(manager, sensor),
+          _keyMinLong(static_cast<SdbKey::SdbKey>(SdbKey::Tof0MinMmLong + blockIndex)),
+          _keyMaxLong(static_cast<SdbKey::SdbKey>(SdbKey::Tof0MaxMmLong + blockIndex))
+    { }
+
+    void init() {
+        _minThreshold = _manager.dataStore().getLong(_keyMinLong, 0);
+        _maxThreshold = _manager.dataStore().getLong(_keyMaxLong, OUT_OF_RANGE_MM);
+    }
+
+    bool state() const override {
+        return _minThreshold <= _sensor->lastDistMM() && _sensor->lastDistMM() <= _maxThreshold;
+    }
+
+    /// Read current properties and fill in JSON var.
+    JSONVar& getProperties(JSONVar &output) override {
+        JSONVar temp;
+
+        output["sr.min.i"  ] = mkProp(temp, "Min Threshold (mm)",   String(_minThreshold));
+        output["sr.max.i"  ] = mkProp(temp, "Max Threshold (mm)",   String(_maxThreshold));
+
+        return output;
+    }
+
+    /// Parse JSON var and store new mutable properties. Ignore non-mutable properties.
     void setProperties(JSONVar &input) override {
         String newMin = input["sr.min.i"];      // empty if not set
         String newMax = input["sr.max.i"];      // empty if not set
@@ -129,29 +170,27 @@ public:
 
         if (!newMin.isEmpty()) {
             _minThreshold = newMin.toInt();
-            _manager.dataStore().putLong(_keyMin, _minThreshold);
+            _manager.dataStore().putLong(_keyMinLong, _minThreshold);
         }
         if (!newMax.isEmpty()) {
             _maxThreshold = newMax.toInt();
-            _manager.dataStore().putLong(_keyMax, _maxThreshold);
+            _manager.dataStore().putLong(_keyMaxLong, _maxThreshold);
         }
     }
 
-    bool state() const override {
-        return _minThreshold <= _lastDistMM && _lastDistMM <= _maxThreshold;
-    }
-
-
 private:
-    SdbKey::SdbKey _keyMin;
-    SdbKey::SdbKey _keyMax;
-    uint8_t _i2cAddr;
-    Adafruit_VL53L0X _tof;
-    VL53L0X_RangingMeasurementData_t _measure{};
-    long _lastDistMM;
     long _minThreshold;
     long _maxThreshold;
+    SdbKey::SdbKey _keyMinLong;
+    SdbKey::SdbKey _keyMaxLong;
 };
+
+
+static ISdbSensorBlockLogic* makeSdbSensorBlockLogicTof(
+    SdbModManager& manager, SdbSensorTof* sensor, int blockIndex)  {
+    return new SdbSensorBlockLogicTof(manager, sensor, blockIndex);
+}
+
 
 //-----------------------------------
 
@@ -162,15 +201,11 @@ public:
        _ioLock(_manager.ioLock()),
        _tof{
            {manager, "tof0",
-            TOF0_I2C_ADDR,
-            SdbKey::Tof0MinMmLong,
-            SdbKey::Tof0MaxMmLong},
+            TOF0_I2C_ADDR},
 #if TOF_NUM > 1
            {manager,
             "tof1",
-            TOF1_I2C_ADDR,
-            static_cast<SdbKey::SdbKey>(SdbKey::Tof0MinMmLong + 1),
-            static_cast<SdbKey::SdbKey>(SdbKey::Tof0MaxMmLong + 1)}
+            TOF1_I2C_ADDR}
 #endif
        }
     { }

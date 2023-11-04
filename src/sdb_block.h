@@ -37,19 +37,17 @@ public:
     explicit SdbBlock(SdbModManager& manager,
                    String&& name,
                    SdbSensor* sensor,
-                   SdbKey::SdbKey keyInvert,
-                   SdbKey::SdbKey keyRefresh,
-                   SdbKey::SdbKey keyJmriName,
-                   SdbKey::SdbKey keyMqttTopic) :
+                   int blockIndex) :
         _manager(manager),
         _blockName(name),
         _sensor(sensor),
+        _logic(sensor->makeLogic(blockIndex)),
         _invert(false),
         _state(false),
-        _keyInvertLong(keyInvert),
-        _keyRefreshLong(keyRefresh),
-        _keyJmriNameStr(keyJmriName),
-        _keyMqttTopicStr(keyMqttTopic),
+        _keyInvertLong(static_cast<SdbKey::SdbKey>(SdbKey::Block0InvertLong + blockIndex)),
+        _keyRefreshLong(static_cast<SdbKey::SdbKey>(SdbKey::Block0RefreshLong + blockIndex)),
+        _keyJmriNameStr(static_cast<SdbKey::SdbKey>(SdbKey::Block0JmriNameStr + blockIndex)),
+        _keyMqttTopicStr(static_cast<SdbKey::SdbKey>(SdbKey::Block0MqttTopicStr + blockIndex)),
         _lastNotifyTS(0),
         _refreshMS(5000)
     {
@@ -63,6 +61,7 @@ public:
     }
 
     void onStart() {
+        _logic->init();
         _invert = _manager.dataStore().getLong(_keyInvertLong, 0) != 0;
         _refreshMS = _manager.dataStore().getLong(_keyRefreshLong, _refreshMS);
 
@@ -84,6 +83,7 @@ public:
         output["bl.invert.b" ] = mkProp(temp, "Invert Output",      _invert ? "1" : "0");
         output["bl.jmname.s" ] = mkProp(temp, "JMRI System Name",   _jmriName);
         output["bl.mqtopic.s"] = mkProp(temp, "MQTT Topic",         _mqttTopic);
+        _logic->getProperties(output);
         output["bl!state.b"  ] = mkProp(temp, "State",              _state ? "1" : "0");
 
         return output;
@@ -116,12 +116,14 @@ public:
 
         _mqttTopic = mqTopic;
         _manager.dataStore().putString(_keyMqttTopicStr, _mqttTopic);
+
+        _logic->setProperties(input);
     }
 
     /// Update and indicates if state has changed.
     bool update() {
         bool oldState = _state;
-        _state = _sensor->state();
+        _state = _logic->state();
         return oldState != _state;
     }
 
@@ -155,6 +157,7 @@ private:
     SdbModManager& _manager;
     const String _blockName;
     const SdbSensor* _sensor;
+    ISdbSensorBlockLogic* _logic;
     SdbKey::SdbKey _keyInvertLong;
     SdbKey::SdbKey _keyRefreshLong;
     SdbKey::SdbKey _keyJmriNameStr;

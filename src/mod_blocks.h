@@ -34,30 +34,26 @@ public:
 
     void onStart() override {
         // TBD: register 2 static blocks. This will be dynamic later.
+        SdbSensor* tof0 = _manager.sensorByName("tof0");
+        if (tof0 == nullptr) {
+            PANIC_PRINTF( ( "SdbBlock: ToF 0 sensor not found\n") );
+        }
+
         _manager.registerBlock(
             new SdbBlock(_manager,
                          "block0",
-                         _manager.sensorByName("tof0"),
-                         SdbKey::Block0InvertLong,
-                         SdbKey::Block0RefreshLong,
-                         SdbKey::Block0JmriNameStr,
-                         SdbKey::Block0MqttTopicStr));
+                         tof0,
+                         0));
         _manager.registerBlock(
             new SdbBlock(_manager,
                          "block1",
-                         _manager.sensorByName("tof0"),
-                         static_cast<SdbKey::SdbKey>(SdbKey::Block0InvertLong + 1),
-                         static_cast<SdbKey::SdbKey>(SdbKey::Block0RefreshLong + 1),
-                         static_cast<SdbKey::SdbKey>(SdbKey::Block0JmriNameStr + 1),
-                         static_cast<SdbKey::SdbKey>(SdbKey::Block0MqttTopicStr + 1)));
+                         tof0,
+                         1));
         _manager.registerBlock(
             new SdbBlock(_manager,
                          "block2",
-                         _manager.sensorByName("tof0"),
-                         static_cast<SdbKey::SdbKey>(SdbKey::Block0InvertLong + 2),
-                         static_cast<SdbKey::SdbKey>(SdbKey::Block0RefreshLong + 2),
-                         static_cast<SdbKey::SdbKey>(SdbKey::Block0JmriNameStr + 2),
-                         static_cast<SdbKey::SdbKey>(SdbKey::Block0MqttTopicStr + 2)));
+                         tof0,
+                         2));
 
         for (auto* b : _manager.blocks()) {
             b->onStart();

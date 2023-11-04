@@ -31,9 +31,11 @@ class SdbModManager;
 
 //---------------
 
+class ISdbSensorBlockLogic;
+
 class SdbSensor {
 public:
-    explicit SdbSensor(SdbModManager& manager, String&& name) :
+    SdbSensor(SdbModManager& manager, String&& name) :
         _manager(manager),
         _sensorName(name)
     { }
@@ -42,7 +44,7 @@ public:
         return _sensorName;
     }
 
-    virtual bool state() const = 0;
+    virtual ISdbSensorBlockLogic* makeLogic(int blockIndex) = 0;
 
     /// Read current properties and fill in JSON var.
     virtual JSONVar& getProperties(JSONVar &output) = 0;
@@ -60,6 +62,35 @@ protected:
 
 private:
     const String _sensorName;
+};
+
+class ISdbSensorBlockLogic {
+public:
+    virtual ~ISdbSensorBlockLogic() = default;
+
+    virtual void init() = 0;
+
+    /// Computes the current state of the sensor viewed from this block's properties.
+    virtual bool state() const = 0;
+
+    /// Read current block-specific properties for this sensor and fill in JSON var.
+    virtual JSONVar& getProperties(JSONVar &output) = 0;
+
+    /// Parse JSON var and store new mutable properties. Ignore non-mutable properties.
+    virtual void setProperties(JSONVar &input) = 0;
+};
+
+template <class S>
+class SdbSensorBlockLogic : public ISdbSensorBlockLogic {
+public:
+ SdbSensorBlockLogic(SdbModManager& manager, S* sensor) :
+       _manager(manager),
+       _sensor(sensor)
+    { }
+
+protected:
+    SdbModManager& _manager;
+    S* _sensor;
 };
 
 #endif // INC_SDB_SENSOR_H
