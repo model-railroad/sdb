@@ -326,6 +326,19 @@ The ".bat" script can be used for that.
 Alternatively, if you install Git for Windows, you can change the terminal type in VS Code or
 CLion and select the `MSYS Git Bash` option to run the ".sh" script.
 
+# VL53L0X Wiring
+
+- VL53L0X VIN ⇒ to ESP32 5V (or 3V3, technically both work).
+- VL53L0X GND ⇒ to ESP32 GND.
+- VL53L0X SCL ⇒ to ESP32 SCL 22.
+- VL53L0X SDA ⇒ to ESP32 SDA 21.
+- VL53L0X GPIO ⇒ n/c
+- VL53L0X xshut ⇒ ESP32 GPIO 18 for ToF0, GPIO 23 for ToF1.
+  - ⇒ In this case, ToF sensors change from I2C address 0x29 to 0x30 + 0x31 respectively.
+- VL53L0X xshut ⇒ n/c (an option if only one ToF sensor is used)
+  - If xshut is not connected, can only have one ToF at I2C 0x29, and need to disable the address-change logic in `mod_tof.h`.
+- ESP32 GPIO 19 ⇒ LED to 200 Ohm resistor to GND (optional).
+- ESP32 GPIO 36 ⇒ Leave floating (pull-up). Connect to GND to force WiFi in AP mode and ignore STA info stored in NVS.
 
 
 # License

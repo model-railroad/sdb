@@ -1,5 +1,5 @@
 default_fqbn: esp32:esp32:heltec_wifi_kit_32
-default_port: COM5
+default_port: COM4
 
 # Note:
 # - to search a library: $ ./_arduino_cli.sh lib search <name>

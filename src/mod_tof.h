@@ -39,11 +39,16 @@
 
 #define TOF_NUM 1
 
+// Default address when the ToF sensor does not have XShut pin connected.
+#define TOF_DEFAULT_I2C_ADDR   0x29
+
+// Define these if the ToF sensors have their XShut pin connected.
 #define TOF0_I2C_ADDR   0x30
+#if TOF_NUM > 1
 #define TOF1_I2C_ADDR   0x31
+#endif
 #define TOF0_XSHUT_PIN  18
 #define TOF1_XSHUT_PIN  23
-
 
 //-----------------------------------
 
@@ -200,9 +205,15 @@ public:
         SdbModTask(manager, MOD_TOF_NAME, "TaskTof", SdbPriority::Sensor),
        _ioLock(_manager.ioLock()),
        _tof{
-           {manager, "tof0",
+#ifdef TOF0_I2C_ADDR
+           {manager,
+            "tof0",
             TOF0_I2C_ADDR},
-#if TOF_NUM > 1
+#else
+          {manager, "tof0",
+           TOF_DEFAULT_I2C_ADDR},
+#endif
+#ifdef TOF1_I2C_ADDR
            {manager,
             "tof1",
             TOF1_I2C_ADDR}
@@ -230,6 +241,7 @@ private:
     SdbLock& _ioLock;
 
     void init() {
+#ifdef TOF0_XSHUT_PIN
         pinMode(TOF0_XSHUT_PIN, OUTPUT);
         pinMode(TOF1_XSHUT_PIN, OUTPUT);
 
@@ -247,11 +259,12 @@ private:
         _tof[0].init();
         delay(10 /*ms*/);
 
-#if TOF_NUM > 1
-            // Keep TOF0 and activate TOF1
-            digitalWrite(TOF1_XSHUT_PIN, HIGH);
-            _tof[1].init();
-            delay(10 /*ms*/);
+    #if TOF_NUM > 1
+        // Keep TOF0 and activate TOF1
+        digitalWrite(TOF1_XSHUT_PIN, HIGH);
+        _tof[1].init();
+        delay(10 /*ms*/);
+    #endif
 #endif
     }
 

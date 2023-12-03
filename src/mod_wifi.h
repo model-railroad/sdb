@@ -45,7 +45,7 @@
 #define MOD_WIFI_NAME "wi"
 
 // This pin is checked for GND at startup, to force AP mode to reset the
-// Wifi SSID + password. It\"s set to be pull-up by default.
+// Wifi SSID + password. It's set to be pull-up by default.
 #define FORCE_AP_PIN 36
 // Defaults for AP mode. Pass must be >=7 chars.
 // AP pass can be set here and this is not a secret.

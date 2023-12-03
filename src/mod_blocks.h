@@ -49,11 +49,6 @@ public:
                          "block1",
                          tof0,
                          1));
-        _manager.registerBlock(
-            new SdbBlock(_manager,
-                         "block2",
-                         tof0,
-                         2));
 
         for (auto* b : _manager.blocks()) {
             b->onStart();

@@ -21,7 +21,7 @@ ARDUINO_DIR_INCLUDES=""
 
 UP=$(cygpath "$USERPROFILE")
 
-if [[ ! -f "$CMD_JSON" ]]; then
+if [[ ! -f "$CMD_JSON" ]] || ! grep --quiet  "g++" build/compile_commands.json; then
     error "Run ./compile.sh to generate $CMD_JSON."
 fi
 
