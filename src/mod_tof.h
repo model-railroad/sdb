@@ -232,7 +232,7 @@ public:
         startTask();
     }
 
-    long onLoop() override {
+    millis_t onLoop() override {
         return 2000;
     }
 
@@ -273,7 +273,7 @@ private:
             long minDistMM = measure_tof();
 
             // Make refresh rate dynamic: faster when target is closer to sensor.
-            long delayMS = max(50L, min(250L, minDistMM / 10));
+            millis_t delayMS = max(50L, min(250L, minDistMM / 10));
             rtDelay(delayMS);
         }
     }

@@ -81,7 +81,7 @@ public:
         selectApOrStaMode();
     }
 
-    long onLoop() override {
+    millis_t onLoop() override {
         if (_apMode) {
             if (_cnxState == CnxAttempt) {
                 startAP();

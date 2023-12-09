@@ -70,7 +70,7 @@ public:
 
     virtual void onStart() {}
     
-    virtual long onLoop() {
+    virtual millis_t onLoop() {
         return 1000 /*ms*/;
     }
 

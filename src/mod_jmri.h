@@ -64,7 +64,7 @@ public:
         int statusCode = client.responseStatusCode();
         String response = client.responseBody();
         DEBUG_PRINTF( ("@@ JMRI [%s = %s] response code: %d -- %s\n",
-                      jmriSystemName.c_str(), (state ? "Active" : "Inact"),
+                      jmriSystemName.c_str(), (state ? "ON" : "OFF"),
                       statusCode, response.c_str()) );
 
     }
@@ -88,7 +88,7 @@ public:
         startTask();
     }
 
-    long onLoop() override {
+    millis_t onLoop() override {
         return 2000;
     }
 

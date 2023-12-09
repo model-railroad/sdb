@@ -166,8 +166,8 @@ private:
     String _mqttTopic;
     bool _invert;
     bool _state;
-    unsigned long _lastNotifyTS;
-    unsigned long _refreshMS;
+    millis_t _lastNotifyTS;
+    millis_t _refreshMS;
 };
 
 #endif // INC_SDB_BLOCK_H

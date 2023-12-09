@@ -29,6 +29,8 @@
 #define MS_TO_TICKS(ms) ((ms) / portTICK_PERIOD_MS)
 #define rtDelay(ms) { vTaskDelay( MS_TO_TICKS(ms) ); } // delay in mS
 
+typedef unsigned long millis_t;      // for millis()
+
 // Debug Printfs
 #define VERBOSE_PRINTF(x) { /*Serial.printf x ; */ }
 #define DEBUG_PRINTF(x)   { Serial.printf x ; }

@@ -114,10 +114,10 @@ public:
         mod->queueEvent(event);
     }
 
-    long schedule(long delayMS, const std::function<void()> lambda) {
+    long schedule(millis_t delayMS, const std::function<void()> lambda) {
         SdbMutex autoMutex(_scheduleLock);
-        long nowMS = millis();
-        Scheduled* scheduled = new Scheduled(nowMS + delayMS, lambda);
+        millis_t nowMS = millis();
+        auto* scheduled = new Scheduled(nowMS + delayMS, lambda);
         _scheduled.push_back(scheduled);
         // Vector sorted in reverse by _atMS (sooner element at the end).
         std::sort(
@@ -144,8 +144,8 @@ public:
     }
 
     void onLoop() {
-        long startMS = millis();
-        long nextMS = startMS + 2000; // default: 2s loop
+        millis_t startMS = millis();
+        millis_t nextMS = startMS + 2000; // default: 2s loop
 
         while (true) {
             Scheduled* last = NULL;
@@ -172,8 +172,8 @@ public:
         }
     
         for (auto* mod : _mods) {
-            long modMS = millis();
-            long ms = mod->onLoop();
+            millis_t modMS = millis();
+            millis_t ms = mod->onLoop();
             if (ms > 0) {
                 modMS += ms;
             }
@@ -181,8 +181,8 @@ public:
                 nextMS = modMS;
             }
         }
-        long loopMS = millis() - startMS;
-        long deltaMS = nextMS - startMS;
+        millis_t loopMS = millis() - startMS;
+        millis_t deltaMS = nextMS - startMS;
         int size = _scheduled.size();
         long debug_printf = loopMS * 1000 + deltaMS + size;
         if (debug_printf != _debug_printf) {
@@ -207,9 +207,9 @@ private:
     long _debug_printf;
 
     struct Scheduled {
-        const long _atMS;
+        const millis_t _atMS;
         const std::function<void()> _lambda;
-        Scheduled(const long at_ms, const std::function<void()> lambda):
+        Scheduled(const millis_t at_ms, const std::function<void()> lambda):
             _atMS(at_ms), _lambda(lambda) {
         }
     };

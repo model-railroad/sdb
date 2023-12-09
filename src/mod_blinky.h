@@ -41,7 +41,7 @@ public:
         startTask();
     }
 
-    long onLoop() override {
+    millis_t onLoop() override {
         return 2000;
     }
 
