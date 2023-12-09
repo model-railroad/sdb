@@ -59,13 +59,17 @@ public:
         path += jmriSystemName;
 
         HttpClient client = HttpClient(wifi, _host, _port);
+        millis_t postTS = millis(); // for debug purposes below
         client.post(path, header, payload);
 
         int statusCode = client.responseStatusCode();
         String response = client.responseBody();
-        DEBUG_PRINTF( ("@@ JMRI [%s = %s] response code: %d -- %s\n",
-                      jmriSystemName.c_str(), (state ? "ON" : "OFF"),
-                      statusCode, response.c_str()) );
+        DEBUG_PRINTF( ("@@ JMRI [%s = %s] -- response delay: %d ms, code: %d -- %s\n",
+                      jmriSystemName.c_str(),
+                      (state ? "ON" : "OFF"),
+                      millis() - postTS,
+                      statusCode,
+                      response.c_str()) );
 
     }
 
