@@ -23,6 +23,7 @@
 #include "sdb_mod.h"
 #include "sdb_server.h"
 
+#include <memory>
 #include <WiFiClient.h>
 #include <ArduinoHttpClient.h>
 
@@ -58,12 +59,15 @@ public:
         String path("/json/sensor/");
         path += jmriSystemName;
 
-        HttpClient client = HttpClient(wifi, _host, _port);
+        if (!_client) {
+            _client.reset(new HttpClient(_wifi, _host, _port));
+            _client->connectionKeepAlive();
+        }
         millis_t postTS = millis(); // for debug purposes below
-        client.post(path, header, payload);
+        _client->post(path, header, payload);
 
-        int statusCode = client.responseStatusCode();
-        String response = client.responseBody();
+        int statusCode = _client->responseStatusCode();
+        String response = _client->responseBody();
         DEBUG_PRINTF( ("@@ JMRI [%s = %s] -- response delay: %d ms, code: %d -- %s\n",
                       jmriSystemName.c_str(),
                       (state ? "ON" : "OFF"),
@@ -74,7 +78,8 @@ public:
     }
 
 private:
-    WiFiClient wifi;
+    WiFiClient _wifi;
+    std::unique_ptr<HttpClient> _client;
 };
 
 // --------------------------------
