@@ -45,7 +45,7 @@ public:
                  SdbKey::ServerJmriPortLong)
     { }
 
-    void send(bool state, const String& jmriSystemName) {
+    void send(const String& jmriSystemName, bool state) {
         DEBUG_PRINTF( ("@@ JMRI host %s, port %d\n", _host.c_str(), _port) );
 
         // curl -d '{ "state": 4 }' -H "Content-Type: application/json" -X POST http://192.168.1.31:12080/json/sensor/NS785
@@ -109,16 +109,17 @@ private:
         while(true) {
 
             if (hasEvents()) {
-                _events.clear();
                 do {
                     auto event = dequeueEvent();
                     if (event.type == SdbEvent::BlockChanged) {
-                        _events[*event.data] = event;
+                        const String* key = event.data;
+                        _events[*key] = event;
                     }
                 } while (hasEvents());
 
                 for (const auto& [key, event]: _events) {
-                    _server.send(event.state, key);
+                    // Each send blocks (measured to be around ~1050 ms).
+                    _server.send(key, event.state);
                 }
                 _events.clear();
             }
