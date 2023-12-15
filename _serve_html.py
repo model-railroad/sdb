@@ -6,6 +6,7 @@
 import argparse
 import http.server
 import json
+import re
 import urllib.parse
 
 PARSER = argparse.ArgumentParser()
@@ -15,6 +16,7 @@ HOST = "localhost"
 PORT = 8080
 AP_INDEX = "src/html/_mod_wifi_ap_index.html"
 STA_INDEX = "src/html/_mod_wifi_sta_index.html"
+CSS_PATTERN = "src/html/_mod_wifi_%s.css"
 INDEX = None
 COUNTER = 1
 
@@ -52,6 +54,15 @@ class LocalSdbServer(http.server.BaseHTTPRequestHandler):
             self.send_header("Content-type", "text/html")
             self.end_headers()
             with open(INDEX) as indexFile:
+                self.wfile.write(bytes(indexFile.read(), "utf-8"))
+        elif path.startswith("/") and path.endswith(".css"):
+            # Serve the main index
+            self.send_response(200)
+            self.send_header("Content-type", "text/css")
+            self.end_headers()
+            _filename = re.match(r"/([a-z]+).css", path).group(1)
+            _filename = CSS_PATTERN % _filename
+            with open(_filename) as indexFile:
                 self.wfile.write(bytes(indexFile.read(), "utf-8"))
         elif path == "/get":
             # This is the only dynamic request currently handled by SDB.
@@ -138,7 +149,7 @@ class LocalSdbServer(http.server.BaseHTTPRequestHandler):
                         "sv.desc.s":    {"l": "Description",    "v": "JMRI or MQTT server"},
                         "sv.host.s":    {"l": "Server IP",      "v": "127.0.0.1"},
                         "sv.port.i":    {"l": "Server Port",    "v": "1234"},
-                        "mq.channel.s": {"l": "MQTT Channel",   "v": "/something"}
+                        "mq.channel.s": {"l": "MQTT Channel",   "v": "something"}
                     }
                 }
 

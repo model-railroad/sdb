@@ -57,6 +57,7 @@
 
 #include "html/_mod_wifi_ap_index.html.gz.h"
 #include "html/_mod_wifi_sta_index.html.gz.h"
+#include "html/_mod_wifi_style.css.gz.h"
 
 
 enum CnxState {
@@ -264,6 +265,15 @@ private:
         };
         httpd_register_uri_handler(_httpdHandle, &indexUri);
 
+        auto styleLambda = [this](httpd_req_t *req) -> esp_err_t { return AP_STA_styleHandler(req); };
+        httpd_uri_t styleUri = {
+            .uri = "/style.css",
+            .method = HTTP_GET,
+            .handler = &_handlerToLambda,
+            .user_ctx = new std::function<esp_err_t(httpd_req_t *)>(styleLambda)
+        };
+        httpd_register_uri_handler(_httpdHandle, &styleUri);
+
         auto getLambda = [this](httpd_req_t *req) -> esp_err_t { return AP_getHandler(req); };
         httpd_uri_t getUri = {
             .uri = "/get",
@@ -290,6 +300,16 @@ private:
         httpd_resp_set_type(req, "text/html");
         httpd_resp_set_hdr(req, "Content-Encoding", "gzip");
         httpd_resp_send(req, _mod_wifi_ap_index_html_gz, _mod_wifi_ap_index_html_gz_len);
+        return ESP_OK;
+    }
+
+    // Handler for /style.css
+    esp_err_t AP_STA_styleHandler(httpd_req_t *req) {
+        // Handlers should return ESP_OK or ESP_FAIL to force closing the underlying socket.
+        DEBUG_PRINTF( ( "[WIFI] styleHandler for %p.\n", req ) );
+        httpd_resp_set_type(req, "text/css");
+        httpd_resp_set_hdr(req, "Content-Encoding", "gzip");
+        httpd_resp_send(req, _mod_wifi_style_html_gz, _mod_wifi_style_html_gz_len);
         return ESP_OK;
     }
 
@@ -427,6 +447,15 @@ private:
             .user_ctx = new std::function<esp_err_t(httpd_req_t *)>(indexLambda)
         };
         httpd_register_uri_handler(_httpdHandle, &indexUri);
+
+        auto styleLambda = [this](httpd_req_t *req) -> esp_err_t { return AP_STA_styleHandler(req); };
+        httpd_uri_t styleUri = {
+            .uri = "/style.css",
+            .method = HTTP_GET,
+            .handler = &_handlerToLambda,
+            .user_ctx = new std::function<esp_err_t(httpd_req_t *)>(styleLambda)
+        };
+        httpd_register_uri_handler(_httpdHandle, &styleUri);
 
         auto getLambda = [this](httpd_req_t *req) -> esp_err_t { return STA_getHandler(req); };
         httpd_uri_t getUri = {

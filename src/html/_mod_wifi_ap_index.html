@@ -1,14 +1,13 @@
 <html><head>
     <link rel="shortcut icon" href="data:," />
-    <style>
-        .warn { background-color: rgb(255, 128, 128);}
-    </style>
+    <link rel="stylesheet" href="style.css">
     <title>Software Defined Blocks - Wifi Setup</title>
 </head><body>
 <h1>Software Defined Blocks</h1>
+<div class="container">
+
 <p id="st_warn">SDB Status: <span id="st">Loading...</span></p>
 
-<hr>
 <h2>Current Wifi Configuration</h2>
 
 <table>
@@ -23,10 +22,9 @@
     </td></tr>
 </table>
 
-<hr>
 <h2>New Wifi Configuration</h2>
 <form id="fm" enctype="text/plain" method="post">
-    <p>List of available Wifi networks: 
+    <p>List of available Wifi networks: </p>
     <table id="ls">
         <thead><tr>
             <th style="padding-right: 1em">WiFi Name (SSID)</th>
@@ -42,11 +40,11 @@
         <input type="text" id="new_pw" name="pw"><br>
     </p>
     <p>
-        <button type="submit">Write Changes</button>
+        <button class="button-primary" type="submit">Write Changes</button>
     </p>
 </form>
 
-<hr>
+</div> <!-- container -->
 
 <script>
 function fillText(id, value) {

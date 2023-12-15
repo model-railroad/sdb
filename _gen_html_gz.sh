@@ -3,7 +3,8 @@ set -e
 
 HTML="$1"
 NAME=$(basename "$HTML")
-NAME="${NAME%%.html}"
+EXT="${NAME##*.}"
+NAME="${NAME%%.$EXT}"
 NAME="${NAME##_}"
 OUT="${HTML}.gz.h"
 
@@ -14,7 +15,9 @@ fi
 
 GZ=$(mktemp --tmpdir "html.XXXXXX.gz")
 BYTESGZ="$GZ.h"
-gzip --best --to-stdout "$HTML" > "$GZ"
+# gzip normally inserts name+timestamp, resulting in files that change even if same content.
+# use --no-name to prevent that from being included.
+gzip --no-name --best --to-stdout "$HTML" > "$GZ"
 cat "$GZ" | xxd -i > "$BYTESGZ"
 
 SIZE=$(stat -c%s "$HTML")

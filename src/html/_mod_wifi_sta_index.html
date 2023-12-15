@@ -1,33 +1,23 @@
 <html><head>
     <link rel="shortcut icon" href="data:," />
-    <style>
-        .warn { background-color: rgb(255, 128, 128);}
-        .hide { display: none }
-        .capitalize::first-letter {
-            text-transform:capitalize;
-        }
-    </style>
+    <link rel="stylesheet" href="style.css">
     <title>Software Defined Blocks</title>
 </head><body>
 <h1>Software Defined Blocks</h1>
+<div class="container">
 <p id="st_warn">SDB Status: <span id="st">Loading...</span></p>
 
-<hr>
 <h2>List of Blocks</h2>
 
 <div id="block_list">Placeholder</div>
 
-<hr>
 <h2>List of Sensors</h2>
 
 <div id="sensor_list">Placeholder</div>
 
-<hr>
 <h2>List of Servers</h2>
 
 <div id="server_list">Placeholder</div>
-
-<hr>
 
 <div class="hide" id="refresh_div">
 <h2>Options</h2>
@@ -46,19 +36,25 @@
 </fieldset>
 </div>
 
+</div> <!-- container -->
+
 <div class="hide" id="template_div">
 <h3 class="capitalize" id="title_">@Type '@Name'</h3>
 
-Properties:
 <form id="form_" enctype="text/plain" method="post">
     <table>
         <thead><tr>
-            <th>Name</th>
+            <th>Property</th>
             <th>Value</th>
         </tr></thead>
         <tbody></tbody>
+        <tfoot><tr>
+            <td></td>
+            <td>
+                <button class="button-primary" type="submit">Update Changes</button>
+            </td>
+        </tr></tfoot>
     </table>
-    <button type="submit">Update Changes</button>
 </form>
 </div>
 
