@@ -66,6 +66,10 @@
 </table>
 
 <script>
+    const kLV = "!";
+    const kRO = ":";
+    const kPW = "*";
+
     function fillText(id, value) {
         const element = document.getElementById(id);
         element.textContent = value;
@@ -90,7 +94,9 @@
 
         const props = {}
         for (const [key, value] of data.entries()) {
-            if (key.indexOf("!") === -1) {
+            if (key.indexOf(kPW) !== -1) {
+                props[key] = convertPw(value);
+            } else if (key.indexOf(kLV) === -1 && key.indexOf(kRO) === -1) {
                 props[key] = value;
             }
         }
@@ -113,6 +119,18 @@
             }
         }
         statusWarning(true, "Failed to load data from SDB.");
+    }
+
+    function convertPw(pw) {
+        if (pw) {
+            let result = "";
+            for (const chr of pw) {
+                result += chr.charCodeAt(0).toString(16);
+            }
+            return result;
+        } else {
+            return "";
+        }
     }
 
     function createList(type, names) {
@@ -156,7 +174,7 @@
 
             for (const [prop, values] of Object.entries(props)) {
                 const label = values.l || "";
-                const value = values.v || "";
+                let value = values.v || "";
 
                 const prop_id = type + "_" + name + "_" + prop.replaceAll(/[^a-z]+/g, "_");
 
@@ -173,8 +191,16 @@
                 let elem_input = tr.querySelector("#prop_")
                 elem_input.id = "prop_" + prop_id;
                 elem_input.name = prop;
-                elem_input.setAttribute("value", value);
-                elem_input.readOnly = prop.indexOf("!") !== -1;
+                elem_input.readOnly = prop.indexOf(kLV) !== -1 || prop.indexOf(kRO) !== -1;
+                if (prop.indexOf(kPW) !== -1) {
+                    elem_input.type = "password";
+                    const len = parseInt(value) || 5;
+                    value = "\u2022".repeat(len);
+                    elem_input.setAttribute("placeholder", value);
+                    elem_input.setAttribute("value", "");
+                } else {
+                    elem_input.setAttribute("value", value);
+                }
 
                 tbody.appendChild(tr);
             }
@@ -188,7 +214,7 @@
             const props = data.props || {};
 
             for (const [prop, values] of Object.entries(props)) {
-                if (prop.indexOf("!") !== -1) {
+                if (prop.indexOf(kLV) !== -1) {
                     const value = values.v || "";
                     if (value !== "") {
                         const prop_id = type + "_" + name + "_" + prop.replaceAll(/[^a-z]+/g, "_");

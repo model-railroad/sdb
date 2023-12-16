@@ -119,8 +119,8 @@ class LocalSdbServer(http.server.BaseHTTPRequestHandler):
             if name in [ "block0", "block1", "block2" ]:
                 data = {
                     "props": {
-                        "bl.name.s":    {"l": "Name",               "v": name},
-                        "bl.desc.s":    {"l": "Description",        "v": "Block"},
+                        "bl:name.s":    {"l": "Name",               "v": name},
+                        "bl:desc.s":    {"l": "Description",        "v": "Block"},
                         "bl.negate.b":  {"l": "Inverted Output",    "v": "0"},
                         "bl.sensor.s":  {"l": "Sensor Name",        "v": name.replace("block", "tof")},
                         "bl.jmname.s":  {"l": "JMRI Sensor Name",   "v": "NS752"},
@@ -133,8 +133,8 @@ class LocalSdbServer(http.server.BaseHTTPRequestHandler):
             if name in [ "tof0", "tof1" ]:
                 data = {
                     "props": {
-                        "sr.name.s":    {"l": "Name",               "v": name},
-                        "sr.desc.s":    {"l": "Description",        "v": "Adafruit VL53L0X ToF"},
+                        "sr:name.s":    {"l": "Name",               "v": name},
+                        "sr:desc.s":    {"l": "Description",        "v": "Adafruit VL53L0X ToF"},
                         "sr.min.i":     {"l": "Min Threshold (mm)", "v": "0"},
                         "sr.max.i":     {"l": "Max Threshold (mm)", "v": "2000"},
                         "sr!value.i":   {"l": "Distance (mm)",      "v": str(COUNTER % 2001)}
@@ -145,13 +145,18 @@ class LocalSdbServer(http.server.BaseHTTPRequestHandler):
             if name in [ "jmri", "mqtt" ]:
                 data = {
                     "props": {
-                        "sv.name.s":    {"l": "Name",           "v": name},
-                        "sv.desc.s":    {"l": "Description",    "v": "JMRI or MQTT server"},
+                        "sv:name.s":    {"l": "Name",           "v": name},
+                        "sv:desc.s":    {"l": "Description",    "v": "JMRI or MQTT server"},
                         "sv.host.s":    {"l": "Server IP",      "v": "127.0.0.1"},
-                        "sv.port.i":    {"l": "Server Port",    "v": "1234"},
-                        "mq.channel.s": {"l": "MQTT Channel",   "v": "something"}
+                        "sv.port.i":    {"l": "Server Port",    "v": "1234"}
                     }
                 }
+            if name == "mqtt":
+                data["props"].update({
+                        "mq.user.s": {"l": "MQTT User",         "v": "something"},
+                        "mq*pass.s": {"l": "MQTT Password",     "v": "7"},
+                        "mq.channel.s": {"l": "MQTT Channel",   "v": "something"}
+                })
 
         return data
 
