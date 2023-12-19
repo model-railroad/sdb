@@ -45,10 +45,10 @@ public:
                  SdbKey::ServerJmriPortLong)
     { }
 
-    void send(const String& jmriSystemName, bool state) {
-        DEBUG_PRINTF( ("@@ JMRI host %s, port %d\n", _host.c_str(), _port) );
-
+    bool send(const String& jmriSystemName, bool state) {
         // curl -d '{ "state": 4 }' -H "Content-Type: application/json" -X POST http://192.168.1.31:12080/json/sensor/NS785
+
+        if (jmriSystemName.isEmpty()) return true;
 
         String payload("{ \"state\": ");
         payload += state ? JMRI_ACTIVE : JMRI_INACTIVE;
@@ -59,22 +59,33 @@ public:
         String path("/json/sensor/");
         path += jmriSystemName;
 
-        if (!_client) {
-            _client.reset(new HttpClient(_wifi, _host, _port));
-            _client->connectionKeepAlive();
-        }
         millis_t postTS = millis(); // for debug purposes below
         _client->post(path, header, payload);
 
         int statusCode = _client->responseStatusCode();
         String response = _client->responseBody();
-        DEBUG_PRINTF( ("@@ JMRI [%s = %s] -- response delay: %d ms, code: %d -- %s\n",
+        DEBUG_PRINTF( ("[JMRI] [%s = %s] -- post time: %d ms, code: %d -- %s\n",
                       jmriSystemName.c_str(),
                       (state ? "ON" : "OFF"),
                       millis() - postTS,
                       statusCode,
                       response.c_str()) );
 
+        return statusCode == 200;
+    }
+
+    void connect() {
+        if (!_client || _clientPropsChanged) {
+            SdbMutex lock(_propsLock);
+            _clientPropsChanged = false;
+            DEBUG_PRINTF( ("[JMRI] Client host %s, port %d\n", _host.c_str(), _port) );
+            _client.reset(new HttpClient(_wifi, _host, _port));
+            _client->connectionKeepAlive();
+        }
+    }
+
+    bool isConnected() {
+        return !!_client; // --?? && _client->connected();
     }
 
 private:
@@ -107,7 +118,6 @@ private:
 
     [[noreturn]] void onTaskRun() override {
         while(true) {
-
             if (hasEvents()) {
                 do {
                     auto event = dequeueEvent();
@@ -117,11 +127,24 @@ private:
                     }
                 } while (hasEvents());
 
-                for (const auto& [key, event]: _events) {
-                    // Each send blocks (measured to be around ~1050 ms).
-                    _server.send(key, event.state);
+                if (!_events.empty()) {
+                    _server.connect();
                 }
-                _events.clear();
+
+                if (!_server.isConnected()) {
+                    DEBUG_PRINTF( ("[JMRI] %d pending events, NOT CONNECTED.\n", _events.size()) );
+                }
+                if (_server.isConnected()) {
+                    bool success = true;
+                    for (const auto& [key, event] : _events) {
+                        // Each send blocks (measured to be around ~1050 ms).
+                        if (!_server.send(key, event.state)) {
+                            success = false;
+                        }
+                    }
+                    if (success) {
+                        _events.clear();
+                    }
             }
 
             rtDelay(250L);

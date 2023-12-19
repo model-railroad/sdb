@@ -23,7 +23,14 @@
 #include "sdb_mod.h"
 #include "sdb_server.h"
 
+#include <memory>
+#include <WiFiClient.h>
+#include <PicoMQTT.h>
+
 #define MOD_MQTT_NAME "mq"
+
+#define MQTT_ACTIVE "ACTIVE"
+#define MQTT_INACTIVE "INACTIVE"
 
 // --------------------------------
 
@@ -37,12 +44,129 @@ public:
                  SdbKey::ServerMqttPortLong)
     { }
 
-    void send(bool state, const String& mqttTopic) {
-        DEBUG_PRINTF( ("@@ MQTT host %s, port %d\n", _host.c_str(), _port) );
+    void onStart() override {
+        SdbServer::onStart();
 
-        // TBD customize stuff
+        auto* user = _manager.dataStore().getString(SdbKey::ServerMqttUserStr);
+        if (user != nullptr) {
+            _user = *user; }
+
+        auto* pass = _manager.dataStore().getString(SdbKey::ServerMqttPassStr);
+        if (pass != nullptr) {
+            _pass = *pass; }
+
+        auto* channel = _manager.dataStore().getString(SdbKey::ServerMqttChannelStr);
+        if (channel != nullptr) {
+            _channel = *channel; }
     }
 
+    /// Read MQTT-specific current properties and fill in JSON var.
+    JSONVar& getProperties(JSONVar &output) override {
+        SdbServer::getProperties(output);
+
+        JSONVar temp;
+        // We don't send the actual password, just it's length.
+        String pass(_pass.length());
+        output["mq.user.s"   ] = mkProp(temp, "MQTT User",      _user);
+        output["mq*pass.s"   ] = mkProp(temp, "MQTT Password",  pass);
+        output["mq.channel.s"] = mkProp(temp, "MQTT Channel",   _channel);
+        return output;
+    }
+
+    /// Parse JSON var and store new mutable MQTT-specific properties. Ignore non-mutable properties.
+    void setProperties(JSONVar &input) override {
+        SdbServer::setProperties(input);
+
+        SdbMutex lock(_propsLock);
+
+        String user = input["mq.user.s"];        // empty if missing
+        String channel = input["mq.channel.s"];  // empty if missing
+
+        user.trim();
+        boolean changed = (_user != user);
+        changed |= (_channel != channel);
+        _user = user;
+        _channel = channel;
+        _manager.dataStore().putString(SdbKey::ServerMqttUserStr, user);
+        _manager.dataStore().putString(SdbKey::ServerMqttChannelStr, channel);
+
+        // Pass is not set if not changed.
+        if (input.hasOwnProperty("mq*pass.s")) {
+            String pass = input["mq*pass.s"];
+            changed |= (_pass == pass);
+            _pass = pass;
+            _manager.dataStore().putString(SdbKey::ServerMqttPassStr, pass);
+        }
+
+        _clientPropsChanged |= changed;
+    }
+
+    bool send(const String& mqttTopic, bool state) {
+        if (mqttTopic.isEmpty()) return true;
+
+        String topic(_channel);
+        if (!topic.isEmpty()
+            && topic.charAt(topic.length() - 1) != '/'
+            && mqttTopic.charAt(0) != '/') {
+            topic += "/";
+        }
+        topic += mqttTopic;
+
+        String payload(state ? MQTT_ACTIVE : MQTT_INACTIVE);
+
+        DEBUG_PRINTF( ("[MQTT] @@@@@ [%s = %s] -- BEFORE\n",
+                      topic.c_str(),
+                      payload.c_str()) );
+
+        millis_t postTS = millis(); // for debug purposes below
+
+        bool result = _client->publish(topic, payload);
+
+        DEBUG_PRINTF( ("[MQTT] [%s = %s] -- publish time: %d ms --> %s\n",
+                      topic.c_str(),
+                      payload.c_str(),
+                      millis() - postTS,
+                      result) );
+        return result;
+    }
+
+    void connect() {
+        if (!_client || _clientPropsChanged) {
+            SdbMutex lock(_propsLock);
+            _clientPropsChanged = false;
+            if (_client) {
+                _client->stop();
+            }
+            DEBUG_PRINTF( ("[MQTT] Client host %s, port %d\n", _host.c_str(), _port) );
+            _client.reset(new PicoMQTT::Client(
+                _host.c_str(),
+                _port,
+                _user.c_str(),
+                _pass.c_str()));
+            _client->reconnect_interval_millis = 1000;
+            _client->connected_callback = std::function<void()>( [this]() { Serial.printf( "[MQTT] Connected" ); } );
+            _client->disconnected_callback = std::function<void()>( [this]() { Serial.printf( "[MQTT] Disconnected" ); } );
+            _client->begin();
+        }
+    }
+
+    bool isConnected() {
+        return _client && _client->connected();
+    }
+
+    void clientLoop() {
+        if (_client) {
+            _client->loop();
+        }
+    }
+
+private:
+     WiFiClient _wifi;
+     std::unique_ptr<PicoMQTT::Client> _client;
+
+    String _user;
+    String _pass;
+    String _channel;
 };
 
 // --------------------------------
@@ -70,9 +194,9 @@ private:
 
     [[noreturn]] void onTaskRun() override {
        while(true) {
+            _server.clientLoop();
 
            if (hasEvents()) {
-               _events.clear();
                do {
                    auto event = dequeueEvent();
                    if (event.type == SdbEvent::BlockChanged) {
@@ -80,10 +204,23 @@ private:
                    }
                } while (hasEvents());
 
-               for (const auto& [key, event]: _events) {
-                   _server.send(event.state, key);
+               if (!_events.empty()) {
+                   _server.connect();
                }
-               _events.clear();
+
+               if (!_server.isConnected()) {
+                   DEBUG_PRINTF( ("[MQTT] %d pending events, NOT CONNECTED.\n", _events.size()) );
+               } else {
+                   bool success = true;
+                   for (const auto& [key, event] : _events) {
+                       if (!_server.send(key, event.state)) {
+                           success = false;
+                       }
+                   }
+                   if (success) {
+                       _events.clear();
+                   }
+               }
            }
 
            rtDelay(250L);

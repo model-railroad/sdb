@@ -22,6 +22,7 @@
 #include "common.h"
 #include "sdb_mod_manager.h"
 #include "sdb_props.h"
+#include "sdb_lock.h"
 
 #include <Arduino_JSON.h>
 
@@ -39,21 +40,22 @@ public:
         _serverName(name),
         _description(description),
         _keyHost(keyHost),
-        _keyPort(keyPort)
+        _keyPort(keyPort),
+       _propsLock(("propsLock"))
     { }
 
     const String& name() const {
         return _serverName;
     }
 
-    void onStart() {
+    virtual void onStart() {
         _port = _manager.dataStore().getLong(_keyPort, 0);
 
         auto* host = _manager.dataStore().getString(_keyHost);
         if (host != nullptr) { _host = *host; }
     }
 
-    /// Read current properties and fill in JSON var.
+    virtual  /// Read current properties and fill in JSON var.
     JSONVar& getProperties(JSONVar &output) {
         JSONVar temp;
 
@@ -65,21 +67,27 @@ public:
         return output;
     }
 
-    /// Parse JSON var and store new mutable properties. Ignore non-mutable properties.
+    virtual  /// Parse JSON var and store new mutable properties. Ignore non-mutable properties.
     void setProperties(JSONVar &input) {
+        SdbMutex lock(_propsLock);
         String host = input["sv.host.s"];       // empty if not set
-        String port = input["sv.port.i"];     // empty if not set
+        String port = input["sv.port.i"];       // empty if not set
 
         host.trim();
         port.trim();
 
+        boolean changed = (_host != host);
         _host = host;
-        _manager.dataStore().putString(_keyHost, _host);
+        _manager.dataStore().putString(_keyHost, host);
 
         if (!port.isEmpty()) {
-            _port = port.toInt();
-            _manager.dataStore().putLong(_keyPort, _port);
+            long newPort = port.toInt();
+            changed |= _port != newPort;
+            _port = newPort;
+            _manager.dataStore().putLong(_keyPort, newPort);
         }
+
+        _clientPropsChanged |= changed;
     }
 
 protected:
@@ -90,6 +98,8 @@ protected:
     SdbKey::SdbKey _keyPort;
     String _host;
     int _port;
+    SdbLock _propsLock;
+    boolean _clientPropsChanged;
 };
 
 #endif // INC_SDB_SERVER_H

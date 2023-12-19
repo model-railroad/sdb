@@ -1,5 +1,5 @@
 default_fqbn: esp32:esp32:heltec_wifi_kit_32
-default_port: COM4
+default_port: COM5
 
 # Note:
 # - to search a library: $ ./_arduino_cli.sh lib search <name>
@@ -17,6 +17,7 @@ profiles:
       - U8g2 (2.33.15)
       - Arduino_JSON (0.2.0)
       - ArduinoHttpClient (0.5.0)
+      - PicoMQTT (0.3.8)
   wifikit32_debug:
     fqbn: esp32:esp32:heltec_wifi_kit_32:DebugLevel=verbose
     platforms:
@@ -28,5 +29,6 @@ profiles:
       - U8g2 (2.33.15)
       - Arduino_JSON (0.2.0)
       - ArduinoHttpClient (0.5.0)
+      - PicoMQTT (0.3.8)
 
 #

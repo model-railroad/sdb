@@ -52,9 +52,13 @@ namespace SdbKey {
 
         // There can be up to 255 (0xFF) servers starting at these indices.
         ServerJmriHostStr  = 0xF000,
-        ServerJmriPortLong = 0xF100,
-        ServerMqttHostStr  = 0xF001,
+        ServerJmriPortLong = 0xF001,
+
+        ServerMqttHostStr  = 0xF100,
         ServerMqttPortLong = 0xF101,
+        ServerMqttUserStr  = 0xF102,
+        ServerMqttPassStr  = 0xF103,
+        ServerMqttChannelStr = 0xF104,
     };
 }
 

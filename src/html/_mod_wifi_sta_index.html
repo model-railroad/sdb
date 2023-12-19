@@ -95,7 +95,9 @@
         const props = {}
         for (const [key, value] of data.entries()) {
             if (key.indexOf(kPW) !== -1) {
-                props[key] = convertPw(value);
+                if (value.replaceAll(kPW, "") !== "") {
+                    props[key] = convertPw(value);
+                }
             } else if (key.indexOf(kLV) === -1 && key.indexOf(kRO) === -1) {
                 props[key] = value;
             }
@@ -195,9 +197,8 @@
                 if (prop.indexOf(kPW) !== -1) {
                     elem_input.type = "password";
                     const len = parseInt(value) || 5;
-                    value = "\u2022".repeat(len);
-                    elem_input.setAttribute("placeholder", value);
-                    elem_input.setAttribute("value", "");
+                    value = kPW.repeat(len);
+                    elem_input.setAttribute("value", value);
                 } else {
                     elem_input.setAttribute("value", value);
                 }
