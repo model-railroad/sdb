@@ -25,7 +25,7 @@
 
 #include <memory>
 #include <WiFiClient.h>
-#include <PicoMQTT.h>
+#include <ArduinoMqttClient.h>
 
 #define MOD_MQTT_NAME "mq"
 
@@ -49,15 +49,18 @@ public:
 
         auto* user = _manager.dataStore().getString(SdbKey::ServerMqttUserStr);
         if (user != nullptr) {
-            _user = *user; }
+            _user = *user;
+        }
 
         auto* pass = _manager.dataStore().getString(SdbKey::ServerMqttPassStr);
         if (pass != nullptr) {
-            _pass = *pass; }
+            _pass = *pass;
+        }
 
         auto* channel = _manager.dataStore().getString(SdbKey::ServerMqttChannelStr);
         if (channel != nullptr) {
-            _channel = *channel; }
+            _channel = *channel;
+        }
     }
 
     /// Read MQTT-specific current properties and fill in JSON var.
@@ -114,20 +117,22 @@ public:
 
         String payload(state ? MQTT_ACTIVE : MQTT_INACTIVE);
 
-        DEBUG_PRINTF( ("[MQTT] @@@@@ [%s = %s] -- BEFORE\n",
+        DEBUG_PRINTF(("[MQTT] @@@@@ [%s = %s] -- BEFORE\n",
                       topic.c_str(),
-                      payload.c_str()) );
+                      payload.c_str()));
 
-        millis_t postTS = millis(); // for debug purposes below
+        millis_t postTS = millis();  // for debug purposes below
 
-        bool result = _client->publish(topic, payload);
+        _client->beginMessage(topic);
+        _client->print(payload);
+        int result = _client->endMessage();
 
-        DEBUG_PRINTF( ("[MQTT] [%s = %s] -- publish time: %d ms --> %s\n",
+        DEBUG_PRINTF( ("[MQTT] [%s = %s] -- publish time: %d ms, result %d\n",
                       topic.c_str(),
                       payload.c_str(),
                       millis() - postTS,
                       result) );
-        return result;
+        return result == 0;
     }
 
     void connect() {
@@ -138,31 +143,25 @@ public:
                 _client->stop();
             }
             DEBUG_PRINTF( ("[MQTT] Client host %s, port %d\n", _host.c_str(), _port) );
-            _client.reset(new PicoMQTT::Client(
-                _host.c_str(),
-                _port,
-                _user.c_str(),
-                _pass.c_str()));
-            _client->reconnect_interval_millis = 1000;
-            _client->connected_callback = std::function<void()>( [this]() { Serial.printf( "[MQTT] Connected" ); } );
-            _client->disconnected_callback = std::function<void()>( [this]() { Serial.printf( "[MQTT] Disconnected" ); } );
-            _client->begin();
+            _client.reset(new MqttClient(_wifi));
+            _client->setUsernamePassword(_user, _pass);
+            _client->connect(_host.c_str(), _port);
         }
     }
 
     bool isConnected() {
-        return _client && _client->connected();
+        return _client.operator bool() ; //--?? && _client->connected();
     }
 
     void clientLoop() {
         if (_client) {
-            _client->loop();
+            _client->poll();
         }
     }
 
 private:
-     WiFiClient _wifi;
-     std::unique_ptr<PicoMQTT::Client> _client;
+    WiFiClient _wifi;
+    std::unique_ptr<MqttClient> _client;
 
     String _user;
     String _pass;
@@ -193,41 +192,39 @@ private:
     std::map<String, SdbEvent::SdbEvent> _events;
 
     [[noreturn]] void onTaskRun() override {
-       while(true) {
+        while (true) {
             _server.clientLoop();
 
-           if (hasEvents()) {
-               do {
-                   auto event = dequeueEvent();
-                   if (event.type == SdbEvent::BlockChanged) {
-                       _events[*event.data] = event;
-                   }
-               } while (hasEvents());
+            if (hasEvents()) {
+                do {
+                    auto event = dequeueEvent();
+                    if (event.type == SdbEvent::BlockChanged) {
+                        _events[*event.data] = event;
+                    }
+                } while (hasEvents());
 
-               if (!_events.empty()) {
-                   _server.connect();
-               }
+                if (!_events.empty()) {
+                    _server.connect();
+                }
 
-               if (!_server.isConnected()) {
-                   DEBUG_PRINTF( ("[MQTT] %d pending events, NOT CONNECTED.\n", _events.size()) );
-               } else {
-                   bool success = true;
-                   for (const auto& [key, event] : _events) {
-                       if (!_server.send(key, event.state)) {
-                           success = false;
-                       }
-                   }
-                   if (success) {
-                       _events.clear();
-                   }
-               }
-           }
+                if (!_server.isConnected()) {
+                    DEBUG_PRINTF(("[MQTT] %d pending events, NOT CONNECTED.\n", _events.size()));
+                } else {
+                    bool success = true;
+                    for (const auto& [key, event] : _events) {
+                        if (!_server.send(key, event.state)) {
+                            success = false;
+                        }
+                    }
+                    if (success) {
+                        _events.clear();
+                    }
+                }
+            }
 
-           rtDelay(250L);
-       }
+            rtDelay(250L);
+        }
     }
-
 };
-
 
 #endif // INC_SDB_MOD_MQTT_H

@@ -85,7 +85,9 @@ public:
     }
 
     bool isConnected() {
-        return !!_client; // --?? && _client->connected();
+        // We can't use _client->connected() because it returns false before
+        // we connect when trying to post, and we won't post until connected.
+        return _client.operator bool();
     }
 
 private:
@@ -145,6 +147,7 @@ private:
                     if (success) {
                         _events.clear();
                     }
+                }
             }
 
             rtDelay(250L);
