@@ -41,6 +41,7 @@ public:
         _description(description),
         _keyHost(keyHost),
         _keyPort(keyPort),
+       _clientPropsChanged(false),
        _propsLock(("propsLock"))
     { }
 

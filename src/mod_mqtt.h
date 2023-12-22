@@ -21,6 +21,7 @@
 
 #include "common.h"
 #include "sdb_mod.h"
+#include "sdb_pass_dec.h"
 #include "sdb_server.h"
 
 #include <memory>
@@ -68,7 +69,7 @@ public:
         SdbServer::getProperties(output);
 
         JSONVar temp;
-        // We don't send the actual password, just it's length.
+        // We don't send the actual password, just its length.
         String pass(_pass.length());
         output["mq.user.s"   ] = mkProp(temp, "MQTT User",      _user);
         output["mq*pass.s"   ] = mkProp(temp, "MQTT Password",  pass);
@@ -95,13 +96,14 @@ public:
 
         // Pass is not set if not changed.
         if (input.hasOwnProperty("mq*pass.s")) {
-            String pass = input["mq*pass.s"];
+            String pass = sdbPassDec(input["mq*pass.s"]);
             changed |= (_pass == pass);
             _pass = pass;
             _manager.dataStore().putString(SdbKey::ServerMqttPassStr, pass);
         }
 
         _clientPropsChanged |= changed;
+        DEBUG_PRINTF( ("[MQTT] Set Props. _clientPropsChanged %d\n", _clientPropsChanged) );
     }
 
     bool send(const String& mqttTopic, bool state) {
@@ -117,22 +119,19 @@ public:
 
         String payload(state ? MQTT_ACTIVE : MQTT_INACTIVE);
 
-        DEBUG_PRINTF(("[MQTT] @@@@@ [%s = %s] -- BEFORE\n",
-                      topic.c_str(),
-                      payload.c_str()));
-
         millis_t postTS = millis();  // for debug purposes below
 
-        _client->beginMessage(topic);
-        _client->print(payload);
-        int result = _client->endMessage();
+        // Note: MqttClient methods returns 0 on error, 1 on success.
+        int result = _client->beginMessage(topic);
+        if (result) _client->print(payload);
+        result = result && _client->endMessage();
 
         DEBUG_PRINTF( ("[MQTT] [%s = %s] -- publish time: %d ms, result %d\n",
                       topic.c_str(),
                       payload.c_str(),
                       millis() - postTS,
                       result) );
-        return result == 0;
+        return result == 1;
     }
 
     void connect() {
@@ -142,15 +141,23 @@ public:
             if (_client) {
                 _client->stop();
             }
-            DEBUG_PRINTF( ("[MQTT] Client host %s, port %d\n", _host.c_str(), _port) );
+            DEBUG_PRINTF( ("[MQTT] Connect to host %s, port %d\n", _host.c_str(), _port) );
             _client.reset(new MqttClient(_wifi));
             _client->setUsernamePassword(_user, _pass);
-            _client->connect(_host.c_str(), _port);
+            // Note: MqttClient methods returns 0 on error, 1 on success.
+            // For errors, the error code is returned via connectError().
+            int result = _client->connect(_host.c_str(), _port);
+            DEBUG_PRINTF( ("[MQTT] Connect result %d, error %d\n", result, _client->connectError()) );
+            if (result == 0 && _client->connectError() < MQTT_SUCCESS) {
+                // A negative result (e.g. conx refused) can happen if the wifi had not finished
+                // connecting yet. In that case, delete the client so that we can try again later.
+                _client.reset(nullptr);
+            }
         }
     }
 
     bool isConnected() {
-        return _client.operator bool() ; //--?? && _client->connected();
+        return _client.operator bool() && _client->connected();
     }
 
     void clientLoop() {
@@ -161,6 +168,7 @@ public:
 
 private:
     WiFiClient _wifi;
+    /// An MqttClient client. Reminder: this API seems to return 1 on success, 0 on error.
     std::unique_ptr<MqttClient> _client;
 
     String _user;

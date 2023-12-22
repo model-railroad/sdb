@@ -30,6 +30,7 @@
 #include "mod_display.h"
 #include "sdb_lock.h"
 #include "sdb_mod.h"
+#include "sdb_pass_dec.h"
 #include "sdb_sensor.h"
 #include "sdb_server.h"
 
@@ -376,13 +377,6 @@ private:
         return ESP_OK;
     }
 
-    static inline char hex2int(char c) {
-        if (c >= '0' && c <= '9') return      c - '0';
-        if (c >= 'A' && c <= 'F') return 10 + c - 'A';
-        if (c >= 'a' && c <= 'f') return 10 + c - 'a';
-        return 0;
-    }
-
     /// Validate whether the ssid + pass is valid. If it is, memorizes the info in data store + NVS.
     /// Note that SSIDs are prefixed by either E or O (encrypted vs open).
     /// Returns true if accepted, false if not accepted.
@@ -401,17 +395,7 @@ private:
             return false;
         }
 
-        const char *pw2src = pass.c_str();
-        int pwlen = pass.length() / 2;
-        std::unique_ptr<char[]> buffer(new char[pwlen + 1]);
-        char* pwdst = buffer.get();
-        for(int i = 0; i < pwlen; i++) {
-            char c = (hex2int(*pw2src++) << 4) + hex2int(*pw2src++);
-            pwdst[i] = c;
-        }
-
-        pwdst[pwlen] = 0;
-        String pw(pwdst);
+        String pw = sdbPassDec(pass);
 
         // Seems valid, write to the data store / NVS.
         _manager.dataStore().putString(SdbKey::WifiSsidStr, ssid);
