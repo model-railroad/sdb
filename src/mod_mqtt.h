@@ -135,19 +135,19 @@ public:
     }
 
     void connect() {
-        if (!_client || _clientPropsChanged) {
+        if (!isConnected() || _clientPropsChanged) {
             SdbMutex lock(_propsLock);
             _clientPropsChanged = false;
             if (_client) {
                 _client->stop();
             }
-            DEBUG_PRINTF( ("[MQTT] Connect to host %s, port %d\n", _host.c_str(), _port) );
+            DEBUG_PRINTF(("[MQTT] Connect to host %s, port %d\n", _host.c_str(), _port));
             _client.reset(new MqttClient(_wifi));
             _client->setUsernamePassword(_user, _pass);
             // Note: MqttClient methods returns 0 on error, 1 on success.
             // For errors, the error code is returned via connectError().
             int result = _client->connect(_host.c_str(), _port);
-            DEBUG_PRINTF( ("[MQTT] Connect result %d, error %d\n", result, _client->connectError()) );
+            DEBUG_PRINTF(("[MQTT] Connect result %d, error %d\n", result, _client->connectError()));
             if (result == 0 && _client->connectError() < MQTT_SUCCESS) {
                 // A negative result (e.g. conx refused) can happen if the wifi had not finished
                 // connecting yet. In that case, delete the client so that we can try again later.
