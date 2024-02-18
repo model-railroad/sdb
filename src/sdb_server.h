@@ -56,8 +56,8 @@ public:
         if (host != nullptr) { _host = *host; }
     }
 
-    virtual  /// Read current properties and fill in JSON var.
-    JSONVar& getProperties(JSONVar &output) {
+    /// Read current properties and fill in JSON var.
+    virtual JSONVar& getProperties(JSONVar &output) {
         JSONVar temp;
 
         output["sv:name.s"  ] = mkProp(temp, "Name",        _serverName);
@@ -68,8 +68,8 @@ public:
         return output;
     }
 
-    virtual  /// Parse JSON var and store new mutable properties. Ignore non-mutable properties.
-    void setProperties(JSONVar &input) {
+    /// Parse JSON var and store new mutable properties. Ignore non-mutable properties.
+    virtual void setProperties(JSONVar &input) {
         SdbMutex lock(_propsLock);
         String host = input["sv.host.s"];       // empty if not set
         String port = input["sv.port.i"];       // empty if not set
