@@ -1,12 +1,13 @@
-DEST="CMakeLists.txt"
+DEST_SRC="src/CMakeLists.txt"
+DEST_TESTS="tests/CMakeLists.txt"
 
 function error() {
     echo "$*"
     exit 1
 }
 
-if [[ -f "$DEST" && "$1" != "-f" ]]; then
-    error "$DEST already exists. Use -f to force overwrite."
+if [[ -f "$DEST_SRC" && "$1" != "-f" ]]; then
+    error "$DEST_SRC already exists. Use -f to force overwrite."
 fi
 
 CMD_JSON="build/compile_commands.json"
@@ -43,10 +44,15 @@ for F in $(grep '^   "-[a-z_DW]' $CMD_JSON | sort -u | tr -d '\\\", '); do
 set(CMAKE_CXX_FLAGS \"\${CMAKE_CXX_FLAGS} $F\")"
 done
 
-SRC_HEADERS=$(find src -name "*.h")
+SRC_HEADERS=$(cd src ; find . -name "*.h")
 
-SRC_DIRS=$(find src -type d)
- 
+SRC_DIRS=$(cd src ; find . -type d | grep -v "\\.$")
+
+TESTS_HEADERS=$(cd tests ; find . -name "*.h" ; find ../src -name "*.h")
+
+TESTS_DIRS=$(cd tests ; find ../src -type d)
+
+
 for I in $(grep '"-I' build/compile_commands.json | sort -u | sed 's/-I//g' | tr -d '\", '); do
     I=$(cygpath "$I")
     I="${I/$UP\/$ARDUINO_DIR\//}"
@@ -54,7 +60,7 @@ for I in $(grep '"-I' build/compile_commands.json | sort -u | sed 's/-I//g' | tr
 \${ARDUINO_DIR}/$I"
 done
 
-cat > $DEST <<EOF
+cat > $DEST_SRC <<EOF
 cmake_minimum_required(VERSION 3.26)
 
 # Arduino directories
@@ -77,11 +83,7 @@ set(CMAKE_FIND_ROOT_PATH_MODE_PROGRAM NEVER)
 set(CMAKE_FIND_ROOT_PATH_MODE_LIBRARY ONLY)
 set(CMAKE_FIND_ROOT_PATH_MODE_INCLUDE ONLY)
 
-# --- SDB Project ---
-project(SDB)
-set(CMAKE_CXX_STANDARD 11)
-set(CMAKE_CXX_STANDARD_REQUIRED True)
-set(CMAKE_CXX_EXTENSIONS OFF)
+# --- SRC target ---
 
 # Force the .ino file to be treated as C++
 set_source_files_properties(\${PROJECT_SOURCE_DIR}/sdb.ino PROPERTIES LANGUAGE CXX)
@@ -89,19 +91,40 @@ set_source_files_properties(\${PROJECT_SOURCE_DIR}/sdb.ino PROPERTIES COMPILE_FL
 
 $CXX_FLAGS
 
-add_library(SDB \${PROJECT_SOURCE_DIR}/sdb.ino
+add_library(src \${PROJECT_SOURCE_DIR}/sdb.ino
 $SRC_HEADERS
 )
 
-set_target_properties(SDB PROPERTIES LINKER_LANGUAGE CXX)
+set_target_properties(src PROPERTIES LINKER_LANGUAGE CXX)
 
-target_include_directories(SDB PRIVATE
+target_include_directories(src PRIVATE
 $SRC_DIRS
 )
 
-target_include_directories(SDB PRIVATE
+target_include_directories(src PRIVATE
 $ARDUINO_DIR_INCLUDES
 )
 # ~~
 EOF
 
+cat > $DEST_TESTS <<EOF
+cmake_minimum_required(VERSION 3.26)
+
+set(CMAKE_SYSTEM_NAME MSYS)
+
+# --- TESTS target ---
+
+add_executable(tests main_test.cpp
+$TEST_HEADERS
+)
+
+target_include_directories(tests PRIVATE
+$TESTS_DIRS
+)
+
+target_include_directories(tests SYSTEM PUBLIC
+    mocks
+)
+
+# ~~
+EOF

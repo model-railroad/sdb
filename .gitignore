@@ -6,4 +6,5 @@ build
 .vscode/c_cpp_properties.json
 cmake-build-debug/
 .idea/
-CMakeLists.txt
+src/CMakeLists.txt
+tests/CMakeLists.txt
