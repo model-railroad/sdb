@@ -82,7 +82,7 @@ public:
                 return sensor;
             }
         }
-        return null;
+        return nullptr;
     }
 
     /// Registers a new server.
