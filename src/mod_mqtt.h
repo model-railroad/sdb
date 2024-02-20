@@ -87,7 +87,7 @@ public:
         String channel = input["mq.channel.s"];  // empty if missing
 
         user.trim();
-        boolean changed = (_user != user);
+        bool changed = (_user != user);
         changed |= (_channel != channel);
         _user = user;
         _channel = channel;

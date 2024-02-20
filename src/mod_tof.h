@@ -273,7 +273,7 @@ private:
             long minDistMM = measure_tof();
 
             // Make refresh rate dynamic: faster when target is closer to sensor.
-            millis_t delayMS = max(50L, min(250L, minDistMM / 10));
+            millis_t delayMS = std::max(50L, std::min(250L, minDistMM / 10));
             rtDelay(delayMS);
         }
     }

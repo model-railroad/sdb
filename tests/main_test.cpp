@@ -14,7 +14,7 @@
 // The order matters.
 #include "sdb_mod_manager.h"
 #include "mod_blinky.h"
-//#include "mod_blocks.h"
+#include "mod_blocks.h"
 //#include "mod_display.h"
 //#include "mod_jmri.h"
 //#include "mod_mqtt.h"

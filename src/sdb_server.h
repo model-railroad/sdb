@@ -77,7 +77,7 @@ public:
         host.trim();
         port.trim();
 
-        boolean changed = (_host != host);
+        bool changed = (_host != host);
         _host = host;
         _manager.dataStore().putString(_keyHost, host);
 
@@ -100,7 +100,7 @@ protected:
     String _host;
     int _port;
     SdbLock _propsLock;
-    boolean _clientPropsChanged;
+    bool _clientPropsChanged;
 };
 
 #endif // INC_SDB_SERVER_H

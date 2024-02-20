@@ -380,7 +380,7 @@ private:
     /// Validate whether the ssid + pass is valid. If it is, memorizes the info in data store + NVS.
     /// Note that SSIDs are prefixed by either E or O (encrypted vs open).
     /// Returns true if accepted, false if not accepted.
-    boolean memorizeNewSsid(const String& ssid, const String& pass) {
+    bool memorizeNewSsid(const String& ssid, const String& pass) {
         // Verify ssid is one of the names we found before
         auto found = std::find(_wifiNetworks.begin(), _wifiNetworks.end(), ssid);
         if (found == std::end(_wifiNetworks)) {

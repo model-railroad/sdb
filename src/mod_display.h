@@ -236,8 +236,9 @@ private:
     }
 
     void drawWifiIP(const String& ip) {
+#if defined(USE_DISPLAY_LIB_U8G2)
         int y = abs(_yOffset - 8);
-        
+
         _u8g2.clearBuffer();
         _u8g2.setFont(u8g2_font_t0_22b_tf);
 
@@ -245,8 +246,8 @@ private:
         y += YTXT;
         _u8g2.drawStr(0, y, ip.c_str());
         y += YTXT;
-
         _yOffset = (_yOffset + 1) % 16;
+#endif
     }
 
     void update() {

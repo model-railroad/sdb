@@ -15,10 +15,7 @@ typedef struct cJSON
 
 class JSONVar {
 public:
-    JSONVar()
-    : JSONVar(NULL, NULL)
-    {
-    }
+    JSONVar() : JSONVar(NULL, NULL) { }
 
 //    JSONVar(bool b);
 //    JSONVar(char i);
@@ -53,7 +50,7 @@ public:
 //    operator unsigned long () const;
 //    operator double() const;
 //    operator const char* () const;
-//    operator const String () const;
+    operator const String () const { return String("placeholder"); }
 //
 //    void operator=(const JSONVar& v);
 //#if __cplusplus >= 201103L || defined(__GXX_EXPERIMENTAL_CXX0X__)
@@ -69,14 +66,14 @@ public:
 //    void operator=(long l);
 //    void operator=(unsigned long ul);
 //    void operator=(double d);
-//    void operator=(const char* s);
+    void operator=(const char* s) { }
 //    void operator=(const String& s);
 //    void operator=(nullptr_t);
 //
 //    bool operator==(const JSONVar& v) const;
 //    bool operator==(nullptr_t) const;
 //
-//    JSONVar operator[](const char* key);
+    JSONVar operator[](const char* key) { return *this; }
 //    JSONVar operator[](const String& key);
 //    JSONVar operator[](int index);
 //    JSONVar operator[](const JSONVar& key);
