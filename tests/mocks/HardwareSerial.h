@@ -3,6 +3,8 @@
 #include <stdio.h>
 #include <stdarg.h>
 
+#define F(x) (x)
+
 class Print {
 public:
     size_t printf(const char *format, ...) {
@@ -11,6 +13,10 @@ public:
         int result = vfprintf(stderr, format, argptr);
         va_end(argptr);
         return result;
+    }
+
+    size_t println(const char *str) {
+        return fprintf(stderr, "%s\n", str);
     }
 };
 

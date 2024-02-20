@@ -21,10 +21,11 @@
 
 #include "common.h"
 #include "sdb_lock.h"
-#include <unordered_map>
+#include <memory>
 #include <nvs_flash.h>
 #include <nvs.h>
 #include <nvs_handle.hpp>
+#include <unordered_map>
 
 namespace SdbKey {
     /// Keys for SdbDataStore
