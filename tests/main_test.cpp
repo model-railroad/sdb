@@ -4,7 +4,9 @@
 
 #define ESP32 1
 
-#include <common.h>
+#include "common.h"
+#include "sdb_lock.h"
+#include "sdb_task.h"
 
 class MainTest {
    public:

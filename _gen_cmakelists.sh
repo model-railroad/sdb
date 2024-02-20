@@ -44,6 +44,8 @@ for F in $(grep '^   "-[a-z_DW]' $CMD_JSON | sort -u | tr -d '\\\", '); do
 set(CMAKE_CXX_FLAGS \"\${CMAKE_CXX_FLAGS} $F\")"
 done
 
+echo "Parsing src/, tests/, and build/compile_commands.json..."
+
 SRC_HEADERS=$(cd src ; find . -name "*.h")
 
 SRC_DIRS=$(cd src ; find . -type d | grep -v "\\.$")
@@ -60,8 +62,15 @@ for I in $(grep '"-I' build/compile_commands.json | sort -u | sed 's/-I//g' | tr
 \${ARDUINO_DIR}/$I"
 done
 
+echo "Generating $DEST_SRC"
 cat > $DEST_SRC <<EOF
 cmake_minimum_required(VERSION 3.26)
+
+# --- SDB Project ---
+project(SDB)
+set(CMAKE_CXX_STANDARD 11)
+set(CMAKE_CXX_STANDARD_REQUIRED True)
+set(CMAKE_CXX_EXTENSIONS OFF)
 
 # Arduino directories
 string(REPLACE "\\\\" "/" WIN_USER_PROFILE \$ENV{USERPROFILE})
@@ -86,12 +95,12 @@ set(CMAKE_FIND_ROOT_PATH_MODE_INCLUDE ONLY)
 # --- SRC target ---
 
 # Force the .ino file to be treated as C++
-set_source_files_properties(\${PROJECT_SOURCE_DIR}/sdb.ino PROPERTIES LANGUAGE CXX)
-set_source_files_properties(\${PROJECT_SOURCE_DIR}/sdb.ino PROPERTIES COMPILE_FLAGS "-x c++")
+set_source_files_properties(\${PROJECT_SOURCE_DIR}/../sdb.ino PROPERTIES LANGUAGE CXX)
+set_source_files_properties(\${PROJECT_SOURCE_DIR}/../sdb.ino PROPERTIES COMPILE_FLAGS "-x c++")
 
 $CXX_FLAGS
 
-add_library(src \${PROJECT_SOURCE_DIR}/sdb.ino
+add_library(src \${PROJECT_SOURCE_DIR}/../sdb.ino
 $SRC_HEADERS
 )
 
@@ -107,8 +116,15 @@ $ARDUINO_DIR_INCLUDES
 # ~~
 EOF
 
+echo "Generating $DEST_TESTS"
 cat > $DEST_TESTS <<EOF
 cmake_minimum_required(VERSION 3.26)
+
+# --- SDB TESTS Project ---
+project(SDB)
+set(CMAKE_CXX_STANDARD 11)
+set(CMAKE_CXX_STANDARD_REQUIRED True)
+set(CMAKE_CXX_EXTENSIONS OFF)
 
 set(CMAKE_SYSTEM_NAME MSYS)
 
