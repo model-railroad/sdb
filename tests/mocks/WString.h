@@ -42,6 +42,10 @@ public:
         return (*this);
     }
 
+    char charAt(unsigned int loc) const {
+        return _str[loc];
+    }
+
     void trim() {
         ltrim(_str);
         rtrim(_str);

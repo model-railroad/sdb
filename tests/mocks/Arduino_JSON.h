@@ -80,7 +80,7 @@ public:
 //
 //    int length() const;
 //    JSONVar keys() const;
-//    bool hasOwnProperty(const char* key) const;
+    bool hasOwnProperty(const char* key) const { return false; }
 //    bool hasOwnProperty(const String& key) const;
 //
 //    bool hasPropertyEqual(const char* key,  const char* value) const;
@@ -99,9 +99,11 @@ public:
 //    static String typeof_(const JSONVar& value);
 
 private:
-    JSONVar(struct cJSON* json, struct cJSON* parent);
+    JSONVar(struct cJSON* json, struct cJSON* parent) :
+            _json(json), _parent(parent) {
+    }
 
-    void replaceJson(struct cJSON* json);
+//    void replaceJson(struct cJSON* json) {}
 
 private:
     struct cJSON* _json;

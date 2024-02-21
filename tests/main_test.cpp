@@ -6,6 +6,7 @@
 
 #include "esp.h"
 #include "common.h"
+#include "sdb_ino.h"
 
 // No display in the mock tests (TBD add later)
 #undef USE_DISPLAY_LIB_U8G2

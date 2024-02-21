@@ -5,7 +5,7 @@
 static const int HTTP_SUCCESS =0;
 static const int HTTP_ERROR_CONNECTION_FAILED =-1;
 
-class HttpClient {
+class HttpClient : public Client {
 public:
     HttpClient(Client& aClient, const String& aServerName, uint16_t aServerPort) {}
 
