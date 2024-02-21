@@ -7,6 +7,13 @@ if [[ "$1" == "-g" ]]; then
   PROF="${PROF}_debug"
   shift
 fi
+
+if [[ -d src/cmake-build-debug ]]; then
+  for F in $(find src/cmake-build-debug/ -name "*\.c" -or -name "*\.cpp"); do
+    if [[ -f "$F" ]]; then rm -v "$F"; fi
+  done
+fi
+
 ./_gen_html_gz.sh src/html/_mod_wifi_ap_index.html
 ./_gen_html_gz.sh src/html/_mod_wifi_sta_index.html
 ./_gen_html_gz.sh src/html/_mod_wifi_style.css

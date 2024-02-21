@@ -95,12 +95,12 @@ set(CMAKE_FIND_ROOT_PATH_MODE_INCLUDE ONLY)
 # --- SRC target ---
 
 # Force the .ino file to be treated as C++
-set_source_files_properties(\${PROJECT_SOURCE_DIR}/../sdb.ino PROPERTIES LANGUAGE CXX)
-set_source_files_properties(\${PROJECT_SOURCE_DIR}/../sdb.ino PROPERTIES COMPILE_FLAGS "-x c++")
+# set_source_files_properties(\${PROJECT_SOURCE_DIR}/../sdb.ino PROPERTIES LANGUAGE CXX)
+# set_source_files_properties(\${PROJECT_SOURCE_DIR}/../sdb.ino PROPERTIES COMPILE_FLAGS "-x c++")
 
 $CXX_FLAGS
 
-add_library(src \${PROJECT_SOURCE_DIR}/../sdb.ino
+add_library(src \${PROJECT_SOURCE_DIR}/sdb.cpp
 $SRC_HEADERS
 )
 
