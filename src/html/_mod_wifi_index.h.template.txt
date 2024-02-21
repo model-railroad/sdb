@@ -19,9 +19,11 @@
 #ifndef __INC_SDB_@NAME@_H
 #define __INC_SDB_@NAME@_H
 
+#include <stdint.h>
+
 // File: _@NAME@.html, Size: @SIZE@
 #define _@NAME@_html_gz_len @SIZEGZ@
-const char _@NAME@_html_gz[] = {
+const uint8_t _@NAME@_html_gz[] = {
 @BYTESGZ@
 };
 

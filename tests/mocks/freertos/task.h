@@ -3,6 +3,8 @@
 typedef void* TaskHandle_t;
 typedef void (* TaskFunction_t)( void * );
 
+#define tskIDLE_PRIORITY ((UBaseType_t) 0U)
+
 BaseType_t xTaskCreatePinnedToCore( TaskFunction_t pvTaskCode,
                                     const char * const pcName,
                                     const uint32_t usStackDepth,

@@ -67,7 +67,7 @@ public:
 //    void operator=(unsigned long ul);
 //    void operator=(double d);
     void operator=(const char* s) { }
-//    void operator=(const String& s);
+    void operator=(const String& s) { }
 //    void operator=(nullptr_t);
 //
 //    bool operator==(const JSONVar& v) const;
@@ -75,7 +75,7 @@ public:
 //
     JSONVar operator[](const char* key) { return *this; }
 //    JSONVar operator[](const String& key);
-//    JSONVar operator[](int index);
+    JSONVar operator[](int index) { return *this; }
 //    JSONVar operator[](const JSONVar& key);
 //
 //    int length() const;
@@ -109,3 +109,11 @@ private:
     struct cJSON* _json;
     struct cJSON* _parent;
 };
+
+class JSONClass {
+public:
+    String stringify(const JSONVar& value) { return ""; }
+    JSONVar parse(const char* s) { return JSONVar(); }
+};
+
+JSONClass JSON;

@@ -236,7 +236,7 @@ private:
         if (_httpdHandle != nullptr) {
             DEBUG_PRINTF( ( "[WIFI] Stop current HTTPd server\n") );
             httpd_stop(_httpdHandle);
-            _httpdHandle = null;
+            _httpdHandle = nullptr;
         }
     }
 
@@ -300,7 +300,10 @@ private:
         DEBUG_PRINTF( ( "[WIFI] AP_indexHandler for %p.\n", req ) );
         httpd_resp_set_type(req, "text/html");
         httpd_resp_set_hdr(req, "Content-Encoding", "gzip");
-        httpd_resp_send(req, _mod_wifi_ap_index_html_gz, _mod_wifi_ap_index_html_gz_len);
+        httpd_resp_send(
+                req,
+                reinterpret_cast<const char *>(_mod_wifi_ap_index_html_gz),
+                _mod_wifi_ap_index_html_gz_len);
         return ESP_OK;
     }
 
@@ -310,7 +313,10 @@ private:
         DEBUG_PRINTF( ( "[WIFI] styleHandler for %p.\n", req ) );
         httpd_resp_set_type(req, "text/css");
         httpd_resp_set_hdr(req, "Content-Encoding", "gzip");
-        httpd_resp_send(req, _mod_wifi_style_html_gz, _mod_wifi_style_html_gz_len);
+        httpd_resp_send(
+                req,
+                reinterpret_cast<const char *>(_mod_wifi_style_html_gz),
+                _mod_wifi_style_html_gz_len);
         return ESP_OK;
     }
 
@@ -475,7 +481,10 @@ private:
         DEBUG_PRINTF( ( "[WIFI] STA_indexHandler for %p.\n", req ) );
         httpd_resp_set_type(req, "text/html");
         httpd_resp_set_hdr(req, "Content-Encoding", "gzip");
-        httpd_resp_send(req, _mod_wifi_sta_index_html_gz, _mod_wifi_sta_index_html_gz_len);
+        httpd_resp_send(
+                req,
+                reinterpret_cast<const char *>(_mod_wifi_sta_index_html_gz),
+                _mod_wifi_sta_index_html_gz_len);
         return ESP_OK;
     }
 
