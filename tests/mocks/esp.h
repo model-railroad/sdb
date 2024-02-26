@@ -39,7 +39,7 @@ void delay(unsigned long millis) { /* no-op */ }
 #define LOW               0x0
 #define HIGH              0x1
 
-#define INPUT             0x01
+//#define INPUT             0x01    -- this conflicts with mingw/.../winuser.h
 #define OUTPUT            0x03
 #define PULLUP            0x04
 #define INPUT_PULLUP      0x05

@@ -13,10 +13,9 @@
 class String {
 public:
     String(const char *str = "") : _str(str) {}
-    String(int val) : String(val, 10) { }
-    String(int val, int radix) {
+    String(int val, int base = 10) {
         char buf[1024];
-        _str = itoa(val, buf, radix);
+        _str = itoa(val, buf, base);
     }
 
     const char *c_str() const { return _str.c_str(); }
@@ -53,7 +52,7 @@ public:
 
     bool isEmpty() const { return _str.empty(); }
 
-    int toInt() const { return std::stoi(_str); }
+    long toInt() const { return atol(_str.c_str()); }
 
     int length() const { return _str.length(); }
     
