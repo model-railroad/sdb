@@ -50,6 +50,8 @@ SRC_HEADERS=$(cd src ; find . -name "*.h")
 
 SRC_DIRS=$(cd src ; find . -type d | grep -v "\\.$")
 
+TESTS_SRC=$(cd tests ; ls -1 *.cpp )
+
 TESTS_HEADERS=$(cd tests ; find . -name "*.h" ; find ../src -name "*.h")
 
 TESTS_DIRS=$(cd tests ; find ../src -type d)
@@ -130,7 +132,8 @@ set(CMAKE_SYSTEM_NAME MSYS)
 
 # --- TESTS target ---
 
-add_executable(tests main_test.cpp
+add_executable(tests
+$TESTS_SRC
 $TEST_HEADERS
 )
 
