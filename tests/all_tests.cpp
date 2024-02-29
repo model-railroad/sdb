@@ -8,4 +8,4 @@
 
 #include "WString_test.h"
 #include "sdb_lock_test.h"
-
+#include "sdb_pass_dec_test.h"

@@ -55,7 +55,10 @@ public:
     long toInt() const { return atol(_str.c_str()); }
 
     int length() const { return _str.length(); }
-    
+
+    // Visible for Testing
+    const std::string& internal() const { return _str; }
+
 private:
     std::string _str;
 
@@ -72,3 +75,9 @@ private:
         }).base(), s.end());
     }
 };
+
+// Stringification for doctest C++ framework
+std::ostream& operator<<(std::ostream& os, const String& value) {
+    os << value.internal();
+    return os;
+}
