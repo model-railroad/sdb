@@ -100,11 +100,11 @@ public:
     /// Registers a new block.
     /// Synchronization: None. This MUST be called at init or start time.
     /// TBD: later add synchronization so that it can be dynamic.
-    void registerBlock(SdbBlock* block) {
+    void registerBlock(const std::shared_ptr<SdbBlock>& block) {
         _blocks.push_back(block);
     }
 
-    const std::vector<SdbBlock*>& blocks() const {
+    const std::vector<std::shared_ptr<SdbBlock>>& blocks() const {
         return _blocks;
     }
 
@@ -220,7 +220,7 @@ private:
     std::map<String, SdbMod*> _modsmap;
     std::vector<std::reference_wrapper<SdbSensor>> _sensors;
     std::vector<std::reference_wrapper<SdbServer>> _servers;
-    std::vector<SdbBlock*> _blocks;
+    std::vector<std::shared_ptr<SdbBlock>> _blocks;
     long _debug_printf;
 
     struct Scheduled {

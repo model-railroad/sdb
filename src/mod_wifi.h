@@ -498,7 +498,7 @@ private:
         JSONVar data = JSON.parse("{}");
 
         int index = 0;
-        for(auto* b: _manager.blocks()) {
+        for(auto& b: _manager.blocks()) {
             data["blocks"][index++] = b->name();
         }
 
@@ -544,7 +544,7 @@ private:
         JSONVar data = JSON.parse("{}");
 
         if (type == "block") {
-            for (auto *b : _manager.blocks()) {
+            for (auto& b : _manager.blocks()) {
                 if (b->name() == name) {
                     JSONVar temp;
                     data["props"] = b->getProperties(temp);
@@ -626,9 +626,9 @@ private:
         bool success = false;
 
         if (type == "block") {
-            for (auto *b : _manager.blocks()) {
+            for (auto& b : _manager.blocks()) {
                 if (b->name() == name) {
-                    DEBUG_PRINTF( ( "[WIFI] set block %p\n", b ) );
+                    DEBUG_PRINTF( ( "[WIFI] set block %p\n", b.get() ) );
                     b->setProperties(props);
                     success = true;
                     break;
@@ -637,7 +637,7 @@ private:
         } else if (type == "sensor") {
             for (auto& s : _manager.sensors()) {
                 if (s.get().name() == name) {
-                    DEBUG_PRINTF( ( "[WIFI] set sensor %p\n", s ) );
+                    DEBUG_PRINTF( ( "[WIFI] set sensor %p\n", &(s.get()) ) );
                     s.get().setProperties(props);
                     success = true;
                     break;
@@ -646,7 +646,7 @@ private:
         } else if (type == "server") {
             for (auto& s : _manager.servers()) {
                 if (s.get().name() == name) {
-                    DEBUG_PRINTF( ( "[WIFI] set server %p\n", s ) );
+                    DEBUG_PRINTF( ( "[WIFI] set server %p\n", &(s.get()) ) );
                     s.get().setProperties(props);
                     success = true;
                     break;

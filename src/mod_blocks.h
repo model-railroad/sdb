@@ -24,6 +24,8 @@
 #include "sdb_block.h"
 #include "sdb_data_store.h"
 
+#include <memory>
+
 #define MOD_BLOCKS_NAME "bl"
 
 class SdbModBlocks : public SdbModTask {
@@ -40,17 +42,18 @@ public:
         }
 
         _manager.registerBlock(
-            new SdbBlock(_manager,
-                         "block0",
-                         tof0,
-                         0));
+                std::make_shared<SdbBlock>(
+                        _manager,
+                        "block0",
+                        tof0,
+                        0));
         _manager.registerBlock(
-            new SdbBlock(_manager,
-                         "block1",
-                         tof0,
-                         1));
-
-        for (auto* b : _manager.blocks()) {
+                std::make_shared<SdbBlock>(
+                        _manager,
+                        "block1",
+                        tof0,
+                        1));
+        for (const auto& b : _manager.blocks()) {
             b->onStart();
         }
 
@@ -67,7 +70,7 @@ private:
             // TBD synchronize when blocks() becomes dynamic.
             auto& vector = _manager.blocks();
 
-            for (auto* block : vector) {
+            for (auto& block : vector) {
                 if (block->update() || block->needsRefresh()) {
                     block->notify();
                 }
