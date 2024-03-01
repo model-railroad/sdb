@@ -508,8 +508,8 @@ private:
         }
 
         index = 0;
-        for(auto* s: _manager.servers()) {
-            data["servers"][index++] = s->name();
+        for(auto& s: _manager.servers()) {
+            data["servers"][index++] = s.get().name();
         }
 
         String response = JSON.stringify(data);
@@ -560,10 +560,10 @@ private:
                 }
             }
         } else if (type == "server") {
-            for (auto *s : _manager.servers()) {
-                if (s->name() == name) {
+            for (auto& s : _manager.servers()) {
+                if (s.get().name() == name) {
                     JSONVar temp;
-                    data["props"] = s->getProperties(temp);
+                    data["props"] = s.get().getProperties(temp);
                     break;
                 }
             }
@@ -644,10 +644,10 @@ private:
                 }
             }
         } else if (type == "server") {
-            for (auto *s : _manager.servers()) {
-                if (s->name() == name) {
+            for (auto& s : _manager.servers()) {
+                if (s.get().name() == name) {
                     DEBUG_PRINTF( ( "[WIFI] set server %p\n", s ) );
-                    s->setProperties(props);
+                    s.get().setProperties(props);
                     success = true;
                     break;
                 }

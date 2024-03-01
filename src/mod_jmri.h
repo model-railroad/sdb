@@ -23,6 +23,7 @@
 #include "sdb_mod.h"
 #include "sdb_server.h"
 
+#include <functional>
 #include <memory>
 #include <WiFiClient.h>
 #include <ArduinoHttpClient.h>
@@ -105,7 +106,7 @@ public:
     { }
 
     void onStart() override {
-        _manager.registerServer(&_server);
+        _manager.registerServer(std::ref<SdbServer>(_server));
         _server.onStart();
         startTask();
     }

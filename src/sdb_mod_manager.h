@@ -88,11 +88,11 @@ public:
 
     /// Registers a new server.
     /// Synchronization: None. This MUST be called at init or start time.
-    void registerServer(SdbServer* server) {
+    void registerServer(std::reference_wrapper<SdbServer> server) {
         _servers.push_back(server);
     }
 
-    const std::vector<SdbServer*>& servers() const {
+    const std::vector<std::reference_wrapper<SdbServer>>& servers() const {
         return _servers;
     }
 
@@ -218,7 +218,7 @@ private:
     std::vector<SdbMod*> _mods;
     std::map<String, SdbMod*> _modsmap;
     std::vector<SdbSensor*> _sensors;
-    std::vector<SdbServer*> _servers;
+    std::vector<std::reference_wrapper<SdbServer>> _servers;
     std::vector<SdbBlock*> _blocks;
     long _debug_printf;
 
