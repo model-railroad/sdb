@@ -69,18 +69,19 @@ public:
 
     /// Registers a new sensor.
     /// Synchronization: None. This MUST be called at init or start time.
-    void registerSensor(SdbSensor* sensor) {
+    void registerSensor(std::reference_wrapper<SdbSensor> sensor) {
         _sensors.push_back(sensor);
     }
 
-    const std::vector<SdbSensor*>& sensors() const {
+    const std::vector<std::reference_wrapper<SdbSensor>>& sensors() const {
         return _sensors;
     }
 
+    /// Returns a pointer on a sensor or null if the sensor does not exist.
     SdbSensor* sensorByName(const String& sensorName) const {
-        for (auto* sensor: _sensors) {
-            if (sensorName == sensor->name()) {
-                return sensor;
+        for (auto& sensor: _sensors) {
+            if (sensorName == sensor.get().name()) {
+                return &(sensor.get());
             }
         }
         return nullptr;
@@ -217,7 +218,7 @@ private:
     SdbDataStore _dataStore;
     std::vector<SdbMod*> _mods;
     std::map<String, SdbMod*> _modsmap;
-    std::vector<SdbSensor*> _sensors;
+    std::vector<std::reference_wrapper<SdbSensor>> _sensors;
     std::vector<std::reference_wrapper<SdbServer>> _servers;
     std::vector<SdbBlock*> _blocks;
     long _debug_printf;

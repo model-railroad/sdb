@@ -226,7 +226,7 @@ public:
         init();
 
         for(auto& t: _tof) {
-            _manager.registerSensor(&t);
+            _manager.registerSensor(t);
         }
 
         startTask();
