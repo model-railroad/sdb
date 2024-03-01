@@ -21,8 +21,11 @@
 #include "all_src.h"
 #include "doctest.h"
 
+TEST_SUITE_BEGIN("sdbPassDec");
 
 TEST_CASE("sdbPassDec") {
     auto p = sdbPassDec("414243646566303132");
     CHECK_EQ(p, "ABCdef012");
 }
+
+TEST_SUITE_END();

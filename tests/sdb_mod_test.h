@@ -27,14 +27,18 @@ public:
             SdbMod(manager, name)
     { }
 
-    bool hasEvents() {
+    // Visible for testing
+    bool _hasEvents() {
         return SdbMod::hasEvents();
     }
 
-    SdbEvent::SdbEvent dequeueEvent() {
+    // Visible for testing
+    SdbEvent::SdbEvent _dequeueEvent() {
         return SdbMod::dequeueEvent();
     }
 };
+
+TEST_SUITE_BEGIN("SdbMod");
 
 TEST_CASE("SdbMod name") {
     SdbModManager manager;
@@ -47,11 +51,10 @@ TEST_CASE("SdbMod events") {
     SdbModManager manager;
     SdbModTest mod(manager, "SDB Mod Test Name");
 
-    CHECK_FALSE(mod.hasEvents());
+    CHECK_FALSE(mod._hasEvents());
 
-    auto event0 = mod.dequeueEvent();
+    auto event0 = mod._dequeueEvent();
     CHECK_EQ(event0, SdbEvent::EMPTY);
-
 
     mod.queueEvent(SdbEvent::DisplayWifiAP);
     mod.queueEvent(SdbEvent::DisplayWifiSTA);
@@ -59,22 +62,22 @@ TEST_CASE("SdbMod events") {
     String blockName("Block Name");
     mod.queueEvent(SdbEvent::SdbEvent(SdbEvent::BlockChanged, true, &blockName));
 
-    CHECK(mod.hasEvents());
+    CHECK(mod._hasEvents());
 
-    auto event1 = mod.dequeueEvent();
+    auto event1 = mod._dequeueEvent();
     CHECK_EQ(event1.type, SdbEvent::DisplayWifiAP);
-    auto event2 = mod.dequeueEvent();
+    auto event2 = mod._dequeueEvent();
     CHECK_EQ(event2.type, SdbEvent::DisplayWifiSTA);
-    auto event3 = mod.dequeueEvent();
+    auto event3 = mod._dequeueEvent();
     CHECK_EQ(event3.type, SdbEvent::DisplaySensor);
-    auto event4 = mod.dequeueEvent();
+    auto event4 = mod._dequeueEvent();
     CHECK_EQ(event4.type, SdbEvent::BlockChanged);
     CHECK_EQ(event4.state, true);
     CHECK_EQ(event4.data->c_str(), "Block Name");
-
-    auto event5 = mod.dequeueEvent();
+    auto event5 = mod._dequeueEvent();
     CHECK_EQ(event5.type, SdbEvent::Empty);
 
-    CHECK_FALSE(mod.hasEvents());
+    CHECK_FALSE(mod._hasEvents());
 }
 
+TEST_SUITE_END();

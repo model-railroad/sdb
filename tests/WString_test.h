@@ -21,6 +21,7 @@
 #include "all_src.h"
 #include "doctest.h"
 
+TEST_SUITE_BEGIN("String");
 
 TEST_CASE("String empty") {
     String s;
@@ -99,3 +100,5 @@ TEST_CASE("String number") {
     CHECK_EQ(s2, "ffff");
     CHECK_NE(s2.toInt(), 65535); // can't read "ffff" in base 10.
 }
+
+TEST_SUITE_END();

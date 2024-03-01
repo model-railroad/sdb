@@ -21,6 +21,7 @@
 #include "all_src.h"
 #include "doctest.h"
 
+TEST_SUITE_BEGIN("SdbLock");
 
 TEST_CASE("SdbLock acquire release") {
     SdbLock lock("name");
@@ -57,3 +58,5 @@ TEST_CASE("SdbMutex") {
 
     CHECK_EQ(gLastSemaphore->counter, 0);
 }
+
+TEST_SUITE_END();
