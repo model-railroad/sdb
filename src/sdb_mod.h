@@ -30,9 +30,13 @@ class SdbModManager;
 namespace SdbEvent {
     enum Type {
         Empty,
+        /// Data: None.
         DisplayWifiAP,
+        /// Data: None.
         DisplayWifiSTA,
+        /// Data: None.
         DisplaySensor,
+        /// Data: state(bool), block(String).
         BlockChanged,
     };
 
@@ -46,6 +50,12 @@ namespace SdbEvent {
 
      SdbEvent(Type type, bool state, const String* data)
          : type(type), state(state), data(data) {}
+
+        bool operator ==(const SdbEvent &rhs) const {
+         return type == rhs.type
+             && state == rhs.state
+             && data == rhs.data;   // Note: String *pointer* equality
+     }
 
         Type type;
         bool state;
