@@ -66,5 +66,4 @@ String sdbPassDec(const String& encodedPass) {
     return pw;
 }
 
-
 #endif // INC_SDB_PASS_DEC_H
