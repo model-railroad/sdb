@@ -20,6 +20,7 @@
 #define INC_SDB_BLOCK_H
 
 #include <Arduino_JSON.h>
+#include <memory>
 
 #include "common.h"
 #include "mod_jmri.h"
@@ -132,18 +133,18 @@ public:
         DEBUG_PRINTF( ("@@ block %p notify [% 8d] %s -- state %d\n",
                       this, _lastNotifyTS, _jmriName.c_str(), _state) );
         if (!_jmriName.isEmpty()) {
-            _manager.queueEvent(
-                MOD_JMRI_NAME,
-                SdbEvent::SdbEvent(SdbEvent::BlockChanged,
-                                   _state,
-                                   &_jmriName));
+            auto event = std::unique_ptr<SdbEvent::SdbEvent>(
+                    new SdbEvent::SdbEvent(SdbEvent::BlockChanged,
+                                           _state,
+                                           &_jmriName));
+            _manager.queueEvent(MOD_JMRI_NAME, std::move(event));
         }
         if (!_mqttTopic.isEmpty()) {
-            _manager.queueEvent(
-                MOD_MQTT_NAME,
-                SdbEvent::SdbEvent(SdbEvent::BlockChanged,
-                                   _state,
-                                   &_mqttTopic));
+            auto event = std::unique_ptr<SdbEvent::SdbEvent>(
+                    new SdbEvent::SdbEvent(SdbEvent::BlockChanged,
+                                           _state,
+                                           &_mqttTopic));
+            _manager.queueEvent(MOD_MQTT_NAME, std::move(event));
         }
     }
 

@@ -83,24 +83,26 @@ public:
         bool changes = false;
 
         auto event = dequeueEvent();
-        switch(event.type) {
-            case SdbEvent::DisplaySensor:
-                _state = DisplaySensor;
-                break;
-            case SdbEvent::DisplayWifiAP:
-                _state = DisplayWifiAP;
-                // Display the wifi info for a few seconds, then back to sensor state.
-                _manager.schedule(DISPLAY_TIME_WIFI_ON_MS, [this](void) {
-                    _manager.queueEvent(MOD_DISPLAY_NAME, SdbEvent::DisplaySensor);
-                });
-                break;
-            case SdbEvent::DisplayWifiSTA:
-                _state = DisplayWifiSTA;
-                // Display the wifi info for a few seconds, then back to sensor state.
-                _manager.schedule(DISPLAY_TIME_WIFI_ON_MS, [this](void) {
-                    _manager.queueEvent(MOD_DISPLAY_NAME, SdbEvent::DisplaySensor);
-                });
-                break;
+        if (event) {
+            switch (event->type) {
+                case SdbEvent::DisplaySensor:
+                    _state = DisplaySensor;
+                    break;
+                case SdbEvent::DisplayWifiAP:
+                    _state = DisplayWifiAP;
+                    // Display the wifi info for a few seconds, then back to sensor state.
+                    _manager.schedule(DISPLAY_TIME_WIFI_ON_MS, [this](void) {
+                        _manager.queueEvent(MOD_DISPLAY_NAME, SdbEvent::DisplaySensor);
+                    });
+                    break;
+                case SdbEvent::DisplayWifiSTA:
+                    _state = DisplayWifiSTA;
+                    // Display the wifi info for a few seconds, then back to sensor state.
+                    _manager.schedule(DISPLAY_TIME_WIFI_ON_MS, [this](void) {
+                        _manager.queueEvent(MOD_DISPLAY_NAME, SdbEvent::DisplaySensor);
+                    });
+                    break;
+            }
         }
 
         switch(_state) {

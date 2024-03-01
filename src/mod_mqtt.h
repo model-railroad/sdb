@@ -197,7 +197,7 @@ public:
 
 private:
     SdbServerMqtt _server;
-    std::map<String, SdbEvent::SdbEvent> _events;
+    std::map<String, std::unique_ptr<SdbEvent::SdbEvent>> _events;
 
     [[noreturn]] void onTaskRun() override {
         while (true) {
@@ -206,8 +206,9 @@ private:
             if (hasEvents()) {
                 do {
                     auto event = dequeueEvent();
-                    if (event.type == SdbEvent::BlockChanged) {
-                        _events[*event.data] = event;
+                    if (event && event->type == SdbEvent::BlockChanged) {
+                        const String* key = event->data;
+                        _events[*key] = std::move(event);
                     }
                 } while (hasEvents());
 
@@ -220,7 +221,7 @@ private:
                 } else {
                     bool success = true;
                     for (const auto& [key, event] : _events) {
-                        if (!_server.send(key, event.state)) {
+                        if (!_server.send(key, event->state)) {
                             success = false;
                         }
                     }

@@ -25,6 +25,7 @@ class SdbModManager;
 #include "sdb_lock.h"
 #include "sdb_mod_manager.h"
 #include "sdb_task.h"
+#include <memory>
 #include <vector>
 
 namespace SdbEvent {
@@ -61,8 +62,6 @@ namespace SdbEvent {
         bool state;
         const String* data;
     };
-
-    static SdbEvent EMPTY;
 }
 
 
@@ -84,15 +83,15 @@ public:
         return 1000 /*ms*/;
     }
 
-    void queueEvent(const SdbEvent::SdbEvent event) {
+    void queueEvent(std::unique_ptr<SdbEvent::SdbEvent> event) {
         SdbMutex eventMutex(_eventLock);
-        _events.push_back(event);
+        _events.push_back(std::move(event));
     }
 
 protected:
     SdbModManager& _manager;
     const String _modName;
-    std::vector<SdbEvent::SdbEvent> _events;
+    std::vector<std::unique_ptr<SdbEvent::SdbEvent>> _events;
     SdbLock _eventLock;
 
     bool hasEvents() {
@@ -100,12 +99,13 @@ protected:
         return !_events.empty();
     }
 
-    SdbEvent::SdbEvent dequeueEvent() {
+    /// Returns the oldest event or nullptr if there are not queued.
+    std::unique_ptr<SdbEvent::SdbEvent> dequeueEvent() {
         SdbMutex eventMutex(_eventLock);
         if (_events.empty()) {
-            return SdbEvent::EMPTY;
+            return { nullptr }; // Note: equivalent to std::unique_ptr<SdbEvent::SdbEvent>(nullptr);
         }
-        auto result = _events.front();
+        auto result = std::move(_events.front());
         _events.erase(_events.begin());
         return result;
     }

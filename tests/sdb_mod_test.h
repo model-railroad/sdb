@@ -18,6 +18,8 @@
 
 // Test SdbLock and SdbMutex
 
+#include <memory>
+
 #include "all_src.h"
 #include "doctest.h"
 
@@ -33,49 +35,58 @@ public:
     }
 
     // Visible for testing
-    SdbEvent::SdbEvent _dequeueEvent() {
-        return SdbMod::dequeueEvent();
+    std::unique_ptr<SdbEvent::SdbEvent> _dequeueEvent() {
+        return std::move(SdbMod::dequeueEvent());
     }
 };
+
+
+
 
 TEST_SUITE_BEGIN("SdbMod");
 
 TEST_CASE("SdbMod name") {
     SdbModManager manager;
-    SdbModTest mod(manager, "SDB Mod Test Name");
+    SdbModTest mod(manager, "SdbModTestName");
 
-    CHECK_EQ(mod.name(), "SDB Mod Test Name");
+    CHECK_EQ(mod.name(), "SdbModTestName");
 }
 
 TEST_CASE("SdbMod events") {
     SdbModManager manager;
-    SdbModTest mod(manager, "SDB Mod Test Name");
+    SdbModTest mod(manager, "SdbModTest");
+    manager.registerMod(&mod);
 
     CHECK_FALSE(mod._hasEvents());
 
     auto event0 = mod._dequeueEvent();
-    CHECK_EQ(event0, SdbEvent::EMPTY);
+    CHECK_FALSE(event0);
+    CHECK_EQ(event0.get(), nullptr);
 
-    mod.queueEvent(SdbEvent::DisplayWifiAP);
-    mod.queueEvent(SdbEvent::DisplayWifiSTA);
-    mod.queueEvent(SdbEvent::DisplaySensor);
+    manager.queueEvent("SdbModTest", SdbEvent::DisplayWifiAP);
+    manager.queueEvent("SdbModTest", SdbEvent::DisplayWifiSTA);
+    manager.queueEvent("SdbModTest", SdbEvent::DisplaySensor);
     String blockName("Block Name");
-    mod.queueEvent(SdbEvent::SdbEvent(SdbEvent::BlockChanged, true, &blockName));
+    auto blockEvent = std::make_unique<SdbEvent::SdbEvent>(
+            SdbEvent::BlockChanged,
+                                   true,
+                                   &blockName);
+    manager.queueEvent("SdbModTest", std::move(blockEvent));
 
     CHECK(mod._hasEvents());
 
     auto event1 = mod._dequeueEvent();
-    CHECK_EQ(event1.type, SdbEvent::DisplayWifiAP);
+    CHECK_EQ(event1->type, SdbEvent::DisplayWifiAP);
     auto event2 = mod._dequeueEvent();
-    CHECK_EQ(event2.type, SdbEvent::DisplayWifiSTA);
+    CHECK_EQ(event2->type, SdbEvent::DisplayWifiSTA);
     auto event3 = mod._dequeueEvent();
-    CHECK_EQ(event3.type, SdbEvent::DisplaySensor);
+    CHECK_EQ(event3->type, SdbEvent::DisplaySensor);
     auto event4 = mod._dequeueEvent();
-    CHECK_EQ(event4.type, SdbEvent::BlockChanged);
-    CHECK_EQ(event4.state, true);
-    CHECK_EQ(event4.data->c_str(), "Block Name");
+    CHECK_EQ(event4->type, SdbEvent::BlockChanged);
+    CHECK_EQ(event4->state, true);
+    CHECK_EQ(event4->data->c_str(), "Block Name");
     auto event5 = mod._dequeueEvent();
-    CHECK_EQ(event5.type, SdbEvent::Empty);
+    CHECK_FALSE(event5);
 
     CHECK_FALSE(mod._hasEvents());
 }

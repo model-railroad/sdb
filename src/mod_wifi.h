@@ -36,6 +36,7 @@
 
 #include <algorithm>
 #include <functional>
+#include <memory>
 #include <vector>
 
 #include <esp_http_server.h>

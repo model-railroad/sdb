@@ -116,16 +116,16 @@ public:
 
 private:
     SdbServerJmri _server;
-    std::map<String, SdbEvent::SdbEvent> _events;
+    std::map<String, std::unique_ptr<SdbEvent::SdbEvent>> _events;
 
     [[noreturn]] void onTaskRun() override {
         while(true) {
             if (hasEvents()) {
                 do {
                     auto event = dequeueEvent();
-                    if (event.type == SdbEvent::BlockChanged) {
-                        const String* key = event.data;
-                        _events[*key] = event;
+                    if (event && event->type == SdbEvent::BlockChanged) {
+                        const String* key = event->data;
+                        _events[*key] = std::move(event);
                     }
                 } while (hasEvents());
 
@@ -140,7 +140,7 @@ private:
                     bool success = true;
                     for (const auto& [key, event] : _events) {
                         // Each send blocks (measured to be around ~1050 ms).
-                        if (!_server.send(key, event.state)) {
+                        if (!_server.send(key, event->state)) {
                             success = false;
                         }
                     }

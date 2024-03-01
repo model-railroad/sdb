@@ -27,6 +27,7 @@
 #include <algorithm>
 #include <functional>
 #include <map>
+#include <memory>
 #include <vector>
 
 class SdbBlock;     // avoid #include "sdb_block.h"  due to circular inclusions.
@@ -106,12 +107,17 @@ public:
         return _blocks;
     }
 
-    void queueEvent(const String& modName, const SdbEvent::SdbEvent& event) {
+    void queueEvent(const String& modName, SdbEvent::Type eventType) const {
+        auto event = std::unique_ptr<SdbEvent::SdbEvent>(new SdbEvent::SdbEvent(eventType));
+        queueEvent(modName, std::move(event));
+    }
+
+    void queueEvent(const String& modName, std::unique_ptr<SdbEvent::SdbEvent> event) const {
         SdbMod* mod = modByName(modName);
         if (mod == nullptr) {
             PANIC_PRINTF( ("QueueEvent: Unknown mod name '%s'\n", modName.c_str()) );
         }
-        mod->queueEvent(event);
+        mod->queueEvent(std::move(event));
     }
 
     long schedule(millis_t delayMS, const std::function<void()> lambda) {
