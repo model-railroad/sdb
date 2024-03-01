@@ -18,6 +18,7 @@
 
 #pragma once
 
+#include <stdio.h>
 #include <stdint.h>
 
 // -- ESP IDF stuff
@@ -51,8 +52,16 @@ void vTaskDelay(unsigned long ticks) { }
 
 #define BUILTIN_LED 25
 
-unsigned long millis() { return 42UL; }
-void delay(unsigned long millis) { /* no-op */ }
+unsigned long _gMockMillis = 1000L;
+
+unsigned long millis() {
+    return _gMockMillis;
+}
+
+void delay(unsigned long millis) {
+    fprintf(stderr, "<DELAY> millis() %ld --> %ld\n", _gMockMillis, _gMockMillis + millis);
+    _gMockMillis += millis;
+}
 
 #define LOW               0x0
 #define HIGH              0x1

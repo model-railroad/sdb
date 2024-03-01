@@ -120,23 +120,25 @@ public:
         mod->queueEvent(std::move(event));
     }
 
-    long schedule(millis_t delayMS, const std::function<void()> lambda) {
+    millis_t schedule(millis_t delayMS, const std::function<void()> lambda) {
         SdbMutex autoMutex(_scheduleLock);
         millis_t nowMS = millis();
-        auto* scheduled = new Scheduled(nowMS + delayMS, lambda);
-        _scheduled.push_back(scheduled);
+        auto scheduled = std::unique_ptr<Scheduled>(new Scheduled(nowMS + delayMS, lambda));
+        _scheduled.push_back(std::move(scheduled));
         // Vector sorted in reverse by _atMS (sooner element at the end).
         std::sort(
             _scheduled.begin(),
             _scheduled.end(),
-            [](Scheduled* a, Scheduled* b) { return a->_atMS < b->_atMS; }
+            [](const std::unique_ptr<Scheduled>& a, const std::unique_ptr<Scheduled>& b) {
+                return a->_atMS > b->_atMS;
+            }
         );
         if (_scheduled.empty()) {
             // This case cannot happen.
             return delayMS;
         } else {
             // The latest element is the soonest, and indicates how much to wait.
-            Scheduled* last = _scheduled.back();
+            auto& last = _scheduled.back();
             return last->_atMS - nowMS;
         }
     }
@@ -150,31 +152,39 @@ public:
     }
 
     void onLoop() {
+        // When we start this loop iteration.
         millis_t startMS = millis();
-        millis_t nextMS = startMS + 2000; // default: 2s loop
+        // The earliest time we want the *next* loop iteration to be. Default is in 2 seconds,
+        // and we'll adjust that if there's some action to perform sooner than that.
+        millis_t nextMS = startMS + 2000;
 
         while (true) {
-            Scheduled* last = NULL;
+            std::unique_ptr<Scheduled> last;
             {
                 SdbMutex autoMutex(_scheduleLock);
                 if (_scheduled.empty()) {
                     break;
                 }
-                // the last item is the soonest we need to execute
-                last = _scheduled.back();
-                // last cannot be null below
-                if (last->_atMS <= startMS) {
+                // Scheduled vector is sorted with the earliest action to execute at the
+                // end of the vector.
+                auto& peak = _scheduled.back();
+                if (peak->_atMS <= startMS) {
+                    // Action was due before start of loop. Must execute it now.
+                    // Exec the lambda below out of the lock
+                    last = std::move(peak);
                     _scheduled.pop_back();
-                    // exec the lambda below out of the lock
                 } else {
-                    if (last->_atMS < nextMS) {
-                        nextMS = last->_atMS;
+                    // The first action to execute is in the future. Adjust the next loop iteration
+                    // to match.
+                    if (peak->_atMS < nextMS) {
+                        nextMS = peak->_atMS;
                     }
                     break;
                 }
             }
-            last->_lambda();
-            delete last;
+            if (last) {
+                last->_lambda();
+            }
         }
     
         for (auto* mod : _mods) {
@@ -189,7 +199,7 @@ public:
         }
         millis_t loopMS = millis() - startMS;
         millis_t deltaMS = nextMS - startMS;
-        int size = _scheduled.size();
+        auto size = _scheduled.size();
         long debug_printf = loopMS * 1000 + deltaMS + size;
         if (debug_printf != _debug_printf) {
             DEBUG_PRINTF( ("loop %3d ms + pause %3d ms, sched #%d\n", loopMS, deltaMS, size) );
@@ -220,7 +230,7 @@ private:
         }
     };
     // Vector sorted in reverse by _atMS (sooner element at the end).
-    std::vector<Scheduled*> _scheduled;
+    std::vector<std::unique_ptr<Scheduled>> _scheduled;
     SdbLock _scheduleLock;
 };
 
