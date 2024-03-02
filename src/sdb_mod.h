@@ -26,41 +26,48 @@ class SdbModManager;
 #include "sdb_mod_manager.h"
 #include "sdb_task.h"
 #include <memory>
+#include <utility>
 #include <vector>
 
 namespace SdbEvent {
     enum Type {
-        Empty,
-        /// Data: None.
+        /// SdbEvent with no extra data.
         DisplayWifiAP,
-        /// Data: None.
+        /// SdbEvent with no extra data.
         DisplayWifiSTA,
-        /// Data: None.
+        /// SdbEvent with no extra data.
         DisplaySensor,
-        /// Data: state(bool), block(String).
+        /// SdbEventBlockChanged with state and payload (String).
         BlockChanged,
     };
 
     class SdbEvent {
     public:
-     SdbEvent()
-         : type(Empty), state(false), data(nullptr) {}
-
-     SdbEvent(Type type) //NOLINT (we want the implicit constructor)
-         : type(type), state(false), data(nullptr) {}
-
-     SdbEvent(Type type, bool state, const String* data)
-         : type(type), state(state), data(data) {}
+        explicit SdbEvent(Type type)
+         : type(type)
+        { }
 
         bool operator ==(const SdbEvent &rhs) const {
-         return type == rhs.type
-             && state == rhs.state
-             && data == rhs.data;   // Note: String *pointer* equality
-     }
+            return type == rhs.type;   // Note: String *pointer* equality
+        }
 
         Type type;
+    };
+
+    class SdbEventBlockChanged : public SdbEvent {
+    public:
+        SdbEventBlockChanged(bool state, String payload)
+        : SdbEvent(BlockChanged), state(state), payload(std::move(payload))
+        { }
+
+        bool operator ==(const SdbEventBlockChanged &rhs) const {
+            return type == rhs.type
+                   && state == rhs.state
+                   && payload == rhs.payload;
+        }
+
         bool state;
-        const String* data;
+        const String payload;
     };
 }
 

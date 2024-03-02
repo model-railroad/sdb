@@ -125,8 +125,9 @@ private:
                 do {
                     auto event = dequeueEvent();
                     if (event && event->type == SdbEvent::BlockChanged) {
-                        const String* key = event->data;
-                        _events[*key] = std::move(event);
+                        auto eventBlock = reinterpret_cast<SdbEvent::SdbEventBlockChanged *>(event.get());
+                        const String& key = eventBlock->payload;
+                        _events[key] = std::move(event);
                     }
                 } while (hasEvents());
 
@@ -141,7 +142,8 @@ private:
                     bool success = true;
                     for (const auto& [key, event] : _events) {
                         // Each send blocks (measured to be around ~1050 ms).
-                        if (!_server.send(key, event->state)) {
+                        auto eventBlock = reinterpret_cast<SdbEvent::SdbEventBlockChanged *>(event.get());
+                        if (!_server.send(key, eventBlock->state)) {
                             success = false;
                         }
                     }

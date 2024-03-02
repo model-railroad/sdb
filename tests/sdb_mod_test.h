@@ -66,11 +66,9 @@ TEST_CASE("SdbMod events") {
     manager.queueEvent("SdbModTest", SdbEvent::DisplayWifiAP);
     manager.queueEvent("SdbModTest", SdbEvent::DisplayWifiSTA);
     manager.queueEvent("SdbModTest", SdbEvent::DisplaySensor);
-    String blockName("Block Name");
-    auto blockEvent = std::make_unique<SdbEvent::SdbEvent>(
-            SdbEvent::BlockChanged,
-                                   true,
-                                   &blockName);
+    auto blockEvent = std::make_unique<SdbEvent::SdbEventBlockChanged>(
+            true,
+            "Block Name");
     manager.queueEvent("SdbModTest", std::move(blockEvent));
 
     CHECK(mod._hasEvents());
@@ -82,9 +80,10 @@ TEST_CASE("SdbMod events") {
     auto event3 = mod._dequeueEvent();
     CHECK_EQ(event3->type, SdbEvent::DisplaySensor);
     auto event4 = mod._dequeueEvent();
-    CHECK_EQ(event4->type, SdbEvent::BlockChanged);
-    CHECK_EQ(event4->state, true);
-    CHECK_EQ(event4->data->c_str(), "Block Name");
+    auto eventBlock = reinterpret_cast<SdbEvent::SdbEventBlockChanged *>(event4.get());
+    CHECK_EQ(eventBlock->type, SdbEvent::BlockChanged);
+    CHECK_EQ(eventBlock->state, true);
+    CHECK_EQ(eventBlock->payload, "Block Name");
     auto event5 = mod._dequeueEvent();
     CHECK_FALSE(event5);
 

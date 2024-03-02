@@ -134,16 +134,16 @@ public:
                       this, _lastNotifyTS, _jmriName.c_str(), _state) );
         if (!_jmriName.isEmpty()) {
             auto event = std::unique_ptr<SdbEvent::SdbEvent>(
-                    new SdbEvent::SdbEvent(SdbEvent::BlockChanged,
-                                           _state,
-                                           &_jmriName));
+                    new SdbEvent::SdbEventBlockChanged(
+                            _state,
+                            _jmriName));
             _manager.queueEvent(MOD_JMRI_NAME, std::move(event));
         }
         if (!_mqttTopic.isEmpty()) {
             auto event = std::unique_ptr<SdbEvent::SdbEvent>(
-                    new SdbEvent::SdbEvent(SdbEvent::BlockChanged,
-                                           _state,
-                                           &_mqttTopic));
+                    new SdbEvent::SdbEventBlockChanged(
+                            _state,
+                            _mqttTopic));
             _manager.queueEvent(MOD_MQTT_NAME, std::move(event));
         }
     }
