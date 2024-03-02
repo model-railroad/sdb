@@ -51,7 +51,7 @@ namespace SdbEvent {
             return type == rhs.type;   // Note: String *pointer* equality
         }
 
-        Type type;
+        const Type type;
     };
 
     class SdbEventBlockChanged : public SdbEvent {
@@ -66,7 +66,7 @@ namespace SdbEvent {
                    && payload == rhs.payload;
         }
 
-        bool state;
+        const bool state;
         const String payload;
     };
 }
