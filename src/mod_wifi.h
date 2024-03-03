@@ -503,13 +503,13 @@ private:
         }
 
         index = 0;
-        for(auto& s: _manager.sensors()) {
-            data["sensors"][index++] = s.get().name();
+        for(auto& sref: _manager.sensors()) {
+            data["sensors"][index++] = sref.get().name();
         }
 
         index = 0;
-        for(auto& s: _manager.servers()) {
-            data["servers"][index++] = s.get().name();
+        for(auto& sref: _manager.servers()) {
+            data["servers"][index++] = sref.get().name();
         }
 
         String response = JSON.stringify(data);
@@ -552,18 +552,18 @@ private:
                 }
             }
         } else if (type == "sensor") {
-            for (auto& s : _manager.sensors()) {
-                if (s.get().name() == name) {
+            for (auto& sref : _manager.sensors()) {
+                if (sref.get().name() == name) {
                     JSONVar temp;
-                    data["props"] = s.get().getProperties(temp);
+                    data["props"] = sref.get().getProperties(temp);
                     break;
                 }
             }
         } else if (type == "server") {
-            for (auto& s : _manager.servers()) {
-                if (s.get().name() == name) {
+            for (auto& sref : _manager.servers()) {
+                if (sref.get().name() == name) {
                     JSONVar temp;
-                    data["props"] = s.get().getProperties(temp);
+                    data["props"] = sref.get().getProperties(temp);
                     break;
                 }
             }
@@ -635,19 +635,19 @@ private:
                 }
             }
         } else if (type == "sensor") {
-            for (auto& s : _manager.sensors()) {
-                if (s.get().name() == name) {
-                    DEBUG_PRINTF( ( "[WIFI] set sensor %p\n", &(s.get()) ) );
-                    s.get().setProperties(props);
+            for (auto& sref : _manager.sensors()) {
+                if (sref.get().name() == name) {
+                    DEBUG_PRINTF( ( "[WIFI] set sensor %p\n", &(sref.get()) ) );
+                    sref.get().setProperties(props);
                     success = true;
                     break;
                 }
             }
         } else if (type == "server") {
-            for (auto& s : _manager.servers()) {
-                if (s.get().name() == name) {
-                    DEBUG_PRINTF( ( "[WIFI] set server %p\n", &(s.get()) ) );
-                    s.get().setProperties(props);
+            for (auto& sref : _manager.servers()) {
+                if (sref.get().name() == name) {
+                    DEBUG_PRINTF( ( "[WIFI] set server %p\n", &(sref.get()) ) );
+                    sref.get().setProperties(props);
                     success = true;
                     break;
                 }

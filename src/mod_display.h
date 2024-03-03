@@ -150,8 +150,8 @@ private:
 
     bool loopSensor() {
         long _newRefresh = 0;
-        for(auto sp: _manager.sensors()) {
-            auto& tp = reinterpret_cast<SdbSensorTof&>(sp.get());
+        for(auto sref: _manager.sensors()) {
+            auto& tp = reinterpret_cast<SdbSensorTof&>(sref.get());
             long newDistMM = tp.lastDistMM();
             _newRefresh = _newRefresh * 1000 + newDistMM;
         }
@@ -214,8 +214,8 @@ private:
         _u8g2.drawStr(0, y, "SDB: VL53L0X");
         y += YTXT;
 
-        for(auto& sp: _manager.sensors()) {
-            sp.get().draw(_u8g2, y);
+        for(auto& sref: _manager.sensors()) {
+            sref.get().draw(_u8g2, y);
             y += YTXT;
         }
 #endif

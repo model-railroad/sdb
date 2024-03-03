@@ -187,7 +187,7 @@ public:
     { }
 
     void onStart() override {
-        _manager.registerServer(std::ref<SdbServer>(_server));
+        _manager.registerServer(_server);
         _server.onStart();
         startTask();
     }

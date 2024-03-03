@@ -52,13 +52,18 @@ public:
     /// Registers a new module.
     /// Modules are executed in the order they are defined.
     /// Synchronization: None. This MUST be called at init or start time.
+    /// This panics if the module name is not unique and has already been registered.
     void registerMod(SdbMod* mod) {
+        if (modByName(mod->name()) != nullptr) {
+            PANIC_PRINTF( ("Mod Manager: Mod name '%s' cannot be redefined\n", mod->name().c_str()) );
+        }
         _mods.push_back(mod);
         _modsmap[mod->name()] = mod;
     }
 
+    /// Returns a pointer on a module, or null if the module name does not exist.
     SdbMod* modByName(const String& modName) const {
-        // Optimize this using a map, as its used by queueEvent().
+        // Optimize this using a map, as it's used by queueEvent().
         auto kvNameMod = _modsmap.find(modName);
         if (kvNameMod == _modsmap.end()) {
             return nullptr;
@@ -69,15 +74,15 @@ public:
 
     /// Registers a new sensor.
     /// Synchronization: None. This MUST be called at init or start time.
-    void registerSensor(std::reference_wrapper<SdbSensor> sensor) {
-        _sensors.push_back(sensor);
+    void registerSensor(SdbSensor& sensor) {
+        _sensors.emplace_back(sensor);
     }
 
     const std::vector<std::reference_wrapper<SdbSensor>>& sensors() const {
         return _sensors;
     }
 
-    /// Returns a pointer on a sensor or null if the sensor does not exist.
+    /// Returns a pointer on a sensor, or null if the sensor does not exist.
     SdbSensor* sensorByName(const String& sensorName) const {
         for (auto& sensor: _sensors) {
             if (sensorName == sensor.get().name()) {
@@ -89,8 +94,8 @@ public:
 
     /// Registers a new server.
     /// Synchronization: None. This MUST be called at init or start time.
-    void registerServer(std::reference_wrapper<SdbServer> server) {
-        _servers.push_back(server);
+    void registerServer(SdbServer& server) {
+        _servers.emplace_back(server);
     }
 
     const std::vector<std::reference_wrapper<SdbServer>>& servers() const {
