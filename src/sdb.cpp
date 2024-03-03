@@ -68,13 +68,13 @@ void _gSdbSetup() {
         __cplusplus) );
     DEBUG_PRINTF( ("Wifi on Core %d\n", WIFI_TASK_CORE_ID) );
 
-    auto blocks  = new SdbModBlocks(_gSdbModManager);
-    auto blinky  = new SdbModBlinky(_gSdbModManager);
-    auto display = new SdbModDisplay(_gSdbModManager);
-    auto jmri    = new SdbModJmri(_gSdbModManager);
-    auto mqtt    = new SdbModMqtt(_gSdbModManager);
-    auto tof     = new SdbModTof(_gSdbModManager);
-    auto wifi    = new SdbModWifi(_gSdbModManager);
+    auto blocks  = std::make_shared<SdbModBlocks>(_gSdbModManager);
+    auto blinky  = std::make_shared<SdbModBlinky>(_gSdbModManager);
+    auto display = std::make_shared<SdbModDisplay>(_gSdbModManager);
+    auto jmri    = std::make_shared<SdbModJmri>(_gSdbModManager);
+    auto mqtt    = std::make_shared<SdbModMqtt>(_gSdbModManager);
+    auto tof     = std::make_shared<SdbModTof>(_gSdbModManager);
+    auto wifi    = std::make_shared<SdbModWifi>(_gSdbModManager);
     // Note: order of registration dictates order of execution for onStart() and onLoop().
     _gSdbModManager.registerMod(blinky);
     _gSdbModManager.registerMod(display);

@@ -27,12 +27,11 @@ TEST_SUITE_BEGIN("SdbModManager");
 
 TEST_CASE("SdbModManager register mod") {
     SdbModManager manager;
-    SdbModTest mod(manager, "SdbModTest");
+    auto mod = std::make_shared<SdbModTest>(manager, "SdbModTest");
     manager.onStart();
+    manager.registerMod(mod);
 
-    manager.registerMod(&mod);
-
-    CHECK_EQ(manager.modByName("SdbModTest"), &mod);
+    CHECK_EQ(manager.modByName("SdbModTest"), mod.get());
 
     CHECK_EQ(manager.modByName("UnknownMod"), nullptr);
 }

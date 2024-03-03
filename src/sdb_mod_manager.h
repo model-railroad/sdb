@@ -53,12 +53,12 @@ public:
     /// Modules are executed in the order they are defined.
     /// Synchronization: None. This MUST be called at init or start time.
     /// This panics if the module name is not unique and has already been registered.
-    void registerMod(SdbMod* mod) {
+    void registerMod(const std::shared_ptr<SdbMod>& mod) {
         if (modByName(mod->name()) != nullptr) {
             PANIC_PRINTF( ("Mod Manager: Mod name '%s' cannot be redefined\n", mod->name().c_str()) );
         }
-        _mods.push_back(mod);
         _modsmap[mod->name()] = mod;
+        _mods.push_back(mod);
     }
 
     /// Returns a pointer on a module, or null if the module name does not exist.
@@ -68,7 +68,7 @@ public:
         if (kvNameMod == _modsmap.end()) {
             return nullptr;
         } else {
-            return kvNameMod->second;
+            return kvNameMod->second.get();
         }
     }
 
@@ -151,7 +151,7 @@ public:
 
     void onStart() {
         _dataStore.onStart();
-        for(auto* mod: _mods) {
+        for(auto& mod: _mods) {
             DEBUG_PRINTF( ("Start module [%s]\n", mod->name().c_str()) );
             mod->onStart();
         }
@@ -193,7 +193,7 @@ public:
             }
         }
     
-        for (auto* mod : _mods) {
+        for (auto& mod : _mods) {
             millis_t modMS = millis();
             millis_t ms = mod->onLoop();
             if (ms > 0) {
@@ -221,8 +221,8 @@ public:
 private:
     SdbLock _ioLock;
     SdbDataStore _dataStore;
-    std::vector<SdbMod*> _mods;
-    std::map<String, SdbMod*> _modsmap;
+    std::vector<std::shared_ptr<SdbMod>> _mods;
+    std::map<String, std::shared_ptr<SdbMod>> _modsmap;
     std::vector<std::reference_wrapper<SdbSensor>> _sensors;
     std::vector<std::reference_wrapper<SdbServer>> _servers;
     std::vector<std::shared_ptr<SdbBlock>> _blocks;
@@ -231,7 +231,7 @@ private:
     struct Scheduled {
         const millis_t _atMS;
         const std::function<void()> _lambda;
-        Scheduled(const millis_t at_ms, const std::function<void()> lambda):
+        Scheduled(const millis_t at_ms, const std::function<void()>& lambda):
             _atMS(at_ms), _lambda(lambda) {
         }
     };

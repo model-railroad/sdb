@@ -133,6 +133,7 @@ public:
         DEBUG_PRINTF( ("@@ block %p notify [% 8d] %s -- state %d\n",
                       this, _lastNotifyTS, _jmriName.c_str(), _state) );
         if (!_jmriName.isEmpty()) {
+            // Note: this compiles with C++ 2011.03 which doesn't have std::make_unique<> yet.
             auto event = std::unique_ptr<SdbEvent::SdbEvent>(
                     new SdbEvent::SdbEventBlockChanged(
                             _state,
