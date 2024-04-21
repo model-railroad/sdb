@@ -126,7 +126,7 @@ public:
         mod->queueEvent(std::move(event));
     }
 
-    millis_t schedule(millis_t delayMS, const std::function<void()> lambda) {
+    millis_t schedule(millis_t delayMS, const std::function<void()>& lambda) {
         SdbMutex autoMutex(_scheduleLock);
         millis_t nowMS = millis();
         auto scheduled = std::unique_ptr<Scheduled>(new Scheduled(nowMS + delayMS, lambda));
