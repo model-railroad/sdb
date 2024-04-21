@@ -22,54 +22,13 @@
 class SdbModManager;
 
 #include "common.h"
+#include "sdb_event.h"
 #include "sdb_lock.h"
 #include "sdb_mod_manager.h"
 #include "sdb_task.h"
 #include <memory>
 #include <utility>
 #include <vector>
-
-namespace SdbEvent {
-    enum Type {
-        /// SdbEvent with no extra data.
-        DisplayWifiAP,
-        /// SdbEvent with no extra data.
-        DisplayWifiSTA,
-        /// SdbEvent with no extra data.
-        DisplaySensor,
-        /// SdbEventBlockChanged with state and payload (String).
-        BlockChanged,
-    };
-
-    class SdbEvent {
-    public:
-        explicit SdbEvent(Type type)
-         : type(type)
-        { }
-
-        bool operator ==(const SdbEvent &rhs) const {
-            return type == rhs.type;   // Note: String *pointer* equality
-        }
-
-        const Type type;
-    };
-
-    class SdbEventBlockChanged : public SdbEvent {
-    public:
-        SdbEventBlockChanged(bool state, String payload)
-        : SdbEvent(BlockChanged), state(state), payload(std::move(payload))
-        { }
-
-        bool operator ==(const SdbEventBlockChanged &rhs) const {
-            return type == rhs.type
-                   && state == rhs.state
-                   && payload == rhs.payload;
-        }
-
-        const bool state;
-        const String payload;
-    };
-}
 
 
 class SdbMod {
