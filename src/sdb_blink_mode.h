@@ -20,6 +20,7 @@
 #define INC_SDB_BLINK_MODE_H
 
 #include "common.h"
+#include <functional>
 
 /*
  BlinkMode is an ESP32 32-bit enum value which encodes the flash pattern + flash counts.
@@ -56,6 +57,63 @@ namespace SdbBlinkMode {
         STAPublishFail  = BLINK_ONCE << 8               | BLINK_ONCE,       // Next: STAIdle
         STAFatalError   = BLINK_FLASH_VERY_SLOWLY << 8  | BLINK_FLASH_VERY_SLOWLY,
     };
+
+    class BlinkHandler {
+    public:
+        explicit BlinkHandler(const std::function<Mode()>& getNextMode) :
+                _currentMode(Undefined),
+                _getNextMode(getNextMode)
+        { }
+
+        /// Implemented by adapter to turn the onboard LED on/off.
+        virtual void setOnboardLED(bool on) = 0;
+
+        /// Implemented by adapter to turn the external LED on/off.
+        virtual void setExternalLED(bool on) = 0;
+
+        /// Implemented by adapter to sleep expected delay.
+        virtual void sleepMs(millis_t delayMs) = 0;
+
+        /**
+         * Called repeatedly from an infinite task. Processes blink mode events
+         * and pauses as required. The function may pause for indeterminate amounts
+         * of time as required by the current blink pattern.
+         *
+         * @param nowMs The current time in millis at the start of the call.
+         */
+        void onLoop(millis_t nowMs) {
+            auto newMode = _getNextMode();
+            if (newMode != Undefined && newMode != _currentMode) {
+                _currentMode = newMode;
+                // reset stuff if needed
+            }
+
+            if (_currentMode != Undefined) {
+                // Workflow:
+                // If (any LED) has count:
+                //  - blink using the count number:
+                //  * cycle on for CONSTANT_MS_ONCE + cycle off same constant.
+                //  * each LED is either on/off or off/off or on/on.
+                //  - block till end, then _currentMode = STAIdle.
+                // If no count, this is an "infinite" mode.
+                //  - currently only one side flashes *or* both at the same rate, so we can simplify.
+                //  - compute half cycle length using 8 seconds >> divider.
+                //  * cycle on for that time + cycle off same time.
+                //  * each LED is either on/off or off/off or on/on.
+                //  - block till end of cycle and just loop.
+                // Note that steps marked as '*' are the same in both cases --> use common function.
+                //
+                // TBD: remove nowMs if we end up not using it. Looks like we won't need it.
+            }
+
+            sleepMs(250);
+        }
+
+    private:
+        const std::function<Mode()> _getNextMode;
+        Mode _currentMode;
+    };
+
 }
 
 

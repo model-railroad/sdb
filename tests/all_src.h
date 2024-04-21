@@ -37,8 +37,10 @@
 #include "mod_wifi.h"
 
 // Include every sdb_* and every mod_ to make sure they compile.
+#include "sdb_blink_mode.h"
 #include "sdb_block.h"
 #include "sdb_data_store.h"
+#include "sdb_event.h"
 #include "sdb_lock.h"
 #include "sdb_mod.h"
 #include "sdb_mod_manager.h"

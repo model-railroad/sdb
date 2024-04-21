@@ -28,6 +28,30 @@
 
 #define MOD_BLINKY_NAME "ld"
 
+
+/// Adapter for BlinkHandler to access resources from SdbModBlinky (events, GPIO).
+class SdbModBlinkyHandler : public SdbBlinkMode::BlinkHandler {
+public:
+    explicit SdbModBlinkyHandler(const std::function<SdbBlinkMode::Mode()>& getNextMode) :
+            SdbBlinkMode::BlinkHandler(getNextMode)
+    { }
+
+    void setOnboardLED(bool on) override {
+        digitalWrite(LED_PIN1, HIGH);
+
+    }
+
+    void setExternalLED(bool on) override {
+        digitalWrite(LED_PIN2, LOW);
+
+    }
+
+    void sleepMs(millis_t delayMs) override {
+        rtDelay(delayMs);
+    }
+};
+
+
 class SdbModBlinky : public SdbModTask {
 public:
     explicit SdbModBlinky(SdbModManager& manager) :
@@ -46,10 +70,28 @@ public:
     }
 
 private:
+    friend class SdbModBlinkyHandler;
     SdbLock& _ioLock;
+
+    SdbModBlinkyHandler _handler {
+            // getNextMode implementation
+            [&]() -> SdbBlinkMode::Mode {
+                if (hasEvents()) {
+                    auto event = dequeueEvent();
+                    if (event && event->type == SdbEvent::BlinkModeUpdated) {
+                        auto eventMode = reinterpret_cast<SdbEvent::SdbEventBlinkMode *>(event.get());
+                        return eventMode->blinkMode;
+                    }
+                }
+                return SdbBlinkMode::Undefined;
+            }
+    };
 
     [[noreturn]] void onTaskRun() override {
         while (true) {
+
+            _handler.onLoop(millis());
+
             {
                 SdbMutex io_mutex(_ioLock);
                 digitalWrite(LED_PIN1, HIGH);
@@ -73,6 +115,8 @@ private:
         }
     }
 };
+
+
 
 
 #endif // INC_SDB_MOD_BLINKY_H
