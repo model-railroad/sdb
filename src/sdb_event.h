@@ -67,7 +67,7 @@ namespace SdbEvent {
 
     class SdbEventBlinkMode : public SdbEvent {
     public:
-        SdbEventBlinkMode(SdbBlinkMode blinkMode)
+        explicit SdbEventBlinkMode(SdbBlinkMode::Mode blinkMode)
                 : SdbEvent(BlinkModeUpdated), blinkMode(blinkMode)
         { }
 
@@ -76,7 +76,7 @@ namespace SdbEvent {
                    && blinkMode == rhs.blinkMode;
         }
 
-        const SdbBlinkMode blinkMode;
+        const SdbBlinkMode::Mode blinkMode;
     };
 }
 

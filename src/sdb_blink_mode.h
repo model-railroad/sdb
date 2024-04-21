@@ -37,25 +37,26 @@
 #define BLINK_ON                    0xFF
 #define BLINK_FLASH_VERY_SLOWLY     0x10
 #define BLINK_FLASH_SLOWLY          0x20
-#define BLINK_FLASH_SLOWLY_3_TIMES  0x23
 #define BLINK_FLASH_RAPIDLY         0x30
 #define BLINK_ONCE                  0x01
 #define BLINK_OFF                   0x00
 
-enum SdbBlinkMode {
-    BLINK_UNSET = 0,
-    BLINK_AP_BOOT               = BLINK_FLASH_RAPIDLY << 8          | BLINK_ON,
-    BLINK_AP_CONNECTED_OK       = BLINK_FLASH_SLOWLY << 8           | BLINK_ON,
-    BLINK_AP_FATAL_ERROR        = BLINK_FLASH_SLOWLY << 8           | BLINK_FLASH_SLOWLY,
-    BLINK_STA_BOOT              = BLINK_FLASH_RAPIDLY << 8          | BLINK_OFF,
-    BLINK_STA_CONNECTED_OK      = BLINK_FLASH_SLOWLY_3_TIMES << 8   | BLINK_OFF,
-    BLINK_STA_IDLE              = BLINK_OFF << 8                    | BLINK_OFF,
-    BLINK_STA_MEASURE_OK        = BLINK_ONCE << 8                   | BLINK_OFF,
-    BLINK_STA_MEASURE_FAIL      = BLINK_OFF << 8                    | BLINK_ONCE,
-    BLINK_STA_PUBLISH_OK        = BLINK_ONCE << 8                   | BLINK_OFF,
-    BLINK_STA_PUBLISH_FAIL      = BLINK_ONCE << 8                   | BLINK_ONCE,
-    BLINK_STA_FATAL_ERROR       = BLINK_FLASH_VERY_SLOWLY << 8      | BLINK_FLASH_VERY_SLOWLY,
-};
+namespace SdbBlinkMode {
+    enum Mode {
+        Undefined       = 0,
+        APBoot          = BLINK_FLASH_RAPIDLY << 8      | BLINK_ON,
+        APConnectedOK   = BLINK_FLASH_SLOWLY << 8       | BLINK_ON,
+        APFatalError    = BLINK_FLASH_SLOWLY << 8       | BLINK_FLASH_SLOWLY,
+        STABoot         = BLINK_FLASH_RAPIDLY << 8      | BLINK_OFF,
+        STAConnectedOk  = BLINK_FLASH_SLOWLY << 8       | BLINK_OFF,
+        STAIdle         = BLINK_OFF << 8                | BLINK_OFF,
+        STAMeasureOK    = BLINK_ONCE << 8               | BLINK_OFF,
+        STAMeasureFail  = BLINK_OFF << 8                | BLINK_ONCE,       // Next: STAIdle
+        STAPublishOk    = BLINK_ONCE << 8               | BLINK_OFF,        // Next: STAIdle
+        STAPublishFail  = BLINK_ONCE << 8               | BLINK_ONCE,       // Next: STAIdle
+        STAFatalError   = BLINK_FLASH_VERY_SLOWLY << 8  | BLINK_FLASH_VERY_SLOWLY,
+    };
+}
 
 
 //---------------
