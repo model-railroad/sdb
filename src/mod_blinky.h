@@ -89,29 +89,7 @@ private:
 
     [[noreturn]] void onTaskRun() override {
         while (true) {
-
-            _handler.onLoop(millis());
-
-            {
-                SdbMutex io_mutex(_ioLock);
-                digitalWrite(LED_PIN1, HIGH);
-                digitalWrite(LED_PIN2, LOW);
-            }
-            rtDelay(250 /*ms*/);
-
-            {
-                SdbMutex io_mutex(_ioLock);
-                digitalWrite(LED_PIN1, LOW);
-                digitalWrite(LED_PIN2, HIGH);
-            }
-            rtDelay(250 /*ms*/);
-
-            {
-                SdbMutex io_mutex(_ioLock);
-                digitalWrite(LED_PIN1, LOW);
-                digitalWrite(LED_PIN2, LOW);
-            }
-            rtDelay(1000 /*ms*/);
+            _handler.onLoop();
         }
     }
 };
