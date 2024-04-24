@@ -55,14 +55,16 @@
 
 namespace SdbBlinkMode {
     enum Mode {
-        Undefined       = 0,
+        Undefined       = 0xFFFF,
+        AlwaysOn        = BLINK_ON << 8                 | BLINK_ON,
+        AlwaysOff       = BLINK_OFF << 8                | BLINK_OFF,
         APBoot          = BLINK_FLASH_RAPIDLY << 8      | BLINK_ON,
         APConnectedOK   = BLINK_FLASH_SLOWLY << 8       | BLINK_ON,
         APFatalError    = BLINK_FLASH_SLOWLY << 8       | BLINK_FLASH_SLOWLY,
         STABoot         = BLINK_FLASH_RAPIDLY << 8      | BLINK_OFF,
         STAConnectedOk  = BLINK_FLASH_SLOWLY << 8       | BLINK_OFF,
         STAIdle         = BLINK_OFF << 8                | BLINK_OFF,
-        STAMeasureOK    = BLINK_ONCE << 8               | BLINK_OFF,
+        STAMeasureOK    = BLINK_ONCE << 8               | BLINK_OFF,        // Next: STAIdle
         STAMeasureFail  = BLINK_OFF << 8                | BLINK_ONCE,       // Next: STAIdle
         STAPublishOk    = BLINK_ONCE << 8               | BLINK_OFF,        // Next: STAIdle
         STAPublishFail  = BLINK_ONCE << 8               | BLINK_ONCE,       // Next: STAIdle
@@ -75,15 +77,6 @@ namespace SdbBlinkMode {
                 _currentMode(Undefined),
                 _getNextMode(getNextMode)
         { }
-
-        /// Implemented by adapter to turn the onboard LED on/off.
-        virtual void setOnboardLED(bool on) = 0;
-
-        /// Implemented by adapter to turn the external LED on/off.
-        virtual void setExternalLED(bool on) = 0;
-
-        /// Implemented by adapter to sleep expected delay.
-        virtual void sleepMs(millis_t delayMs) = 0;
 
         /**
          * Called repeatedly from an infinite task. Processes blink mode events
@@ -105,6 +98,18 @@ namespace SdbBlinkMode {
                 sleepMs(250);
             }
         }
+
+        Mode currentMode() { return _currentMode; }
+
+    protected:
+        /// Implemented by adapter to turn the onboard LED on/off.
+        virtual void setOnboardLED(bool on) = 0;
+
+        /// Implemented by adapter to turn the external LED on/off.
+        virtual void setExternalLED(bool on) = 0;
+
+        /// Implemented by adapter to sleep expected delay.
+        virtual void sleepMs(millis_t delayMs) = 0;
 
     private:
         const std::function<Mode()> _getNextMode;
@@ -163,9 +168,9 @@ namespace SdbBlinkMode {
         }
 
         void applyCount(int durationMs, int cycleCount, int onboardMode, int externalMode) {
-            // Note: This always does at least one iteration, so that we can process the
+            // Note: This always does at least one iteration, to ensure we can process the
             // always-off & always-on cases equally. This means this function always has a
-            // slept time of at least 2 x durationMs.
+            // sleep time of at least 2 x durationMs.
             int count = 0;
             do {
                 applyPattern(BLINK_LED_ONBOARD, onboardMode, true);
@@ -174,7 +179,7 @@ namespace SdbBlinkMode {
                 applyPattern(BLINK_LED_ONBOARD, onboardMode, false);
                 applyPattern(BLINK_LED_EXTERNAL, externalMode, false);
                 sleepMs(durationMs);
-            } while (count++ < cycleCount);
+            } while (++count < cycleCount);
         }
 
         void applyPattern(int ledIndex, int mode, bool cycle) {
@@ -184,7 +189,7 @@ namespace SdbBlinkMode {
             } else if (mode == BLINK_OFF) {
                 state = false;
             } else if ((mode & BLINK_COUNT_MASK) != 0 || (mode & BLINK_FLASH_MASK) != 0) {
-                state = cycle;
+                // state = cycle; -- nothing to do, this is the default value.
             }
             setLED(ledIndex, state);
         }

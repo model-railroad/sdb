@@ -36,6 +36,7 @@ public:
             SdbBlinkMode::BlinkHandler(getNextMode)
     { }
 
+protected:
     void setOnboardLED(bool on) override {
         digitalWrite(LED_PIN1, HIGH);
 
@@ -70,7 +71,6 @@ public:
     }
 
 private:
-    friend class SdbModBlinkyHandler;
     SdbLock& _ioLock;
 
     SdbModBlinkyHandler _handler {

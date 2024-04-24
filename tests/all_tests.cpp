@@ -11,3 +11,4 @@
 #include "sdb_mod_test.h"
 #include "sdb_mod_manager_test.h"
 #include "sdb_pass_dec_test.h"
+#include "sdb_blink_mode_test.h"
