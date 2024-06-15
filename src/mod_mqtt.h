@@ -127,8 +127,6 @@ public:
         if (result) _client->print(payload);
         result = result && _client->endMessage();
 
-        blinkLED(_manager, result ? SdbBlinkMode::STAPublishOk : SdbBlinkMode::STAPublishFail);
-
         DEBUG_PRINTF( ("[MQTT] [%s = %s] -- publish time: %d ms, result %d\n",
                       topic.c_str(),
                       payload.c_str(),
@@ -226,13 +224,16 @@ private:
                     bool success = true;
                     for (const auto& [key, event] : _events) {
                         auto eventBlock = reinterpret_cast<SdbEvent::SdbEventBlockChanged *>(event.get());
-                        if (!_server.send(key, eventBlock->state)) {
+                        if (_server.send(key, eventBlock->state)) {
+                            _events.erase(key);
+                        } else {
                             success = false;
                         }
                     }
                     if (success) {
                         _events.clear();
                     }
+                    BLINK_EVENT(_manager, success ? SdbBlinkMode::STAPublishOk : SdbBlinkMode::STAPublishFail);
                 }
             }
 

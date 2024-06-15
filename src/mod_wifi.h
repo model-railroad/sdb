@@ -157,7 +157,7 @@ private:
     void startAP() {
         DEBUG_PRINTF( ( "[WIFI] start AP mode.\n" ) );
 
-        blinkLED(_manager, SdbBlinkMode::APBoot);
+        BLINK_EVENT(_manager, SdbBlinkMode::APBoot);
 
         // Scanning networks forces STA mode. Do it before AP mode.
         scanNetworks();
@@ -185,7 +185,7 @@ private:
     void startSTA() {
         DEBUG_PRINTF(("[WIFI] start STA mode.\n"));
 
-        blinkLED(_manager, SdbBlinkMode::STABoot);
+        BLINK_EVENT(_manager, SdbBlinkMode::STABoot);
 
         // First character of ssid is E or O indicating encrypted vs open.
         const char *ssidptr = _staSsid.c_str();
@@ -259,7 +259,7 @@ private:
         // task/memory cannot be allocated, which is all fatal.
         auto error = httpd_start(&_httpdHandle, &httpdConfig);
         if (error != ESP_OK) {
-            blinkLED(_manager, SdbBlinkMode::APFatalError);
+            BLINK_EVENT(_manager, SdbBlinkMode::APFatalError);
             PANIC_PRINTF( ( "[WIFI] httpd_start failed with error %d\n", error ) );
         }
 
@@ -299,7 +299,7 @@ private:
         };
         httpd_register_uri_handler(_httpdHandle, &setUri);
 
-        blinkLED(_manager, SdbBlinkMode::APConnectedOK);
+        BLINK_EVENT(_manager, SdbBlinkMode::APConnectedOK);
     }
 
     // Handler for /
@@ -434,7 +434,7 @@ private:
         // task/memory cannot be allocated, which is all fatal.
         auto error = httpd_start(&_httpdHandle, &httpdConfig);
         if (error != ESP_OK) {
-            blinkLED(_manager, SdbBlinkMode::STAFatalError);
+            BLINK_EVENT(_manager, SdbBlinkMode::STAFatalError);
             PANIC_PRINTF( ( "[WIFI] STA httpd_start failed with error %d\n", error ) );
         }
 
@@ -483,7 +483,7 @@ private:
         };
         httpd_register_uri_handler(_httpdHandle, &setPropsUri);
 
-        blinkLED(_manager, SdbBlinkMode::STAConnectedOk);
+        BLINK_EVENT(_manager, SdbBlinkMode::STAConnectedOk);
     }
 
     // Handler for /

@@ -127,6 +127,8 @@ namespace SdbBlinkMode {
         }
 
         void apply(Mode mode) {
+            VERBOSE_PRINTF( ( "[BLINK] ---> APPLY mode %04X.\n", mode ) );
+
             const int externalMode = mode & BLINK_MASK;
             const int onboardMode = (mode >> BLINK_ONBOARD_OFFSET) & BLINK_MASK;
 

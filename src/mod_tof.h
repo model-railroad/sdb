@@ -85,11 +85,9 @@ public:
         int newDistMM;
         if (_measure.RangeStatus != 4) {
             newDistMM = _measure.RangeMilliMeter;
-            blinkLED(_manager, SdbBlinkMode::STAMeasureOK);
         } else {
             // phase failures have incorrect data
             newDistMM = OUT_OF_RANGE_MM;
-            blinkLED(_manager, SdbBlinkMode::STAMeasureFail);
         }
 
         _lastDistMM = newDistMM;
@@ -291,6 +289,11 @@ private:
             int newDistMM = tof.measure();
             minDistMM = MIN(minDistMM, newDistMM);
         }
+
+        // STAMeasureFail is not used since the ToF reading never really "fails" as it times out
+        // if there's nothing to detect. The only real failure is some kind of I2C error which we
+        // don't really catch here anyway.
+        BLINK_EVENT(_manager, SdbBlinkMode::STAMeasureOK);
 
         return minDistMM;
     }

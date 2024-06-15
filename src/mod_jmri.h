@@ -143,13 +143,16 @@ private:
                     for (const auto& [key, event] : _events) {
                         // Each send blocks (measured to be around ~1050 ms).
                         auto eventBlock = reinterpret_cast<SdbEvent::SdbEventBlockChanged *>(event.get());
-                        if (!_server.send(key, eventBlock->state)) {
+                        if (_server.send(key, eventBlock->state)) {
+                            _events.erase(key);
+                        } else {
                             success = false;
                         }
                     }
                     if (success) {
                         _events.clear();
                     }
+                    BLINK_EVENT(_manager, success ? SdbBlinkMode::STAPublishOk : SdbBlinkMode::STAPublishFail);
                 }
             }
 

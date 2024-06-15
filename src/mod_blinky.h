@@ -28,12 +28,13 @@
 
 #define MOD_BLINKY_NAME "ld"
 
-#define blinkLED(manager, mode) \
-    DEBUG_PRINTF( ( "[BLINK] mode " #mode ".\n" ) ); \
-    _blinkLED(manager, mode)
+#define BLINK_EVENT(manager, mode) \
+    { VERBOSE_PRINTF( ( "[BLINK] ENQUEUE    mode %04X " #mode ".\n", mode ) ); \
+      _blinkLED(manager, mode); }
 
-void _blinkLED(SdbModManager& manager, SdbBlinkMode::Mode ledMode) {
-    auto event = std::unique_ptr<SdbEvent::SdbEvent>(new SdbEvent::SdbEventBlinkMode(ledMode));
+void _blinkLED(SdbModManager& manager, SdbBlinkMode::Mode mode) {
+    // Note: we don't have std::make_unique in ESP32 4.x (C++11 below 201103)
+    auto event = std::unique_ptr<SdbEvent::SdbEvent>(new SdbEvent::SdbEventBlinkMode(mode));
     manager.queueEvent(MOD_BLINKY_NAME, std::move(event));
 }
 
