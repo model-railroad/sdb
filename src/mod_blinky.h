@@ -29,6 +29,12 @@
 #define MOD_BLINKY_NAME "ld"
 
 
+void blinkLED(SdbModManager& manager, SdbBlinkMode::Mode ledMode) {
+    auto event = std::unique_ptr<SdbEvent::SdbEvent>(new SdbEvent::SdbEventBlinkMode(ledMode));
+    manager.queueEvent(MOD_BLINKY_NAME, std::move(event));
+}
+
+
 /// Adapter for BlinkHandler to access resources from SdbModBlinky (events, GPIO).
 class SdbModBlinkyHandler : public SdbBlinkMode::BlinkHandler {
 public:
@@ -38,13 +44,12 @@ public:
 
 protected:
     void setOnboardLED(bool on) override {
-        digitalWrite(LED_PIN1, HIGH);
-
+        digitalWrite(LED_PIN1, on ? HIGH : LOW);
+        digitalWrite(LED_PIN2, on ? HIGH : LOW);
     }
 
     void setExternalLED(bool on) override {
-        digitalWrite(LED_PIN2, LOW);
-
+//        digitalWrite(LED_PIN2, on ? HIGH : LOW);
     }
 
     void sleepMs(millis_t delayMs) override {

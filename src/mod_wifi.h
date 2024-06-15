@@ -157,6 +157,8 @@ private:
     void startAP() {
         DEBUG_PRINTF( ( "[WIFI] start AP mode.\n" ) );
 
+        blinkLED(_manager, SdbBlinkMode::APBoot);
+
         // Scanning networks forces STA mode. Do it before AP mode.
         scanNetworks();
         DEBUG_PRINTF( ( "[WIFI] End Scan Network.\n" ) );
@@ -182,6 +184,8 @@ private:
 
     void startSTA() {
         DEBUG_PRINTF(("[WIFI] start STA mode.\n"));
+
+        blinkLED(_manager, SdbBlinkMode::STABoot);
 
         // First character of ssid is E or O indicating encrypted vs open.
         const char *ssidptr = _staSsid.c_str();
