@@ -28,8 +28,11 @@
 
 #define MOD_BLINKY_NAME "ld"
 
+#define blinkLED(manager, mode) \
+    DEBUG_PRINTF( ( "[BLINK] mode " #mode ".\n" ) ); \
+    _blinkLED(manager, mode)
 
-void blinkLED(SdbModManager& manager, SdbBlinkMode::Mode ledMode) {
+void _blinkLED(SdbModManager& manager, SdbBlinkMode::Mode ledMode) {
     auto event = std::unique_ptr<SdbEvent::SdbEvent>(new SdbEvent::SdbEventBlinkMode(ledMode));
     manager.queueEvent(MOD_BLINKY_NAME, std::move(event));
 }
