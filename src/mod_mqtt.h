@@ -127,6 +127,8 @@ public:
         if (result) _client->print(payload);
         result = result && _client->endMessage();
 
+        blinkLED(_manager, result ? SdbBlinkMode::STAPublishOk : SdbBlinkMode::STAPublishFail);
+
         DEBUG_PRINTF( ("[MQTT] [%s = %s] -- publish time: %d ms, result %d\n",
                       topic.c_str(),
                       payload.c_str(),

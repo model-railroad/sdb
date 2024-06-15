@@ -259,6 +259,7 @@ private:
         // task/memory cannot be allocated, which is all fatal.
         auto error = httpd_start(&_httpdHandle, &httpdConfig);
         if (error != ESP_OK) {
+            blinkLED(_manager, SdbBlinkMode::APFatalError);
             PANIC_PRINTF( ( "[WIFI] httpd_start failed with error %d\n", error ) );
         }
 
@@ -297,6 +298,8 @@ private:
             .user_ctx = new std::function<esp_err_t(httpd_req_t *)>(setLambda)
         };
         httpd_register_uri_handler(_httpdHandle, &setUri);
+
+        blinkLED(_manager, SdbBlinkMode::APConnectedOK);
     }
 
     // Handler for /
@@ -431,6 +434,7 @@ private:
         // task/memory cannot be allocated, which is all fatal.
         auto error = httpd_start(&_httpdHandle, &httpdConfig);
         if (error != ESP_OK) {
+            blinkLED(_manager, SdbBlinkMode::STAFatalError);
             PANIC_PRINTF( ( "[WIFI] STA httpd_start failed with error %d\n", error ) );
         }
 
@@ -478,6 +482,8 @@ private:
             .user_ctx = new std::function<esp_err_t(httpd_req_t *)>(setPropsLambda)
         };
         httpd_register_uri_handler(_httpdHandle, &setPropsUri);
+
+        blinkLED(_manager, SdbBlinkMode::STAConnectedOk);
     }
 
     // Handler for /

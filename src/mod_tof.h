@@ -85,9 +85,11 @@ public:
         int newDistMM;
         if (_measure.RangeStatus != 4) {
             newDistMM = _measure.RangeMilliMeter;
+            blinkLED(_manager, SdbBlinkMode::STAMeasureOK);
         } else {
             // phase failures have incorrect data
             newDistMM = OUT_OF_RANGE_MM;
+            blinkLED(_manager, SdbBlinkMode::STAMeasureFail);
         }
 
         _lastDistMM = newDistMM;

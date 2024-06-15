@@ -45,11 +45,10 @@ public:
 protected:
     void setOnboardLED(bool on) override {
         digitalWrite(LED_PIN1, on ? HIGH : LOW);
-        digitalWrite(LED_PIN2, on ? HIGH : LOW);
     }
 
     void setExternalLED(bool on) override {
-//        digitalWrite(LED_PIN2, on ? HIGH : LOW);
+        digitalWrite(LED_PIN2, on ? HIGH : LOW);
     }
 
     void sleepMs(millis_t delayMs) override {
