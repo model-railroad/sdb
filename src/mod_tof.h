@@ -18,6 +18,7 @@
 
 #ifndef INC_SDB_MOD_TOF_H
 #define INC_SDB_MOD_TOF_H
+#ifdef MOD_TOF_ENABLED
 
 // Important: I2C controller 0 (aka &Wire ) is used in mod_display.
 //            I2C controller 1 (aka &Wire1) is used here.
@@ -299,4 +300,5 @@ private:
     }
 };
 
+#endif // MOD_TOF_ENABLED
 #endif // INC_SDB_MOD_TOF_H

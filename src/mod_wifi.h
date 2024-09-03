@@ -46,9 +46,6 @@
 
 #define MOD_WIFI_NAME "wi"
 
-// This pin is checked for GND at startup, to force AP mode to reset the
-// Wifi SSID + password. It's set to be pull-up by default.
-#define FORCE_AP_PIN 36
 // Defaults for AP mode. Pass must be >=7 chars.
 // AP pass can be set here and this is not a secret.
 #define AP_SSID "SdbNodeWifi"
@@ -80,7 +77,9 @@ public:
     { }
 
     void onStart() override {
-        pinMode(FORCE_AP_PIN, INPUT_PULLUP);
+#ifdef MOD_WIFI_FORCE_AP_PIN
+        pinMode(MOD_WIFI_FORCE_AP_PIN, INPUT_PULLUP);
+#endif
         selectApOrStaMode();
     }
 
@@ -125,11 +124,13 @@ private:
         // We'll attempt to connect in AP or STA mode at the next loop.
         _cnxState = CnxAttempt;
 
-        if (digitalRead(FORCE_AP_PIN) == LOW) {
+#ifdef MOD_WIFI_FORCE_AP_PIN
+        if (digitalRead(MOD_WIFI_FORCE_AP_PIN) == LOW) {
             DEBUG_PRINTF( ( "[WIFI] Pin 36 Low ==> AP mode.\n" ) );
             _apMode = true;
             return;
         }
+#endif
 
         const String* ssid = _manager.dataStore().getString(SdbKey::WifiSsidStr);
         const String* pass = _manager.dataStore().getString(SdbKey::WifiPassStr);
@@ -173,8 +174,10 @@ private:
         DEBUG_PRINTF( ( "[WIFI] AP IP: %s.\n", ip.toString().c_str() ) );
         _manager.dataStore().putString(SdbKey::WifiApIpStr, ip.toString());
 
+#ifdef MOD_DISPLAY_ENABLED
         // Display the wifi info for a few seconds, then back to sensor state.
         _manager.queueEvent(MOD_DISPLAY_NAME, SdbEvent::DisplayWifiAP);
+#endif
 
         startAPServer();
         _statusStr = "Ready for configuration";
@@ -206,8 +209,10 @@ private:
         DEBUG_PRINTF( ( "[WIFI] STA IP: %s.\n", ip.toString().c_str() ) );
         _manager.dataStore().putString(SdbKey::WifiStaIpStr, ip.toString());
 
+#ifdef MOD_DISPLAY_ENABLED
         // Display the wifi info for a few seconds, then back to sensor state.
         _manager.queueEvent(MOD_DISPLAY_NAME, SdbEvent::DisplayWifiSTA);
+#endif
 
         startSTAServer();
         _statusStr = "Ready for serving";

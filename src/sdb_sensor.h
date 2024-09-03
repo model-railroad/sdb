@@ -25,7 +25,9 @@ class SdbModManager;
 #include "sdb_mod_manager.h"
 
 #include <Arduino_JSON.h>
+#if defined(USE_DISPLAY_LIB_U8G2)
 #include <U8g2lib.h>
+#endif
 #include <vector>
 
 

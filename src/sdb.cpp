@@ -70,15 +70,23 @@ void _gSdbSetup() {
 
     auto blocks  = std::make_shared<SdbModBlocks>(_gSdbModManager);
     auto blinky  = std::make_shared<SdbModBlinky>(_gSdbModManager);
+#ifdef MOD_DISPLAY_ENABLED
     auto display = std::make_shared<SdbModDisplay>(_gSdbModManager);
+#endif
     auto jmri    = std::make_shared<SdbModJmri>(_gSdbModManager);
     auto mqtt    = std::make_shared<SdbModMqtt>(_gSdbModManager);
+#ifdef MOD_TOF_ENABLED
     auto tof     = std::make_shared<SdbModTof>(_gSdbModManager);
+#endif
     auto wifi    = std::make_shared<SdbModWifi>(_gSdbModManager);
     // Note: order of registration dictates order of execution for onStart() and onLoop().
     _gSdbModManager.registerMod(blinky);
+#ifdef MOD_DISPLAY_ENABLED
     _gSdbModManager.registerMod(display);
+#endif
+#ifdef MOD_TOF_ENABLED
     _gSdbModManager.registerMod(tof);
+#endif
     _gSdbModManager.registerMod(jmri);
     _gSdbModManager.registerMod(mqtt);
     _gSdbModManager.registerMod(blocks); // after sensors modules

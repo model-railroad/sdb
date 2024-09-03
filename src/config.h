@@ -24,8 +24,38 @@
     #define ESP32 1
 #endif
 
+#ifdef ESP32_PROFILE_esp32cam
+// Profile is set in _compile.sh
+#warning Building for esp32cam profile
+#define USE_ESP32_CAM
+
+#ifndef LED_BUILTIN
+#define LED_BUILTIN 33
+#endif
+
+// Mod Blinky -- TBD only one LED on the ESP32-CAM
+#define MOD_BLINKY_LED_PIN1 LED_BUILTIN         // Onboard LED
+#define MOD_BLINKY_LED_PIN2 33                  // External LED
+
+#else
+// Mod Blinky
+#define MOD_BLINKY_LED_PIN1 LED_BUILTIN         // Onboard LED
+#define MOD_BLINKY_LED_PIN2 19                  // External LED
+
+// Mod Wifi
+// This pin is checked for GND at startup, to force AP mode to reset the
+// Wifi SSID + password. It's set to be pull-up by default.
+#define MOD_WIFI_FORCE_AP_PIN 36
+
+// Mod Display
+#define MOD_DISPLAY_ENABLED
+
+// Mod ToF Sensor
+#define MOD_TOF_ENABLED
+
 // Graphics Library being used (if any)
 #define USE_DISPLAY_LIB_U8G2
+#endif
 
 // CPU affinity for ESP32
 #define PRO_CPU 0       // Wifi

@@ -18,6 +18,7 @@
 
 #ifndef INC_SDB_MOD_DISPLAY_H
 #define INC_SDB_MOD_DISPLAY_H
+#ifdef MOD_DISPLAY_ENABLED
 
 // Important: I2C controller 0 (aka &Wire ) is used here.
 //            I2C controller 1 (aka &Wire1) is used in mod_tof.
@@ -150,11 +151,13 @@ private:
 
     bool loopSensor() {
         long _newRefresh = 0;
+#ifdef MOD_TOF_ENABLED
         for(auto sref: _manager.sensors()) {
             auto& tp = reinterpret_cast<SdbSensorTof&>(sref.get());
             long newDistMM = tp.lastDistMM();
             _newRefresh = _newRefresh * 1000 + newDistMM;
         }
+#endif
         bool changes = _lastRefresh != _newRefresh;
 
         if (changes) {
@@ -260,4 +263,5 @@ private:
     }
 };
 
+#endif // MOD_DISPLAY_ENABLED
 #endif // INC_SDB_MOD_DISPLAY_H

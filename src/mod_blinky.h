@@ -23,9 +23,6 @@
 #include "sdb_lock.h"
 #include "sdb_mod.h"
 
-#define LED_PIN1 BUILTIN_LED        // Onboard LED
-#define LED_PIN2 19                 // External LED
-
 #define MOD_BLINKY_NAME "ld"
 
 #define BLINK_EVENT(manager, mode) \
@@ -48,11 +45,11 @@ public:
 
 protected:
     void setOnboardLED(bool on) override {
-        digitalWrite(LED_PIN1, on ? HIGH : LOW);
+        digitalWrite(MOD_BLINKY_LED_PIN1, on ? HIGH : LOW);
     }
 
     void setExternalLED(bool on) override {
-        digitalWrite(LED_PIN2, on ? HIGH : LOW);
+        digitalWrite(MOD_BLINKY_LED_PIN2, on ? HIGH : LOW);
     }
 
     void sleepMs(millis_t delayMs) override {
@@ -69,8 +66,8 @@ public:
     { }
 
     void onStart() override {
-        pinMode(LED_PIN1, OUTPUT);
-        pinMode(LED_PIN2, OUTPUT);
+        pinMode(MOD_BLINKY_LED_PIN1, OUTPUT);
+        pinMode(MOD_BLINKY_LED_PIN2, OUTPUT);
         startTask();
     }
 
