@@ -37,7 +37,7 @@ namespace SdbKey {
 
         /// NVS -- WARNING: All NVS keys must be considered constants;
         /// the enum values should not change across updates.
-        NvsStart        = 0x8000,
+        NvsStartLong    = 0x8000,
         WifiSsidStr     = 0x8001,
         WifiPassStr     = 0x8002,
 
@@ -88,16 +88,46 @@ public:
     void onStart() {
         // Initialize NVS
         esp_err_t err = nvs_flash_init();
+        DEBUG_PRINTF( ("NVS nvs_flash_init: %d\n", err) );
+
+        if (CHECK_ESP_OK(err)) {
+            DEBUG_PRINTF( ("NVS check initialized\n") );
+
+            std::unique_ptr<nvs::NVSHandle> handle = nvs::open_nvs_handle("sdb", NVS_READWRITE, &err);
+            PANIC_ESP_PRINTLN(err, "NVS open failed.");
+            String nvsKey(SdbKey::NvsStartLong, HEX);
+            int32_t data = 0;
+            err = handle->get_item(nvsKey.c_str(), data);
+            DEBUG_ESP_PRINTLN(err, "NVS get string size failed");
+            if (CHECK_ESP_OK(err) && data != SdbKey::NvsStartLong) {
+                DEBUG_PRINTF( ("NVS start read/write check failed: %d != %d.\n", data, SdbKey::NvsStartLong) );
+                err = ESP_ERR_NVS_NEW_VERSION_FOUND;
+            }
+        }
+
         if (err == ESP_ERR_NVS_NO_FREE_PAGES || err == ESP_ERR_NVS_NEW_VERSION_FOUND) {
             // From sample code: NVS partition was truncated and needs to be erased.
             // Then retry nvs_flash_init
             err = nvs_flash_erase();
+            DEBUG_PRINTF( ("NVS nvs_flash_erase: %d\n", err) );
             DEBUG_ESP_PRINTLN(err, "NVS flash erase failed");
-            if (err == ESP_OK) {
+            if (CHECK_ESP_OK(err)) {
                 err = nvs_flash_init();
             }
         }
         PANIC_ESP_PRINTLN(err, "NVS init failed.");
+
+        // Write init flag
+        {
+            std::unique_ptr<nvs::NVSHandle> handle = nvs::open_nvs_handle("sdb", NVS_READWRITE, &err);
+            PANIC_ESP_PRINTLN(err, "NVS open failed.");
+
+            String nvsKey(SdbKey::NvsStartLong, HEX);
+            err = handle->set_item(nvsKey.c_str(), (int32_t)SdbKey::NvsStartLong);
+            DEBUG_ESP_PRINTLN(err, "NVS write failed");
+            err = handle->commit();
+            PANIC_ESP_PRINTLN(err, "NVS commit failed");
+        }
     }
 
     /// Inserts this long value at the given key.
@@ -105,7 +135,7 @@ public:
         SdbMutex autoMutex(_lock);
         _mapLong[key] = value;
 
-        if (key > SdbKey::NvsStart) {
+        if (key > SdbKey::NvsStartLong) {
             esp_err_t err;
             std::unique_ptr<nvs::NVSHandle> handle = nvs::open_nvs_handle("sdb", NVS_READWRITE, &err);
             PANIC_ESP_PRINTLN(err, "NVS open failed.");
@@ -123,7 +153,7 @@ public:
     long getLong(const SdbKey::SdbKey key, long _default) {
         SdbMutex autoMutex(_lock);
 
-        if (key > SdbKey::NvsStart && !loadedFromNvs(key)) {
+        if (key > SdbKey::NvsStartLong && !loadedFromNvs(key)) {
             _mapNvs[key] = true;
             esp_err_t err;
             std::unique_ptr<nvs::NVSHandle> handle = nvs::open_nvs_handle("sdb", NVS_READWRITE, &err);
@@ -151,7 +181,7 @@ public:
         SdbMutex autoMutex(_lock);
         _mapString[key] = value;
 
-        if (key > SdbKey::NvsStart) {
+        if (key > SdbKey::NvsStartLong) {
             esp_err_t err;
             std::unique_ptr<nvs::NVSHandle> handle = nvs::open_nvs_handle("sdb", NVS_READWRITE, &err);
             PANIC_ESP_PRINTLN(err, "NVS open failed.");
@@ -168,7 +198,7 @@ public:
     const String* getString(const SdbKey::SdbKey key) {
         SdbMutex autoMutex(_lock);
 
-        if (key > SdbKey::NvsStart && !loadedFromNvs(key)) {
+        if (key > SdbKey::NvsStartLong && !loadedFromNvs(key)) {
             _mapNvs[key] = true;
             esp_err_t err;
             std::unique_ptr<nvs::NVSHandle> handle = nvs::open_nvs_handle("sdb", NVS_READWRITE, &err);
