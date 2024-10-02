@@ -34,6 +34,8 @@ Requirements:
 
 Blog posts describing this project:
 
+- Demo Video: [Automated Trolley #2](https://www.alfray.com/trains/blog/randall/2024-04-24_yellow_trolley_on_the_automation.html)
+- Demo Video: [Automated Trolley #1](https://www.alfray.com/trains/blog/randall/2024-02-18_an_update_on_the_trolley_automation.html)
 - [Presentation of "Software Defined Blocks"](https://www.alfray.com/trains/blog/train/2023-01-29_sdb_software_defined_blocks.html)
 - [Code Design](https://www.alfray.com/trains/blog/train/2023-01-31_sdb_overall_module_design.html)
 - [MQTT Support](https://www.alfray.com/trains/blog/train/2023-02-24_sdb_mqtt.html)
