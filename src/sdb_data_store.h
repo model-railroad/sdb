@@ -38,8 +38,9 @@ namespace SdbKey {
         /// NVS -- WARNING: All NVS keys must be considered constants;
         /// the enum values should not change across updates.
         NvsStartLong    = 0x8000,
-        WifiSsidStr     = 0x8001,
-        WifiPassStr     = 0x8002,
+        NvsStartStr     = 0x8001,
+        WifiSsidStr     = 0x8011,
+        WifiPassStr     = 0x8012,
 
         // There can be up to 255 (0xFF) sensors starting at these indices.
         Tof0MinMmLong   = 0xD000,
@@ -95,13 +96,37 @@ public:
 
             std::unique_ptr<nvs::NVSHandle> handle = nvs::open_nvs_handle("sdb", NVS_READWRITE, &err);
             PANIC_ESP_PRINTLN(err, "NVS open failed.");
-            String nvsKey(SdbKey::NvsStartLong, HEX);
-            int32_t data = 0;
-            err = handle->get_item(nvsKey.c_str(), data);
-            DEBUG_ESP_PRINTLN(err, "NVS get string size failed");
-            if (CHECK_ESP_OK(err) && data != SdbKey::NvsStartLong) {
-                DEBUG_PRINTF( ("NVS start read/write check failed: %d != %d.\n", data, SdbKey::NvsStartLong) );
-                err = ESP_ERR_NVS_NEW_VERSION_FOUND;
+
+            if (CHECK_ESP_OK(err)) {
+                String nvsKey(SdbKey::NvsStartLong, HEX);
+                int32_t data = 0;
+                err = handle->get_item(nvsKey.c_str(), data);
+                DEBUG_ESP_PRINTLN(err, "NVS get string size failed");
+                if (!CHECK_ESP_OK(err) || data != SdbKey::NvsStartLong) {
+                    DEBUG_PRINTF(
+                            ("NVS start long read check failed: %d != %d.\n", data, SdbKey::NvsStartLong));
+                    err = ESP_ERR_NVS_NEW_VERSION_FOUND;
+                }
+            }
+
+            if (CHECK_ESP_OK(err)) {
+                String nvsKey(SdbKey::NvsStartStr, HEX);
+                size_t size = 0;
+                err = handle->get_item_size(nvs::ItemType::SZ, nvsKey.c_str(), size);
+                DEBUG_ESP_PRINTLN(err, "NVS get string size failed");
+                if (!CHECK_ESP_OK(err) || size <= 0) {
+                    err = ESP_ERR_NVS_NEW_VERSION_FOUND;
+                } else {
+                    char *dest = (char *) malloc(size); // TBD use a shared_ptr(malloc,free)
+                    err = handle->get_string(nvsKey.c_str(), dest, size);
+                    DEBUG_ESP_PRINTLN(err, "NVS get string failed");
+                    if (CHECK_ESP_OK(err)) {
+                        if (strcasecmp(dest, "0x8001") != 0) {
+                            err = ESP_ERR_NVS_NEW_VERSION_FOUND;
+                        }
+                    }
+                    free(dest);
+                }
             }
         }
 
@@ -118,15 +143,27 @@ public:
         PANIC_ESP_PRINTLN(err, "NVS init failed.");
 
         // Write init flag
-        {
-            std::unique_ptr<nvs::NVSHandle> handle = nvs::open_nvs_handle("sdb", NVS_READWRITE, &err);
+        if (CHECK_ESP_OK(err)) {
+            std::unique_ptr<nvs::NVSHandle> handle = nvs::open_nvs_handle("sdb", NVS_READWRITE,
+                                                                          &err);
             PANIC_ESP_PRINTLN(err, "NVS open failed.");
 
-            String nvsKey(SdbKey::NvsStartLong, HEX);
-            err = handle->set_item(nvsKey.c_str(), (int32_t)SdbKey::NvsStartLong);
-            DEBUG_ESP_PRINTLN(err, "NVS write failed");
-            err = handle->commit();
-            PANIC_ESP_PRINTLN(err, "NVS commit failed");
+            if (CHECK_ESP_OK(err)) {
+                String nvsKey(SdbKey::NvsStartLong, HEX);
+                err = handle->set_item(nvsKey.c_str(), (int32_t) SdbKey::NvsStartLong);
+                DEBUG_ESP_PRINTLN(err, "NVS write failed");
+                err = handle->commit();
+                PANIC_ESP_PRINTLN(err, "NVS commit failed");
+            }
+
+            if (CHECK_ESP_OK(err)) {
+                String value("0x8001");
+                String nvsKey(SdbKey::NvsStartStr, HEX);
+                err = handle->set_string(nvsKey.c_str(), value.c_str());
+                DEBUG_ESP_PRINTLN(err, "NVS write failed");
+                err = handle->commit();
+                PANIC_ESP_PRINTLN(err, "NVS commit failed");
+            }
         }
     }
 
