@@ -8,3 +8,4 @@ cmake-build-debug/
 .idea/
 src/CMakeLists.txt
 tests/CMakeLists.txt
+sketch.local
