@@ -38,7 +38,6 @@ namespace SdbKey {
         /// NVS -- WARNING: All NVS keys must be considered constants;
         /// the enum values should not change across updates.
         NvsStartLong    = 0x8000,
-        NvsStartStr     = 0x8001,
         WifiSsidStr     = 0x8011,
         WifiPassStr     = 0x8012,
 
@@ -108,26 +107,6 @@ public:
                     err = ESP_ERR_NVS_NEW_VERSION_FOUND;
                 }
             }
-
-            if (CHECK_ESP_OK(err)) {
-                String nvsKey(SdbKey::NvsStartStr, HEX);
-                size_t size = 0;
-                err = handle->get_item_size(nvs::ItemType::SZ, nvsKey.c_str(), size);
-                DEBUG_ESP_PRINTLN(err, "NVS get string size failed");
-                if (!CHECK_ESP_OK(err) || size <= 0) {
-                    err = ESP_ERR_NVS_NEW_VERSION_FOUND;
-                } else {
-                    char *dest = (char *) malloc(size); // TBD use a shared_ptr(malloc,free)
-                    err = handle->get_string(nvsKey.c_str(), dest, size);
-                    DEBUG_ESP_PRINTLN(err, "NVS get string failed");
-                    if (CHECK_ESP_OK(err)) {
-                        if (strcasecmp(dest, "0x8001") != 0) {
-                            err = ESP_ERR_NVS_NEW_VERSION_FOUND;
-                        }
-                    }
-                    free(dest);
-                }
-            }
         }
 
         if (err == ESP_ERR_NVS_NO_FREE_PAGES || err == ESP_ERR_NVS_NEW_VERSION_FOUND) {
@@ -151,15 +130,6 @@ public:
             if (CHECK_ESP_OK(err)) {
                 String nvsKey(SdbKey::NvsStartLong, HEX);
                 err = handle->set_item(nvsKey.c_str(), (int32_t) SdbKey::NvsStartLong);
-                DEBUG_ESP_PRINTLN(err, "NVS write failed");
-                err = handle->commit();
-                PANIC_ESP_PRINTLN(err, "NVS commit failed");
-            }
-
-            if (CHECK_ESP_OK(err)) {
-                String value("0x8001");
-                String nvsKey(SdbKey::NvsStartStr, HEX);
-                err = handle->set_string(nvsKey.c_str(), value.c_str());
                 DEBUG_ESP_PRINTLN(err, "NVS write failed");
                 err = handle->commit();
                 PANIC_ESP_PRINTLN(err, "NVS commit failed");
