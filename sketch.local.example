@@ -1,0 +1,9 @@
+# Instructions: dup this file into "sket.local".
+# Keep only ONE line in the format "profile com-port".
+# Profile must be one of the sketch.yaml entries.
+# Port must be a valid argument to arduino_cli -p (e.g. COM5 or /dev/ttyS0)
+# Remove everything else, including this comment.
+wifikit32 COM5
+esp32cam COM11
+
+
