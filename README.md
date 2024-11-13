@@ -225,15 +225,18 @@ is enabled in the ESP-IDF toolchain.
 ### Source
 
 ```
-$ git clone git@bitbucket.org:alf-labs/sdb.git
+$ git clone git@bitbucket.org:model-railroad/sdb.git
 ```
 
 ### VSCode Setup Instructions
 
-In VSCode, we use the "Arduino" extension, and _not_ the "Espressif IDF" extension.
+Build SDB is done via the `arduino-cli`; by default the build scripts use the `cli` bundled with the
+VSCode Arduino Community Extension.
+
+In VSCode, we use the "Arduino Community" extension, and _not_ the "Espressif IDF" extension.
 Add these 2 extensions:
 
-- [Arduino for Visual Studio Code](https://marketplace.visualstudio.com/items?itemName=vsciot-vscode.vscode-arduino) by Microsoft
+- [Arduino Community Edition](https://marketplace.visualstudio.com/items?itemName=vscode-arduino.vscode-arduino-community) by vscode-arduino
 - [C/C++ Extension Pack](https://marketplace.visualstudio.com/items?itemName=ms-vscode.cpptools-extension-pack) by Microsoft
 
 The first run:
@@ -267,6 +270,9 @@ Finally, you need to select your board model:
     - Current is `Heltec Wifi Kit 32, PSRAM disabled, 240 MHz`.
 
 Actual build and deploy is done via the command line script indicated below.
+
+**Tip**: If you want to use a different install of `arduino-cli`, please customize the search path
+in `_arduino_cli.sh` and `_arduino_cli.bat`.
 
 
 ### CLion Instructions

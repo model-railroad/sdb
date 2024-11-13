@@ -16,6 +16,9 @@
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#ifndef INC_SDB_CPP
+#define INC_SDB_CPP
+
 #include "common.h"
 #include <esp_wifi.h>
 
@@ -62,6 +65,7 @@ SdbModManager _gSdbModManager;
 void _gSdbSetup() {
     Serial.begin(115200);
     Serial.setDebugOutput(true);
+#warning "Compiling using " __cplusplus
     DEBUG_PRINTF( ("SDB on Core %d with priority %d, compiled using C++ %d\n",
         xPortGetCoreID(),
         uxTaskPriorityGet(nullptr),
@@ -97,3 +101,5 @@ void _gSdbSetup() {
 void _gSdbLoop() {
     _gSdbModManager.onLoop();
 }
+
+#endif // INC_SDB_CPP

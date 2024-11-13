@@ -19,12 +19,12 @@ profiles:
   wifikit32:
     fqbn: esp32:esp32:heltec_wifi_kit_32
     platforms:
-      - platform: esp32:esp32 (2.0.7)
+      - platform: esp32:esp32 (3.0.7)
         platform_index_url: https://raw.githubusercontent.com/espressif/arduino-esp32/gh-pages/package_esp32_index.json
     libraries:
-      - Adafruit_VL53L0X (1.2.2)
-      - Adafruit SSD1306 (2.5.7)
-      - U8g2 (2.33.15)
+      - Adafruit_VL53L0X (1.2.4)
+      - Adafruit SSD1306 (2.5.13)
+      - U8g2 (2.35.30)
       - Arduino_JSON (0.2.0)
       - ArduinoHttpClient (0.5.0)
       - ArduinoMqttClient (0.1.7)

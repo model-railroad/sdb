@@ -23,7 +23,6 @@ void setup() {
     _gSdbSetup();
 }
 
-
 void loop() {
     _gSdbLoop();
 }
