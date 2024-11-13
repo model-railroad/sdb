@@ -17,6 +17,5 @@ if [[ ! -x "$C" ]]; then
     echo "ERROR: arduino-cli not found in $USERPROFILE/.vscode/extensions"
     exit 1
 fi
-"$C" version
 "$C" "$@"
 
