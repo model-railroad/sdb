@@ -12,7 +12,7 @@ fi
 
 CMD_JSON="build/compile_commands.json"
 ARDUINO_DIR="AppData/Local/Arduino15"
-XTENSA_DIR="packages/esp32/tools/xtensa-esp32-elf-gcc/gcc8_4_0-esp-2021r2-patch5"
+XTENSA_DIR=""   # this value is parsed from compile_commands.json below
 _GCC="xtensa-esp32-elf-gcc.exe"
 _GPP="xtensa-esp32-elf-g++.exe"
 CXX_FLAGS=""
@@ -29,7 +29,7 @@ fi
 ARDUINO_DIR=( $UP/AppData/Local/Arduino* )
 ARDUINO_DIR="${ARDUINO_DIR[0]/$UP\//}"
 
-_GPP=$(cygpath $(grep "g++" build/compile_commands.json | sort -u | head -n 1 | tr -d ' \",') )
+_GPP=$(cygpath $(grep "g++" "$CMD_JSON" | sort -u | head -n 1 | tr -d ' \",') )
 XTENSA_DIR=$(dirname "$_GPP")
 if [[ $(basename "$XTENSA_DIR") == "bin" ]]; then XTENSA_DIR=$(dirname "$XTENSA_DIR"); fi
 XTENSA_DIR="${XTENSA_DIR/$UP\/$ARDUINO_DIR\//}"
@@ -70,7 +70,7 @@ cmake_minimum_required(VERSION 3.26)
 
 # --- SDB Project ---
 project(SDB)
-set(CMAKE_CXX_STANDARD 11)
+set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED True)
 set(CMAKE_CXX_EXTENSIONS OFF)
 

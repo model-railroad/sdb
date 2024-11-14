@@ -60,14 +60,15 @@ AE_VERS=$(echo "$PROPS" | grep "^version=" | cut -d = -f 2-)  # arduino-esp32 ve
 
 BUILD_FLAGS="-DESP32 -DESP32_PROFILE_$PROF $FLAGS $BUILD_FLAGS"
 
-if [[ "$AE_VERS" =~ "^3\." ]]; then
+if [[ "$AE_VERS" =~ ^3\. ]]; then
     # Enable C++20 Module support for arduino-esp32 3.x
+    echo "Enable C++20 Module Support"
     CPP_FLAGS="-fmodules-ts $CPP_FLAGS"
 fi
 
 echo "Compiling..."
 
-./_arduino_cli.sh compile \
+time ./_arduino_cli.sh compile \
     $LOG \
     --build-path ./build \
     --profile $PROF \
