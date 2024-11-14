@@ -16,8 +16,8 @@
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-extern void _gSdbSetup();
-extern void _gSdbLoop();
+extern "C" void _gSdbSetup();
+extern "C" void _gSdbLoop();
 
 void setup() {
     _gSdbSetup();

@@ -16,8 +16,7 @@
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#if false // ndef INC_SDB_PASS_DEC_H
-#define INC_SDB_PASS_DEC_H
+module;
 
 // Wifi module.
 // AP mode, a.k.a. "Ad-hoc wifi": this module generates its own wifi network,
@@ -43,6 +42,8 @@
 #include <WiFi.h>
 #include <WiFiClient.h>
 
+export module SDB.PassDec;
+
 #define MOD_WIFI_NAME "wi"
 
 static inline char sdbPassDec_hex2int(char c) {
@@ -52,7 +53,7 @@ static inline char sdbPassDec_hex2int(char c) {
     return 0;
 }
 
-String sdbPassDec(const String& encodedPass) {
+export String sdbPassDec(const String& encodedPass) {
     const char *pw2src = encodedPass.c_str();
     int pwlen = encodedPass.length() / 2;
     std::unique_ptr<char[]> buffer(new char[pwlen + 1]);
@@ -66,5 +67,3 @@ String sdbPassDec(const String& encodedPass) {
     String pw(pwdst);
     return pw;
 }
-
-#endif // INC_SDB_PASS_DEC_H

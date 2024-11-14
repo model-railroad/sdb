@@ -61,6 +61,6 @@ typedef unsigned long millis_t;      // for millis()
 #endif
 
 // In main INO... a global panic method.
-[[noreturn]] void sdbPanic(char* msg = nullptr);
+extern "C" [[noreturn]] void sdbPanic(char* msg = nullptr);
 
 #endif // INC_COMMON_H

@@ -16,15 +16,16 @@
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#if false // ndef INC_SDB_LOCK_H
-#define INC_SDB_LOCK_H
+module;
 
 #include "common.h"
 #include <assert.h>
 #include <freertos/semphr.h>
 #include <functional>
 
-class SdbLock {
+export module SDB.Lock;
+
+export class SdbLock {
 public:
     SdbLock(const String& name) :
         _name(name),
@@ -68,7 +69,7 @@ private:
 };
 
 /// A mutex is a lock that auto-acquires and auto-releases on scope.
-class SdbMutex {
+export class SdbMutex {
 public:
     SdbMutex(SdbLock& lock) : _lock(lock) {
         _lock.acquire();
@@ -82,4 +83,3 @@ private:
     SdbLock& _lock;
 };
 
-#endif // INC_SDB_LOCK_H
