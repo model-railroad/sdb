@@ -1,6 +1,10 @@
 DEST_SRC="src/CMakeLists.txt"
 DEST_TESTS="tests/CMakeLists.txt"
 
+# Updated:
+# 2024-11-14: CMake 3.28 needed for C++20 Modules support.
+# https://cmake.org/cmake/help/latest/manual/cmake-cxxmodules.7.html#manual:cmake-cxxmodules(7)
+
 function error() {
     echo "$*"
     exit 1
@@ -46,11 +50,15 @@ done
 
 echo "Parsing src/, tests/, and build/compile_commands.json..."
 
+SRC_CPP=$(cd src ; find . -name "*.cpp")
+
 SRC_HEADERS=$(cd src ; find . -name "*.h")
 
-SRC_DIRS=$(cd src ; find . -type d | grep -v "\\.$")
+SRC_DIRS=$(cd src ; find . -type d | grep -v "\\.$" | grep -iv cmake | grep -iv idea)
 
-TESTS_SRC=$(cd tests ; ls -1 *.cpp )
+SRC_W_MOCKS_DIRS=$(cd src ; find ../tests/ -type d | grep -v "\\.$" | grep -iv cmake | grep -iv idea)
+
+TESTS_SRC=$(cd tests ; find . -name "*.cpp" | grep -iv cmake)
 
 TESTS_HEADERS=$(cd tests ; find . -name "*.h" ; find ../src -name "*.h")
 
@@ -60,13 +68,13 @@ TESTS_DIRS=$(cd tests ; find ../src -type d)
 for I in $(grep '"-I' build/compile_commands.json | sort -u | sed 's/-I//g' | tr -d '\", '); do
     I=$(cygpath "$I")
     I="${I/$UP\/$ARDUINO_DIR\//}"
-    ARDUINO_DIR_INCLUDES="$ARDUINO_DIR_INCLUDES
-\${ARDUINO_DIR}/$I"
+    ARDUINO_DIR_INCLUDES="\${ARDUINO_DIR}/$I
+$ARDUINO_DIR_INCLUDES"
 done
 
 echo "Generating $DEST_SRC"
 cat > $DEST_SRC <<EOF
-cmake_minimum_required(VERSION 3.26)
+cmake_minimum_required(VERSION 3.28)
 
 # --- SDB Project ---
 project(SDB)
@@ -94,6 +102,8 @@ set(CMAKE_FIND_ROOT_PATH_MODE_PROGRAM NEVER)
 set(CMAKE_FIND_ROOT_PATH_MODE_LIBRARY ONLY)
 set(CMAKE_FIND_ROOT_PATH_MODE_INCLUDE ONLY)
 
+set_directory_properties(PROPERTIES ADDITIONAL_CLEAN_FILES "gcm.cache")
+
 # --- SRC target ---
 
 # Force the .ino file to be treated as C++
@@ -102,7 +112,20 @@ set(CMAKE_FIND_ROOT_PATH_MODE_INCLUDE ONLY)
 
 $CXX_FLAGS
 
-add_library(src \${PROJECT_SOURCE_DIR}/sdb.cpp
+add_library(src_with_mocks
+$SRC_CPP
+$SRC_HEADERS
+)
+
+set_target_properties(src_with_mocks PROPERTIES LINKER_LANGUAGE CXX)
+
+target_include_directories(src_with_mocks PRIVATE
+$SRC_W_MOCKS_DIRS
+)
+
+
+add_library(src
+$SRC_CPP
 $SRC_HEADERS
 )
 
@@ -115,12 +138,13 @@ $SRC_DIRS
 target_include_directories(src PRIVATE
 $ARDUINO_DIR_INCLUDES
 )
+
 # ~~
 EOF
 
 echo "Generating $DEST_TESTS"
 cat > $DEST_TESTS <<EOF
-cmake_minimum_required(VERSION 3.26)
+cmake_minimum_required(VERSION 3.28)
 
 # --- SDB TESTS Project ---
 project(SDB)
@@ -129,6 +153,8 @@ set(CMAKE_CXX_STANDARD_REQUIRED True)
 set(CMAKE_CXX_EXTENSIONS ON)
 
 set(CMAKE_SYSTEM_NAME MSYS)
+
+set_directory_properties(PROPERTIES ADDITIONAL_CLEAN_FILES "gcm.cache")
 
 # --- TESTS target ---
 

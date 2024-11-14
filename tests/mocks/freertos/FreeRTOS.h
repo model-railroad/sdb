@@ -49,3 +49,5 @@ typedef unsigned portBASE_TYPE      UBaseType_t;
 #define portMAX_DELAY (TickType_t) 0xffffffffUL
 
 #define configMAX_PRIORITIES (25)
+
+#define WIFI_TASK_CORE_ID 1

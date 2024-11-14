@@ -16,18 +16,21 @@
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef INC_SDB_DATA_STORE_H
-#define INC_SDB_DATA_STORE_H
+module;
 
 #include "common.h"
-#include "sdb_lock.h"
 #include <memory>
 #include <nvs_flash.h>
 #include <nvs.h>
 #include <nvs_handle.hpp>
 #include <unordered_map>
 
-namespace SdbKey {
+//---------------
+export module SDB.DataStore;
+
+import SDB.Lock;
+
+export namespace SdbKey {
     /// Keys for SdbDataStore
     enum SdbKey {
         /// In-memory keys, not backed into NVS.
@@ -75,7 +78,7 @@ namespace SdbKey {
  * When read, the in-memory value prevails; the NVS is only read if there is no initial
  * copy in memory. When writing, both the in-memory and the NVS versions are updated.
  */
-class SdbDataStore {
+export class SdbDataStore {
 public:
     SdbDataStore() :
         _lock("LockData")
@@ -248,7 +251,4 @@ private:
         return loaded != _mapNvs.end();
     }
 };
-
-
-#endif // INC_SDB_DATA_STORE_H
 

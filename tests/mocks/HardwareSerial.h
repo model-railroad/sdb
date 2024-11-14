@@ -36,6 +36,18 @@ public:
     size_t println(const char *str) {
         return fprintf(stderr, "%s\n", str);
     }
+
+    void begin(
+            unsigned long baud
+            // uint32_t config = SERIAL_8N1,
+            // int8_t rxPin = -1,
+            // int8_t txPin = -1,
+            // bool invert = false,
+            // unsigned long timeout_ms = 20000UL,
+            // uint8_t rxfifo_full_thrhd = 112
+    ) { }
+
+    void setDebugOutput(bool) { };
 };
 
 class Stream : public Print {};

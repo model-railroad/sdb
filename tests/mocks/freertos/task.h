@@ -36,3 +36,7 @@ BaseType_t xTaskCreatePinnedToCore( TaskFunction_t pvTaskCode,
 BaseType_t xPortGetCoreID(void) {
     return APP_CPU;
 }
+
+UBaseType_t uxTaskPriorityGet( const TaskHandle_t xTask ) {
+    return 1;
+}

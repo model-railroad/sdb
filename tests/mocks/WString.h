@@ -33,7 +33,12 @@ public:
     String(const char *str = "") : _str(str) {}
     String(int val, int base = 10) {
         char buf[1024];
+#if defined(itoa)
         _str = itoa(val, buf, base);
+#else
+        assert(base == 10); // lazy mock implementation
+        _str = std::to_string(val);
+#endif
     }
 
     const char *c_str() const { return _str.c_str(); }

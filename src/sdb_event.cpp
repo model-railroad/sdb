@@ -16,13 +16,16 @@
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef INC_SDB_EVENT_H
-#define INC_SDB_EVENT_H
+module;
 
 #include "common.h"
-#include "sdb_blink_mode.h"
 
-namespace SdbEvent {
+//---------------
+export module SDB.Event;
+
+import SDB.BlinkMode;
+
+export namespace SdbEvent {
     enum Type {
         /// SdbEventBlinkMode with new blink mode.
         BlinkModeUpdated,
@@ -79,5 +82,3 @@ namespace SdbEvent {
         const SdbBlinkMode::Mode blinkMode;
     };
 }
-
-#endif // INC_SDB_EVENT_H

@@ -18,6 +18,8 @@
 
 #pragma once
 
+#include <WString.h>
+
 typedef struct cJSON
 {
 //    struct cJSON *next;

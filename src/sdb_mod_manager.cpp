@@ -16,24 +16,26 @@
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef INC_SDB_MOD_MANAGER_H
-#define INC_SDB_MOD_MANAGER_H
+module;
 
 #include "common.h"
-#include "sdb_data_store.h"
-#include "sdb_lock.h"
-#include "sdb_mod.h"
-#include "sdb_sensor.h"
 #include <algorithm>
 #include <functional>
 #include <map>
 #include <memory>
 #include <vector>
 
-class SdbBlock;     // avoid #include "sdb_block.h"  due to circular inclusions.
-class SdbServer;    // avoid #include "sdb_server.h" due to circular inclusions.
+//---------------
+export module SDB.ModManager;
 
-class SdbModManager {
+import SDB.Block;
+import SDB.DataStore;
+import SDB.Lock;
+import SDB.Mod;
+import SDB.Sensor;
+import SDB.Server;
+
+export class SdbModManager {
 public:
     SdbModManager() :
         _ioLock("LockIO"),

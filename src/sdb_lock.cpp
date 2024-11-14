@@ -23,6 +23,7 @@ module;
 #include <freertos/semphr.h>
 #include <functional>
 
+//---------------
 export module SDB.Lock;
 
 export class SdbLock {

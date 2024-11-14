@@ -16,13 +16,16 @@
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef INC_SDB_TASK_H
-#define INC_SDB_TASK_H
+module;
 
 #include "common.h"
-#include "sdb_lock.h"
 
-namespace SdbPriority {
+//---------------
+export module SDB.Task;
+
+import SDB.Lock;
+
+export namespace SdbPriority {
     enum SdbPriority {
         Idle = 0,
         MainLoop = 1,
@@ -34,7 +37,7 @@ namespace SdbPriority {
     };
 }
 
-class SdbTask {
+export class SdbTask {
 public:
     SdbTask(const String& name, SdbPriority::SdbPriority priority) :
         _taskName(name),
@@ -75,5 +78,3 @@ private:
         task->onRun();
     }
 };
-
-#endif // INC_SDB_TASK_H

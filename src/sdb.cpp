@@ -17,23 +17,24 @@
  */
 
 module;
+
 #include <Arduino.h>
 #include "common.h"
 #include <esp_wifi.h>
 
-//#include "sdb_mod_manager.h"
-//#include "mod_blinky.h"
-//#include "mod_blocks.h"
-//#include "mod_display.h"
-//#include "mod_jmri.h"
-//#include "mod_mqtt.h"
-//#include "mod_tof.h"
-//#include "mod_wifi.h"
-
+//---------------
 export module SDB;
 
+import SDB.ModManager;
+import SDB.Mod.Blocks;
+import SDB.Mod.Blinky;
+import SDB.Mod.Display;
+import SDB.Mod.JMRI;
+import SDB.Mod.MQTT;
+import SDB.Mod.ToF;
+import SDB.Mod.Wifi;
 
-//SdbModManager _gSdbModManager;
+SdbModManager _gSdbModManager;
 
 //[[noreturn]] void sdbPanic(char* msg) {
 //    if (msg != nullptr) {
@@ -74,32 +75,32 @@ extern "C" void _gSdbSetup() {
         __cplusplus) );
     DEBUG_PRINTF( ("Wifi on Core %d\n", WIFI_TASK_CORE_ID) );
 
-//    auto blocks  = std::make_shared<SdbModBlocks>(_gSdbModManager);
-//    auto blinky  = std::make_shared<SdbModBlinky>(_gSdbModManager);
-//#ifdef MOD_DISPLAY_ENABLED
-//    auto display = std::make_shared<SdbModDisplay>(_gSdbModManager);
-//#endif
-//    auto jmri    = std::make_shared<SdbModJmri>(_gSdbModManager);
-//    auto mqtt    = std::make_shared<SdbModMqtt>(_gSdbModManager);
-//#ifdef MOD_TOF_ENABLED
-//    auto tof     = std::make_shared<SdbModTof>(_gSdbModManager);
-//#endif
-//    auto wifi    = std::make_shared<SdbModWifi>(_gSdbModManager);
-//    // Note: order of registration dictates order of execution for onStart() and onLoop().
-//    _gSdbModManager.registerMod(blinky);
-//#ifdef MOD_DISPLAY_ENABLED
-//    _gSdbModManager.registerMod(display);
-//#endif
-//#ifdef MOD_TOF_ENABLED
-//    _gSdbModManager.registerMod(tof);
-//#endif
-//    _gSdbModManager.registerMod(jmri);
-//    _gSdbModManager.registerMod(mqtt);
-//    _gSdbModManager.registerMod(blocks); // after sensors modules
-//    _gSdbModManager.registerMod(wifi);
-//    _gSdbModManager.onStart();
+    auto blocks  = std::make_shared<SdbModBlocks>(_gSdbModManager);
+    auto blinky  = std::make_shared<SdbModBlinky>(_gSdbModManager);
+#ifdef MOD_DISPLAY_ENABLED
+    auto display = std::make_shared<SdbModDisplay>(_gSdbModManager);
+#endif
+    auto jmri    = std::make_shared<SdbModJmri>(_gSdbModManager);
+    auto mqtt    = std::make_shared<SdbModMqtt>(_gSdbModManager);
+#ifdef MOD_TOF_ENABLED
+    auto tof     = std::make_shared<SdbModTof>(_gSdbModManager);
+#endif
+    auto wifi    = std::make_shared<SdbModWifi>(_gSdbModManager);
+    // Note: order of registration dictates order of execution for onStart() and onLoop().
+    _gSdbModManager.registerMod(blinky);
+#ifdef MOD_DISPLAY_ENABLED
+    _gSdbModManager.registerMod(display);
+#endif
+#ifdef MOD_TOF_ENABLED
+    _gSdbModManager.registerMod(tof);
+#endif
+    _gSdbModManager.registerMod(jmri);
+    _gSdbModManager.registerMod(mqtt);
+    _gSdbModManager.registerMod(blocks); // after sensors modules
+    _gSdbModManager.registerMod(wifi);
+    _gSdbModManager.onStart();
 }
 
 extern "C" void _gSdbLoop() {
-//    _gSdbModManager.onLoop();
+    _gSdbModManager.onLoop();
 }

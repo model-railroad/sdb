@@ -25,26 +25,10 @@ module;
 //   provides pages for configuration, and sent its state to a JMIR or MQTT server.
 
 #include "common.h"
-#include "sdb_block.h"
-#include "mod_display.h"
-#include "sdb_lock.h"
-#include "sdb_mod.h"
-#include "sdb_sensor.h"
-#include "sdb_server.h"
-
-#include <algorithm>
-#include <functional>
 #include <memory>
-#include <vector>
 
-#include <esp_http_server.h>
-#include <Arduino_JSON.h>
-#include <WiFi.h>
-#include <WiFiClient.h>
-
+//---------------
 export module SDB.PassDec;
-
-#define MOD_WIFI_NAME "wi"
 
 static inline char sdbPassDec_hex2int(char c) {
     if (c >= '0' && c <= '9') return      c - '0';

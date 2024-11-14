@@ -16,20 +16,20 @@
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef INC_SDB_SERVER_H
-#define INC_SDB_SERVER_H
+module;
 
 #include "common.h"
-#include "sdb_mod_manager.h"
-#include "sdb_props.h"
-#include "sdb_lock.h"
 
 #include <Arduino_JSON.h>
 
-
 //---------------
+export module SDB.Server;
 
-class SdbServer {
+import SDB.Lock;
+import SDB.ModManager;
+import SDB.Props;
+
+export class SdbServer {
 public:
     explicit SdbServer(SdbModManager& manager,
                     String&& name,
@@ -102,5 +102,3 @@ protected:
     SdbLock _propsLock;
     bool _clientPropsChanged;
 };
-
-#endif // INC_SDB_SERVER_H

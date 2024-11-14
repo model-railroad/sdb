@@ -16,20 +16,20 @@
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef INC_SDB_MOD_H
-#define INC_SDB_MOD_H
-
-class SdbModManager;
+module;
 
 #include "common.h"
-#include "sdb_event.h"
-#include "sdb_lock.h"
-#include "sdb_mod_manager.h"
-#include "sdb_task.h"
 #include <memory>
 #include <utility>
 #include <vector>
 
+//---------------
+export module SDB.Mod;
+
+import SDB.Event;
+import SDB.Lock;
+import SDB.ModManager;
+import SDB.Task;
 
 class SdbMod {
 public:

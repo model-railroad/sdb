@@ -16,90 +16,10 @@
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef INC_SDB_MOD_BLINKY_H
-#define INC_SDB_MOD_BLINKY_H
-
-#include "common.h"
-#include "sdb_lock.h"
-#include "sdb_mod.h"
+#pragma once
 
 #define MOD_BLINKY_NAME "ld"
 
 #define BLINK_EVENT(manager, mode) \
     { VERBOSE_PRINTF( ( "[BLINK] ENQUEUE    mode %04X " #mode ".\n", mode ) ); \
       _blinkLED(manager, mode); }
-
-void _blinkLED(SdbModManager& manager, SdbBlinkMode::Mode mode) {
-    // Note: we don't have std::make_unique in ESP32 4.x (C++11 below 201103)
-    auto event = std::unique_ptr<SdbEvent::SdbEvent>(new SdbEvent::SdbEventBlinkMode(mode));
-    manager.queueEvent(MOD_BLINKY_NAME, std::move(event));
-}
-
-
-/// Adapter for BlinkHandler to access resources from SdbModBlinky (events, GPIO).
-class SdbModBlinkyHandler : public SdbBlinkMode::BlinkHandler {
-public:
-    explicit SdbModBlinkyHandler(const std::function<SdbBlinkMode::Mode()>& getNextMode) :
-            SdbBlinkMode::BlinkHandler(getNextMode)
-    { }
-
-protected:
-    void setOnboardLED(bool on) override {
-        digitalWrite(MOD_BLINKY_LED_PIN1, on ? HIGH : LOW);
-    }
-
-    void setExternalLED(bool on) override {
-        digitalWrite(MOD_BLINKY_LED_PIN2, on ? HIGH : LOW);
-    }
-
-    void sleepMs(millis_t delayMs) override {
-        rtDelay(delayMs);
-    }
-};
-
-
-class SdbModBlinky : public SdbModTask {
-public:
-    explicit SdbModBlinky(SdbModManager& manager) :
-        SdbModTask(manager, MOD_BLINKY_NAME, "TaskBlinky", SdbPriority::Sensor),
-        _ioLock(manager.ioLock())
-    { }
-
-    void onStart() override {
-        pinMode(MOD_BLINKY_LED_PIN1, OUTPUT);
-        pinMode(MOD_BLINKY_LED_PIN2, OUTPUT);
-        startTask();
-    }
-
-    millis_t onLoop() override {
-        return 2000;
-    }
-
-private:
-    SdbLock& _ioLock;
-
-    SdbModBlinkyHandler _handler {
-            // getNextMode implementation
-            [&]() -> SdbBlinkMode::Mode {
-                if (hasEvents()) {
-                    auto event = dequeueEvent();
-                    if (event && event->type == SdbEvent::BlinkModeUpdated) {
-                        auto eventMode = reinterpret_cast<SdbEvent::SdbEventBlinkMode *>(event.get());
-                        return eventMode->blinkMode;
-                    }
-                }
-                return SdbBlinkMode::Undefined;
-            }
-    };
-
-    [[noreturn]] void onTaskRun() override {
-        while (true) {
-            _handler.onLoop();
-        }
-    }
-};
-
-
-
-
-#endif // INC_SDB_MOD_BLINKY_H

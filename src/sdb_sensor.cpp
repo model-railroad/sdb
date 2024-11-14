@@ -16,13 +16,9 @@
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef INC_SDB_SENSOR_H
-#define INC_SDB_SENSOR_H
-
-class SdbModManager;
+module;
 
 #include "common.h"
-#include "sdb_mod_manager.h"
 
 #include <Arduino_JSON.h>
 #if defined(USE_DISPLAY_LIB_U8G2)
@@ -32,10 +28,14 @@ class SdbModManager;
 
 
 //---------------
+export module SDB.Sensor;
 
-class ISdbSensorBlockLogic;
+//class SdbModManager;
+// class ISdbSensorBlockLogic;
 
-class SdbSensor {
+import SDB.ModManager;
+
+export class SdbSensor {
 public:
     SdbSensor(SdbModManager& manager, String&& name) :
         _manager(manager),
@@ -66,7 +66,7 @@ private:
     const String _sensorName;
 };
 
-class ISdbSensorBlockLogic {
+export class ISdbSensorBlockLogic {
 public:
     virtual ~ISdbSensorBlockLogic() = default;
 
@@ -82,6 +82,7 @@ public:
     virtual void setProperties(JSONVar &input) = 0;
 };
 
+export
 template <class S>
 class SdbSensorBlockLogic : public ISdbSensorBlockLogic {
 public:
@@ -94,5 +95,3 @@ protected:
     SdbModManager& _manager;
     S* _sensor;
 };
-
-#endif // INC_SDB_SENSOR_H

@@ -16,19 +16,17 @@
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef INC_SDB_PROPS_H
-#define INC_SDB_PROPS_H
+module;
 
 #include "common.h"
 #include <Arduino_JSON.h>
 
 //-----------------------------------
+export module SDB.Props;
 
-static const JSONVar& mkProp(JSONVar& var, const char* label, const String& val) {
+export static const JSONVar& mkProp(JSONVar& var, const char* label, const String& val) {
     var["l"] = label;
     var["v"] = val.c_str();
     return var;
 }
 
-
-#endif // INC_SDB_PROPS_H

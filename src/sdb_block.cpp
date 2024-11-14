@@ -16,8 +16,7 @@
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef INC_SDB_BLOCK_H
-#define INC_SDB_BLOCK_H
+module;
 
 #include <Arduino_JSON.h>
 #include <memory>
@@ -25,15 +24,15 @@
 #include "common.h"
 #include "mod_jmri.h"
 #include "mod_mqtt.h"
-#include "sdb_data_store.h"
-#include "sdb_mod_manager.h"
-#include "sdb_props.h"
-#include "sdb_sensor.h"
-#include "sdb_server.h"
 
 //---------------
+export module SDB.Block;
 
-class SdbBlock {
+import SDB.DataStore;
+import SDB.ModManager;
+import SDB.Sensor;
+
+export class SdbBlock {
 public:
     explicit SdbBlock(SdbModManager& manager,
                    String&& name,
@@ -171,5 +170,3 @@ private:
     millis_t _lastNotifyTS;
     millis_t _refreshMS;
 };
-
-#endif // INC_SDB_BLOCK_H
