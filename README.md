@@ -225,7 +225,7 @@ is enabled in the ESP-IDF toolchain.
 ### Source
 
 ```
-$ git clone git@bitbucket.org:model-railroad/sdb.git
+$ git clone git@github.com:model-railroad/sdb.git
 ```
 
 ### VSCode Setup Instructions
